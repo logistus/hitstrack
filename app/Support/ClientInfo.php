@@ -6,6 +6,23 @@ use Illuminate\Http\Request;
 
 class ClientInfo
 {
+    public static function referrerDomain(Request $request): ?string
+    {
+        $referer = $request->headers->get('referer');
+
+        if (! $referer) {
+            return null;
+        }
+
+        $host = parse_url($referer, PHP_URL_HOST);
+
+        if (! is_string($host) || $host === '') {
+            return null;
+        }
+
+        return preg_replace('/^www\./i', '', strtolower($host));
+    }
+
     /**
      * @return array{device_type: string|null, operating_system: string|null, browser: string|null}
      */

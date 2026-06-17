@@ -28,7 +28,7 @@ class RotatorRedirectController extends Controller
         RotatorStat::create([
             'rotator_id' => $rotator->id,
             'tracker_id' => $tracker->id,
-            'ref_url' => $request->headers->get('referer'),
+            'ref_url' => ClientInfo::referrerDomain($request),
             'ip_address' => $request->ip(),
             ...$clientInfo,
         ]);
@@ -36,7 +36,7 @@ class RotatorRedirectController extends Controller
         TrackerStat::create([
             'tracker_id' => $tracker->id,
             'rotator_id' => $rotator->id,
-            'ref_url' => $request->headers->get('referer'),
+            'ref_url' => ClientInfo::referrerDomain($request),
             'ip_address' => $request->ip(),
             ...$clientInfo,
         ]);

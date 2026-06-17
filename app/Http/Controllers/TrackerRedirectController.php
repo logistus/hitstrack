@@ -21,7 +21,7 @@ class TrackerRedirectController extends Controller
 
         TrackerStat::create([
             'tracker_id' => $tracker->id,
-            'ref_url' => $request->headers->get('referer'),
+            'ref_url' => ClientInfo::referrerDomain($request),
             'ip_address' => $request->ip(),
             ...$clientInfo,
         ]);
