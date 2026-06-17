@@ -92,6 +92,19 @@ new #[Title('Rotator stats')] class extends Component
         return $this->dailyHits($this->rotator())['chartData'];
     }
 
+    public function referrerHref(?string $refUrl): ?string
+    {
+        if (! $refUrl) {
+            return null;
+        }
+
+        if (str_starts_with($refUrl, 'http://') || str_starts_with($refUrl, 'https://')) {
+            return $refUrl;
+        }
+
+        return 'https://'.$refUrl;
+    }
+
     private function rotator(): Rotator
     {
         return Rotator::query()
@@ -314,7 +327,15 @@ new #[Title('Rotator stats')] class extends Component
                     @forelse ($totalHitRecords as $hit)
                     <flux:table.row wire:key="rotator-hit-{{ $hit->id }}">
                         <flux:table.cell>{{ $hit->created_at?->format('Y-m-d H:i:s') }}</flux:table.cell>
-                        <flux:table.cell>{{ $hit->ref_url ?: __('Direct / unknown') }}</flux:table.cell>
+                        <flux:table.cell>
+                            @if ($href = $this->referrerHref($hit->ref_url))
+                            <flux:link href="{{ $href }}" target="_blank" rel="noreferrer" class="block max-w-md truncate">
+                                {{ $hit->ref_url }}
+                            </flux:link>
+                            @else
+                            {{ __('Direct / unknown') }}
+                            @endif
+                        </flux:table.cell>
                         <flux:table.cell>{{ $hit->device_type ? str($hit->device_type)->title() : __('Unknown') }}</flux:table.cell>
                         <flux:table.cell>{{ $hit->operating_system ?: __('Unknown') }}</flux:table.cell>
                         <flux:table.cell>{{ $hit->browser ?: __('Unknown') }}</flux:table.cell>
@@ -377,7 +398,15 @@ new #[Title('Rotator stats')] class extends Component
                     <flux:table.rows>
                         @forelse ($referrerStats as $stat)
                         <flux:table.row wire:key="rotator-referrer-{{ md5($stat->ref_url ?: 'direct') }}">
-                            <flux:table.cell>{{ $stat->ref_url ?: __('Direct / unknown') }}</flux:table.cell>
+                            <flux:table.cell>
+                                @if ($href = $this->referrerHref($stat->ref_url))
+                                <flux:link href="{{ $href }}" target="_blank" rel="noreferrer" class="block max-w-md truncate">
+                                    {{ $stat->ref_url }}
+                                </flux:link>
+                                @else
+                                {{ __('Direct / unknown') }}
+                                @endif
+                            </flux:table.cell>
                             <flux:table.cell>{{ $stat->total_hits }}</flux:table.cell>
                             <flux:table.cell>{{ $stat->unique_hits }}</flux:table.cell>
                         </flux:table.row>
