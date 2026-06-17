@@ -80,15 +80,6 @@
         </div>
     </flux:header>
 
-    <div class="container mx-auto flex justify-end py-2">
-        <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">
-            {{ __('Server time') }}:
-            <time datetime="{{ now()->toIso8601String() }}">
-                {{ now()->format('Y-m-d H:i:s') }}
-            </time>
-        </flux:text>
-    </div>
-
     <!-- Mobile Menu -->
     <flux:sidebar collapsible="mobile" sticky class="lg:hidden border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:sidebar.header>
