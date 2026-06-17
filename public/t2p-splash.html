@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time2Party Splash Page</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255, 0, 204, 0.45), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(0, 229, 255, 0.35), transparent 32%),
+        linear-gradient(135deg, #120019, #030014 60%, #000);
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .splash {
+      min-height: 100vh;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      text-align: center;
+    }
+
+    .card {
+      position: relative;
+      z-index: 5;
+      width: 100%;
+      padding: 34px 22px;
+      border-radius: 30px;
+      background: rgba(5, 0, 20, 0.74);
+      border: 2px solid rgba(0, 229, 255, 0.65);
+      box-shadow:
+        0 0 35px rgba(0, 229, 255, 0.55),
+        0 0 70px rgba(255, 0, 204, 0.35),
+        inset 0 0 35px rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .badge {
+      display: inline-block;
+      margin-bottom: 18px;
+      padding: 9px 18px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ff00cc, #00e5ff);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      animation: badgePulse 1.3s infinite;
+    }
+
+    .party {
+      font-size: 76px;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 18px #ff00cc);
+      animation: float 2.2s ease-in-out infinite;
+    }
+
+    h1 {
+      font-size: clamp(38px, 7vw, 68px);
+      line-height: 0.95;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+      color: #fff;
+      text-shadow:
+        0 0 12px #00e5ff,
+        0 0 22px #ff00cc;
+    }
+
+    h1 span {
+      color: #00e5ff;
+    }
+
+    .sub {
+      font-size: clamp(20px, 4vw, 31px);
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+
+    .sub strong {
+      color: #ffea00;
+    }
+
+    .rotating-text {
+      height: 36px;
+      margin: 18px 0;
+      font-size: clamp(22px, 4vw, 34px);
+      font-weight: 1000;
+      color: #ffea00;
+      text-shadow: 0 0 14px rgba(255, 234, 0, 0.9);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      max-width: 560px;
+      margin: 22px auto;
+    }
+
+    .feature {
+      padding: 11px 8px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      font-weight: 900;
+      font-size: 15px;
+    }
+
+    .cta {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 18px 34px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #ffea00, #ff8a00);
+      color: #130014;
+      text-decoration: none;
+      font-size: clamp(23px, 4vw, 34px);
+      font-weight: 1000;
+      text-transform: uppercase;
+      box-shadow:
+        0 8px 0 #8f3300,
+        0 0 28px rgba(255, 234, 0, 0.9);
+      animation: ctaBeat 1.05s infinite;
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 15px;
+      opacity: 0.88;
+    }
+
+    /* Confetti */
+    .confetti {
+      position: fixed;
+      top: -20px;
+      width: 10px;
+      height: 18px;
+      opacity: 0.9;
+      animation: fall linear infinite;
+    }
+
+    .confetti:nth-child(1) {
+      left: 7%;
+      background: #ff00cc;
+      animation-duration: 4s;
+      animation-delay: 0s;
+    }
+
+    .confetti:nth-child(2) {
+      left: 15%;
+      background: #00e5ff;
+      animation-duration: 5.2s;
+      animation-delay: .4s;
+    }
+
+    .confetti:nth-child(3) {
+      left: 25%;
+      background: #ffea00;
+      animation-duration: 4.6s;
+      animation-delay: .9s;
+    }
+
+    .confetti:nth-child(4) {
+      left: 34%;
+      background: #ff7a00;
+      animation-duration: 5.6s;
+      animation-delay: .2s;
+    }
+
+    .confetti:nth-child(5) {
+      left: 44%;
+      background: #8a2be2;
+      animation-duration: 4.8s;
+      animation-delay: .7s;
+    }
+
+    .confetti:nth-child(6) {
+      left: 54%;
+      background: #00ff88;
+      animation-duration: 5.4s;
+      animation-delay: .1s;
+    }
+
+    .confetti:nth-child(7) {
+      left: 64%;
+      background: #ff00cc;
+      animation-duration: 4.4s;
+      animation-delay: 1s;
+    }
+
+    .confetti:nth-child(8) {
+      left: 74%;
+      background: #00e5ff;
+      animation-duration: 5s;
+      animation-delay: .3s;
+    }
+
+    .confetti:nth-child(9) {
+      left: 84%;
+      background: #ffea00;
+      animation-duration: 4.7s;
+      animation-delay: .8s;
+    }
+
+    .confetti:nth-child(10) {
+      left: 94%;
+      background: #ff7a00;
+      animation-duration: 5.7s;
+      animation-delay: .5s;
+    }
+
+    .money {
+      position: absolute;
+      z-index: 1;
+      font-weight: 900;
+      color: #00ff88;
+      opacity: 0;
+      text-shadow: 0 0 12px #00ff88;
+      animation: moneyPop 5s infinite;
+    }
+
+    .money.m1 {
+      left: 8%;
+      top: 65%;
+      animation-delay: 0s;
+    }
+
+    .money.m2 {
+      left: 78%;
+      top: 70%;
+      animation-delay: 1.2s;
+    }
+
+    .money.m3 {
+      left: 15%;
+      top: 28%;
+      animation-delay: 2.4s;
+    }
+
+    .money.m4 {
+      left: 82%;
+      top: 25%;
+      animation-delay: 3.5s;
+    }
+
+    @keyframes fall {
+      0% {
+        transform: translateY(-30px) rotate(0deg);
+      }
+
+      100% {
+        transform: translateY(110vh) rotate(420deg);
+      }
+    }
+
+    @keyframes badgePulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.08);
+      }
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(-3deg);
+      }
+
+      50% {
+        transform: translateY(-12px) rotate(3deg);
+      }
+    }
+
+    @keyframes ctaBeat {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.06);
+      }
+    }
+
+    @keyframes moneyPop {
+      0% {
+        opacity: 0;
+        transform: translateY(30px) scale(.8);
+      }
+
+      12% {
+        opacity: 1;
+        transform: translateY(0) scale(1.15);
+      }
+
+      28% {
+        opacity: 0;
+        transform: translateY(-55px) scale(1);
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .features {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 26px 16px;
+      }
+
+      .party {
+        font-size: 64px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="confetti"></div>
+  <div class="confetti"></div>
+  <div class="confetti"></div>
+  <div class="confetti"></div>
+  <div class="confetti"></div>
+  <div class="confetti"></div>
+  <div class="confetti"></div>
+  <div class="confetti"></div>
+  <div class="confetti"></div>
+  <div class="confetti"></div>
+
+  <div class="splash">
+    <div class="money m1">+$0.18</div>
+    <div class="money m2">+$0.42</div>
+    <div class="money m3">+$1.15</div>
+    <div class="money m4">+$0.77</div>
+
+    <div class="card">
+      <div class="badge">Traffic Exchange Party</div>
+
+      <div class="party">🎉</div>
+
+      <h1>
+        Stop Surfing<br>
+        For <span>Nothing</span>
+      </h1>
+
+      <div class="sub">
+        You are already surfing.<br>
+        <strong>Start winning while you surf.</strong>
+      </div>
+
+      <div class="rotating-text" id="rotatingText">
+        SURF
+      </div>
+
+      <div class="features">
+        <div class="feature">💰 Weekly Cash Pool</div>
+        <div class="feature">🎲 Fortune Climb Game</div>
+        <div class="feature">🏆 Leaderboards</div>
+        <div class="feature">🎁 Daily Rewards</div>
+        <div class="feature">🚀 80+ Exchanges</div>
+        <div class="feature">👥 Downline Builder</div>
+      </div>
+
+      <a class="cta" href="https://time2party.online/?ref=lordofclicking" target="_blank">
+        Join The Party →
+      </a>
+
+      <div class="note">
+        Free to join. Surf, claim prizes, climb the leaderboard.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const words = ["SURF", "CLAIM", "WIN", "REPEAT"];
+    let index = 0;
+    const rotatingText = document.getElementById("rotatingText");
+
+    setInterval(() => {
+      index = (index + 1) % words.length;
+      rotatingText.textContent = words[index];
+    }, 900);
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finest Traffic Splash Page</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255, 215, 0, 0.35), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(0, 180, 255, 0.28), transparent 32%),
+        linear-gradient(135deg, #050b18, #02040a 65%, #000);
+      color: #fff;
+      overflow: hidden;
+    }
+
+    .splash {
+      min-height: 100vh;
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 22px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .card {
+      width: 100%;
+      position: relative;
+      z-index: 5;
+      padding: 34px 22px;
+      border-radius: 30px;
+      background: rgba(3, 8, 22, 0.84);
+      border: 3px solid rgba(255, 215, 0, 0.85);
+      box-shadow:
+        0 0 35px rgba(255, 215, 0, 0.45),
+        0 0 70px rgba(0, 180, 255, 0.25),
+        inset 0 0 38px rgba(255, 255, 255, 0.07);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 9px 18px;
+      margin-bottom: 16px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ffd700, #00b4ff);
+      color: #06101f;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      animation: pulse 1.25s infinite;
+    }
+
+    .icon {
+      font-size: 76px;
+      margin-bottom: 8px;
+      filter: drop-shadow(0 0 18px #ffd700);
+      animation: float 2.2s ease-in-out infinite;
+    }
+
+    h1 {
+      font-size: clamp(36px, 7vw, 66px);
+      line-height: 0.95;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      color: #ffd700;
+      text-shadow:
+        4px 4px 0 #123a6a,
+        0 0 18px rgba(255, 215, 0, 0.75);
+    }
+
+    h1 span {
+      color: #00b4ff;
+    }
+
+    .sub {
+      font-size: clamp(20px, 4vw, 30px);
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    .sub strong {
+      color: #ffef8a;
+    }
+
+    .rotating-text {
+      height: 38px;
+      margin: 18px 0;
+      font-size: clamp(23px, 4vw, 36px);
+      font-weight: 1000;
+      color: #00b4ff;
+      text-shadow: 0 0 15px rgba(0, 180, 255, 0.9);
+    }
+
+    .features {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      max-width: 580px;
+      margin: 22px auto;
+    }
+
+    .feature {
+      padding: 11px 8px;
+      border-radius: 14px;
+      background: rgba(255, 215, 0, 0.11);
+      border: 1px solid rgba(255, 215, 0, 0.35);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .cta {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 18px 34px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #fff3a0, #ffd700);
+      color: #06101f;
+      text-decoration: none;
+      font-size: clamp(23px, 4vw, 34px);
+      font-weight: 1000;
+      text-transform: uppercase;
+      box-shadow:
+        0 8px 0 #8b6b00,
+        0 0 28px rgba(255, 215, 0, 0.85);
+      animation: ctaBeat 1.05s infinite;
+    }
+
+    .note {
+      margin-top: 18px;
+      font-size: 15px;
+      opacity: 0.9;
+    }
+
+    /* Background moving diamonds */
+    .diamond {
+      position: fixed;
+      top: -40px;
+      width: 18px;
+      height: 18px;
+      background: rgba(255, 215, 0, 0.8);
+      transform: rotate(45deg);
+      z-index: 1;
+      animation: fall linear infinite;
+    }
+
+    .diamond:nth-child(1) {
+      left: 6%;
+      animation-duration: 5.2s;
+      animation-delay: 0s;
+    }
+
+    .diamond:nth-child(2) {
+      left: 16%;
+      background: rgba(0, 180, 255, 0.8);
+      animation-duration: 6s;
+      animation-delay: .4s;
+    }
+
+    .diamond:nth-child(3) {
+      left: 27%;
+      animation-duration: 5.5s;
+      animation-delay: .9s;
+    }
+
+    .diamond:nth-child(4) {
+      left: 38%;
+      background: rgba(0, 180, 255, 0.8);
+      animation-duration: 6.4s;
+      animation-delay: .2s;
+    }
+
+    .diamond:nth-child(5) {
+      left: 50%;
+      animation-duration: 5.8s;
+      animation-delay: .8s;
+    }
+
+    .diamond:nth-child(6) {
+      left: 62%;
+      background: rgba(0, 180, 255, 0.8);
+      animation-duration: 6.2s;
+      animation-delay: .1s;
+    }
+
+    .diamond:nth-child(7) {
+      left: 74%;
+      animation-duration: 5.4s;
+      animation-delay: 1s;
+    }
+
+    .diamond:nth-child(8) {
+      left: 86%;
+      background: rgba(0, 180, 255, 0.8);
+      animation-duration: 6.1s;
+      animation-delay: .5s;
+    }
+
+    .float-text {
+      position: absolute;
+      z-index: 2;
+      color: #00ff99;
+      font-weight: 1000;
+      text-shadow: 0 0 14px rgba(0, 255, 153, 0.9);
+      opacity: 0;
+      animation: pop 5s infinite;
+    }
+
+    .float-text.t1 {
+      left: 7%;
+      top: 62%;
+      animation-delay: 0s;
+    }
+
+    .float-text.t2 {
+      right: 8%;
+      top: 67%;
+      animation-delay: 1.2s;
+    }
+
+    .float-text.t3 {
+      left: 10%;
+      top: 25%;
+      animation-delay: 2.4s;
+    }
+
+    .float-text.t4 {
+      right: 10%;
+      top: 24%;
+      animation-delay: 3.5s;
+    }
+
+    @keyframes fall {
+      0% {
+        transform: translateY(-40px) rotate(45deg);
+      }
+
+      100% {
+        transform: translateY(110vh) rotate(405deg);
+      }
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.08);
+      }
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(-3deg);
+      }
+
+      50% {
+        transform: translateY(-12px) rotate(3deg);
+      }
+    }
+
+    @keyframes ctaBeat {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.06);
+      }
+    }
+
+    @keyframes pop {
+      0% {
+        opacity: 0;
+        transform: translateY(30px) scale(.8);
+      }
+
+      12% {
+        opacity: 1;
+        transform: translateY(0) scale(1.15);
+      }
+
+      28% {
+        opacity: 0;
+        transform: translateY(-55px) scale(1);
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 540px) {
+      .features {
+        grid-template-columns: 1fr;
+      }
+
+      .card {
+        padding: 26px 16px;
+      }
+
+      .icon {
+        font-size: 64px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="diamond"></div>
+  <div class="diamond"></div>
+  <div class="diamond"></div>
+  <div class="diamond"></div>
+  <div class="diamond"></div>
+  <div class="diamond"></div>
+  <div class="diamond"></div>
+  <div class="diamond"></div>
+
+  <div class="splash">
+    <div class="float-text t1">+ Credits</div>
+    <div class="float-text t2">+ Tokens</div>
+    <div class="float-text t3">+ Ads</div>
+    <div class="float-text t4">+ Referrals</div>
+
+    <div class="card">
+      <div class="badge">Premium Traffic Exchange</div>
+
+      <div class="icon">💎</div>
+
+      <h1>
+        Turn Surfing<br>
+        Into <span>Traffic</span>
+      </h1>
+
+      <div class="sub">
+        Earn credits. Win tokens.<br>
+        <strong>Promote your sites with real views.</strong>
+      </div>
+
+      <div class="rotating-text" id="rotatingText">
+        SURF
+      </div>
+
+      <div class="features">
+        <div class="feature">🚀 Real Member Views</div>
+        <div class="feature">💰 Daily Credit Pools</div>
+        <div class="feature">🏆 Token Challenge</div>
+        <div class="feature">👥 Team Competition</div>
+        <div class="feature">🎯 Promote Your Sites</div>
+        <div class="feature">🆓 Free To Join</div>
+      </div>
+
+      <a class="cta" href="https://finesttraffic.com/?rid=307" target="_blank">
+        Start Free →
+      </a>
+
+      <div class="note">
+        Add your site, surf other members’ ads, earn credits, and get real people viewing your pages.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const words = [
+      "SURF",
+      "EARN CREDITS",
+      "WIN TOKENS",
+      "PROMOTE",
+      "REPEAT"
+    ];
+
+    let index = 0;
+    const rotatingText = document.getElementById("rotatingText");
+
+    setInterval(() => {
+      index = (index + 1) % words.length;
+      rotatingText.textContent = words[index];
+    }, 950);
+  </script>
+
+</body>
+
+</html>
