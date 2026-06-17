@@ -314,6 +314,8 @@ new #[Title('Rotator stats')] class extends Component
                 <flux:subheading>{{ __('Newest hits first') }}</flux:subheading>
             </div>
 
+            <flux:pagination :paginator="$totalHitRecords" class="border-t-0 border-b pb-3 pt-0" />
+
             <flux:table :paginate="$totalHitRecords">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Created at') }}</flux:table.column>
@@ -373,6 +375,8 @@ new #[Title('Rotator stats')] class extends Component
                     <flux:heading>{{ __('Referrer stats') }}</flux:heading>
                     <flux:subheading>{{ Carbon::parse($selectedDate)->format('F j, Y') }}</flux:subheading>
                 </div>
+
+                <flux:pagination :paginator="$referrerStats" class="border-t-0 border-b pb-3 pt-0" />
 
                 <flux:table :paginate="$referrerStats">
                     <flux:table.columns>
