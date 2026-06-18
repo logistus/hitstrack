@@ -104,6 +104,17 @@ new #[Title('Rotator stats')] class extends Component
         return 'https://'.$refUrl;
     }
 
+    public function clientSummary($hit): string
+    {
+        return collect([
+            $hit->device_type ? str($hit->device_type)->title()->toString() : null,
+            $hit->operating_system,
+            $hit->browser,
+        ])
+            ->filter()
+            ->join(' / ') ?: __('Unknown');
+    }
+
     private function rotator(): Rotator
     {
         return Rotator::query()
@@ -212,7 +223,7 @@ new #[Title('Rotator stats')] class extends Component
 
 <section
     class="container mx-auto space-y-8"
-    x-data="{ activeTab: 'total' }">
+    x-data="{ activeTab: 'overview' }">
     <div class="flex items-start justify-between gap-4">
         <div class="space-y-2">
             <flux:heading class="sr-only">{{ __('Rotator stats') }}</flux:heading>
@@ -225,66 +236,18 @@ new #[Title('Rotator stats')] class extends Component
         </flux:button>
     </div>
 
-    <div class="flex flex-wrap gap-4">
-        <flux:card class="w-fit min-w-40">
+    <div class="grid gap-4 sm:grid-cols-2">
+        <flux:card>
             <div class="space-y-2">
                 <flux:text>{{ __('Total Hits') }}</flux:text>
                 <flux:heading size="xl">{{ number_format($summaryStats['total_hits']) }}</flux:heading>
             </div>
         </flux:card>
 
-        <flux:card class="w-fit min-w-40">
+        <flux:card>
             <div class="space-y-2">
                 <flux:text>{{ __('Unique Hits') }}</flux:text>
                 <flux:heading size="xl">{{ number_format($summaryStats['unique_hits']) }}</flux:heading>
-            </div>
-        </flux:card>
-
-        <flux:card class="w-fit min-w-44">
-            <div class="space-y-3">
-                <flux:text>{{ __('Device Type') }}</flux:text>
-                <div class="space-y-1">
-                    @forelse ($breakdownStats['device_types'] as $stat)
-                    <div class="flex items-center justify-between gap-6 text-sm">
-                        <span class="text-zinc-600 dark:text-zinc-400">{{ str($stat->label)->title() }}</span>
-                        <span class="font-medium">{{ number_format($stat->total) }}</span>
-                    </div>
-                    @empty
-                    <flux:text>{{ __('No data') }}</flux:text>
-                    @endforelse
-                </div>
-            </div>
-        </flux:card>
-
-        <flux:card class="w-fit min-w-44">
-            <div class="space-y-3">
-                <flux:text>{{ __('Operating System') }}</flux:text>
-                <div class="space-y-1">
-                    @forelse ($breakdownStats['operating_systems'] as $stat)
-                    <div class="flex items-center justify-between gap-6 text-sm">
-                        <span class="text-zinc-600 dark:text-zinc-400">{{ $stat->label }}</span>
-                        <span class="font-medium">{{ number_format($stat->total) }}</span>
-                    </div>
-                    @empty
-                    <flux:text>{{ __('No data') }}</flux:text>
-                    @endforelse
-                </div>
-            </div>
-        </flux:card>
-
-        <flux:card class="w-fit min-w-44">
-            <div class="space-y-3">
-                <flux:text>{{ __('Browser') }}</flux:text>
-                <div class="space-y-1">
-                    @forelse ($breakdownStats['browsers'] as $stat)
-                    <div class="flex items-center justify-between gap-6 text-sm">
-                        <span class="text-zinc-600 dark:text-zinc-400">{{ $stat->label }}</span>
-                        <span class="font-medium">{{ number_format($stat->total) }}</span>
-                    </div>
-                    @empty
-                    <flux:text>{{ __('No data') }}</flux:text>
-                    @endforelse
-                </div>
             </div>
         </flux:card>
     </div>
@@ -294,23 +257,79 @@ new #[Title('Rotator stats')] class extends Component
             <button
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
-                :class="activeTab === 'total' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
-                @click="activeTab = 'total'">
-                {{ __('Total hits') }}
+                :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
+                @click="activeTab = 'overview'; $nextTick(() => document.dispatchEvent(new CustomEvent('rotator-chart-resize')))">
+                {{ __('Overview') }}
             </button>
 
             <button
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
-                :class="activeTab === 'daily' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
-                @click="activeTab = 'daily'; $nextTick(() => document.dispatchEvent(new CustomEvent('rotator-chart-resize')))">
-                {{ __('Daily hits') }}
+                :class="activeTab === 'hits' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
+                @click="activeTab = 'hits'">
+                {{ __('Hits') }}
+            </button>
+
+            <button
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium transition"
+                :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
+                @click="activeTab = 'referrers'">
+                {{ __('Referrers') }}
             </button>
         </div>
 
-        <section class="space-y-4" x-show="activeTab === 'total'">
+        <section class="space-y-8" x-show="activeTab === 'overview'">
+            <section class="space-y-4">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <flux:heading>{{ __('Daily hits') }}</flux:heading>
+                        <flux:subheading>{{ __('Last 30 days') }}</flux:subheading>
+                    </div>
+                    <flux:text>{{ __('Peak: :count', ['count' => $maxHits]) }}</flux:text>
+                </div>
+
+                <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" wire:ignore>
+                    <div class="h-80">
+                        <canvas data-rotator-chart data-chart='@json($chartData)'></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section class="grid gap-4 lg:grid-cols-3">
+                @foreach ([
+                    __('Device Type') => $breakdownStats['device_types'],
+                    __('Operating System') => $breakdownStats['operating_systems'],
+                    __('Browser') => $breakdownStats['browsers'],
+                ] as $label => $stats)
+                <flux:card>
+                    <div class="space-y-3">
+                        <div class="text-sm font-medium text-zinc-900 dark:text-white">{{ $label }}</div>
+                        <div class="space-y-3">
+                            @forelse ($stats as $stat)
+                            @php($percent = $summaryStats['total_hits'] > 0 ? min(100, round(($stat->total / $summaryStats['total_hits']) * 100)) : 0)
+                            <div class="space-y-1.5">
+                                <div class="flex items-center justify-between gap-4 text-sm">
+                                    <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $label === __('Device Type') ? str($stat->label)->title() : $stat->label }}</span>
+                                    <span class="font-medium">{{ number_format($stat->total) }}</span>
+                                </div>
+                                <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                                    <div class="h-full rounded-full bg-blue-600" style="width: {{ $percent }}%"></div>
+                                </div>
+                            </div>
+                            @empty
+                            <flux:text>{{ __('No data') }}</flux:text>
+                            @endforelse
+                        </div>
+                    </div>
+                </flux:card>
+                @endforeach
+            </section>
+        </section>
+
+        <section class="space-y-4" x-show="activeTab === 'hits'">
             <div>
-                <flux:heading>{{ __('Total hits') }}</flux:heading>
+                <flux:heading>{{ __('Hits') }}</flux:heading>
                 <flux:subheading>{{ __('Newest hits first') }}</flux:subheading>
             </div>
 
@@ -321,9 +340,7 @@ new #[Title('Rotator stats')] class extends Component
                     <flux:table.column>{{ __('Created at') }}</flux:table.column>
                     <flux:table.column>{{ __('Tracker') }}</flux:table.column>
                     <flux:table.column>{{ __('Ref URL') }}</flux:table.column>
-                    <flux:table.column>{{ __('Device') }}</flux:table.column>
-                    <flux:table.column>{{ __('Operating system') }}</flux:table.column>
-                    <flux:table.column>{{ __('Browser') }}</flux:table.column>
+                    <flux:table.column>{{ __('Client') }}</flux:table.column>
                 </flux:table.columns>
 
                 <flux:table.rows>
@@ -350,13 +367,11 @@ new #[Title('Rotator stats')] class extends Component
                             {{ __('Direct / unknown') }}
                             @endif
                         </flux:table.cell>
-                        <flux:table.cell>{{ $hit->device_type ? str($hit->device_type)->title() : __('Unknown') }}</flux:table.cell>
-                        <flux:table.cell>{{ $hit->operating_system ?: __('Unknown') }}</flux:table.cell>
-                        <flux:table.cell>{{ $hit->browser ?: __('Unknown') }}</flux:table.cell>
+                        <flux:table.cell>{{ $this->clientSummary($hit) }}</flux:table.cell>
                     </flux:table.row>
                     @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="6" align="center">
+                        <flux:table.cell colspan="4" align="center">
                             {{ __('No hits yet.') }}
                         </flux:table.cell>
                     </flux:table.row>
@@ -365,26 +380,10 @@ new #[Title('Rotator stats')] class extends Component
             </flux:table>
         </section>
 
-        <div x-show="activeTab === 'daily'" class="space-y-8">
-            <section class="space-y-4">
-                <div class="flex items-center justify-between gap-4">
-                    <div>
-                        <flux:heading>{{ __('Daily hits') }}</flux:heading>
-                        <flux:subheading>{{ __('Last 30 days') }}</flux:subheading>
-                    </div>
-                    <flux:text>{{ __('Peak: :count', ['count' => $maxHits]) }}</flux:text>
-                </div>
-
-                <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" wire:ignore>
-                    <div class="h-80">
-                        <canvas data-rotator-chart data-chart='@json($chartData)'></canvas>
-                    </div>
-                </div>
-            </section>
-
+        <div x-show="activeTab === 'referrers'" class="space-y-8">
             <section class="space-y-4">
                 <div>
-                    <flux:heading>{{ __('Referrer stats') }}</flux:heading>
+                    <flux:heading>{{ __('Referrers') }}</flux:heading>
                     <flux:subheading>{{ Carbon::parse($selectedDate)->format('F j, Y') }}</flux:subheading>
                 </div>
 
