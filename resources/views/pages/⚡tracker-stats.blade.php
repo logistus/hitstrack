@@ -5,7 +5,6 @@ use App\Models\TrackerStat;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -50,7 +49,7 @@ new #[Title('Tracker stats')] class extends Component
     public function selectDate(string $date): void
     {
         $this->selectedDate = Carbon::parse($date)->toDateString();
-        $this->resetPage('dailyHitsPage');
+        $this->resetPage('dailyHitsCursor');
     }
 
     public function sortBy(string $field): void
@@ -61,14 +60,14 @@ new #[Title('Tracker stats')] class extends Component
 
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
-            $this->resetPage('dailyHitsPage');
+            $this->resetPage('dailyHitsCursor');
 
             return;
         }
 
         $this->sortField = $field;
         $this->sortDirection = 'desc';
-        $this->resetPage('dailyHitsPage');
+        $this->resetPage('dailyHitsCursor');
     }
 
     public function with(): array
@@ -126,7 +125,7 @@ new #[Title('Tracker stats')] class extends Component
             ->pluck('total', 'hit_date');
 
         $days = collect(CarbonPeriod::create($start, $end))
-            ->map(fn(Carbon $date) => [
+            ->map(fn (Carbon $date) => [
                 'date' => $date->toDateString(),
                 'label' => $date->format('M j'),
                 'total' => (int) ($hitsByDay[$date->toDateString()] ?? 0),
@@ -179,16 +178,15 @@ new #[Title('Tracker stats')] class extends Component
     private function referrerStats(Tracker $tracker)
     {
         return TrackerStat::query()
-            ->select([
-                'ref_url',
-                DB::raw('COUNT(*) as total_hits'),
-                DB::raw('COUNT(DISTINCT ip_address) as unique_hits'),
-            ])
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('COUNT(*) as total_hits')
+            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('tracker_id', $tracker->id)
             ->whereDate('created_at', $this->selectedDate)
-            ->groupBy('ref_url')
+            ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate(25, pageName: 'dailyHitsPage');
+            ->orderBy('ref_url')
+            ->cursorPaginate(25, cursorName: 'dailyHitsCursor');
     }
 
     private function totalHitRecords(Tracker $tracker)
@@ -205,7 +203,7 @@ new #[Title('Tracker stats')] class extends Component
             ->where('tracker_id', $tracker->id)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->paginate(25, pageName: 'totalHitsPage');
+            ->cursorPaginate(25, cursorName: 'totalHitsCursor');
     }
 };
 ?>
