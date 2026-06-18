@@ -38,7 +38,7 @@ new #[Title('Rotator stats')] class extends Component
 
     public function sortBy(string $field): void
     {
-        if (! in_array($field, ['total_hits', 'unique_hits'], true)) {
+        if (! in_array($field, ['ref_url', 'total_hits', 'unique_hits'], true)) {
             return;
         }
 
@@ -85,7 +85,7 @@ new #[Title('Rotator stats')] class extends Component
             return $refUrl;
         }
 
-        return 'https://' . $refUrl;
+        return 'https://'.$refUrl;
     }
 
     private function rotator(): Rotator
@@ -112,7 +112,7 @@ new #[Title('Rotator stats')] class extends Component
             ->keyBy('hit_date');
 
         $days = collect(CarbonPeriod::create($start, $end))
-            ->map(fn(Carbon $date) => [
+            ->map(fn (Carbon $date) => [
                 'date' => $date->toDateString(),
                 'label' => $date->format('M j'),
                 'total' => (int) ($hitsByDay[$date->toDateString()]?->total_hits ?? 0),
@@ -153,7 +153,7 @@ new #[Title('Rotator stats')] class extends Component
             ->where('rotator_id', $rotator->id)
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
-            ->orderBy('ref_url')
+            ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
             ->simplePaginate(25, pageName: 'referrerPage');
     }
 
@@ -340,7 +340,14 @@ new #[Title('Rotator stats')] class extends Component
 
                 <flux:table :paginate="$referrerStats">
                     <flux:table.columns>
-                        <flux:table.column>{{ __('Ref URL') }}</flux:table.column>
+                        <flux:table.column
+                            sortable
+                            :sorted="$sortField === 'ref_url'"
+                            :direction="$sortDirection"
+                            wire:click="sortBy('ref_url')"
+                            class="cursor-pointer">
+                            {{ __('Ref URL') }}
+                        </flux:table.column>
                         <flux:table.column
                             sortable
                             :sorted="$sortField === 'total_hits'"
