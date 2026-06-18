@@ -4,17 +4,11 @@ use App\Http\Controllers\RotatorRedirectController;
 use App\Http\Controllers\TrackerRedirectController;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::view('/', 'welcome')->name('home');
 
-Route::get('t/{slug}', TrackerRedirectController::class)
-    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class])
-    ->name('trackers.redirect');
-
-Route::get('r/{slug}', RotatorRedirectController::class)
-    ->withoutMiddleware([StartSession::class, ShareErrorsFromSession::class])
-    ->name('rotators.redirect');
+Route::get('t/{slug}', TrackerRedirectController::class)->name('trackers.redirect');
+Route::get('r/{slug}', RotatorRedirectController::class)->name('rotators.redirect');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('trackers', 'pages::trackers')->name('trackers');
@@ -23,4 +17,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('rotators/{slug}/stats', 'pages::rotator-stats')->name('rotators.stats');
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';
