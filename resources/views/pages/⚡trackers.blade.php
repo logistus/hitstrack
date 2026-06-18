@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Tracker;
-use Carbon\Carbon;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -162,6 +161,9 @@ new #[Title('Trackers')] class extends Component
             'trackers' => Tracker::query()
                 ->where('user_id', Auth::id())
                 ->withCount('stats')
+                ->withCount([
+                    'stats as unique_hits_count' => fn ($query) => $query->selectRaw('COUNT(DISTINCT ip_address)'),
+                ])
                 ->withMax('stats', 'created_at')
                 ->latest()
                 ->paginate(25),
@@ -235,17 +237,21 @@ new #[Title('Trackers')] class extends Component
 
     <flux:table :paginate="$trackers">
         <flux:table.columns>
+            <flux:table.column>{{ __('Created') }}</flux:table.column>
             <flux:table.column>{{ __('Tracker URL') }}</flux:table.column>
             <flux:table.column>{{ __('Target URL') }}</flux:table.column>
             <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
+            <flux:table.column>{{ __('Unique Hits') }}</flux:table.column>
             <flux:table.column>{{ __('Last Hit') }}</flux:table.column>
-            <flux:table.column>{{ __('Created') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 
         <flux:table.rows>
             @forelse ($trackers as $tracker)
             <flux:table.row :key="$tracker->id">
+                <flux:table.cell>
+                    {{ $tracker->created_at?->format('Y-m-d H:i') }}
+                </flux:table.cell>
 
                 <flux:table.cell>
                     @php($trackerUrl = route('trackers.redirect', $tracker->tracker_slug))
@@ -287,11 +293,11 @@ new #[Title('Trackers')] class extends Component
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    {{ $tracker->stats_max_created_at ? Carbon::parse($tracker->stats_max_created_at)->format('Y-m-d H:i') : __('Never') }}
+                    {{ number_format($tracker->unique_hits_count) }}
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    {{ $tracker->created_at?->format('Y-m-d H:i') }}
+                    {{ $tracker->stats_max_created_at ? \Carbon\Carbon::parse($tracker->stats_max_created_at)->format('Y-m-d H:i') : __('Never') }}
                 </flux:table.cell>
 
                 <flux:table.cell align="end">
@@ -318,7 +324,7 @@ new #[Title('Trackers')] class extends Component
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="6" align="center">
+                <flux:table.cell colspan="7" align="center">
                     {{ __('No trackers created yet.') }}
                 </flux:table.cell>
             </flux:table.row>
