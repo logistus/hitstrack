@@ -41,9 +41,6 @@ class RotatorRedirectController extends Controller
             ...$clientInfo,
         ]);
 
-        TrackerStatsUpdated::dispatch($tracker->id, $tracker->tracker_slug, $tracker->user_id);
-        RotatorStatsUpdated::dispatch($rotator->id, $rotator->rotator_slug, $rotator->user_id);
-
         return redirect()->away($tracker->target_url);
     }
 }

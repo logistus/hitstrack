@@ -31,13 +31,6 @@ new #[Title('Tracker stats')] class extends Component
             ->id;
     }
 
-    public function getListeners(): array
-    {
-        return [
-            "echo-private:tracker-stats.{$this->trackerId},.tracker.stats.updated" => 'refreshStats',
-        ];
-    }
-
     public function refreshStats(): void
     {
         $this->dispatch('tracker-chart-updated', chartData: $this->freshChartData());
@@ -92,7 +85,7 @@ new #[Title('Tracker stats')] class extends Component
             return $refUrl;
         }
 
-        return 'https://'.$refUrl;
+        return 'https://' . $refUrl;
     }
 
     private function tracker(): Tracker
@@ -119,7 +112,7 @@ new #[Title('Tracker stats')] class extends Component
             ->keyBy('hit_date');
 
         $days = collect(CarbonPeriod::create($start, $end))
-            ->map(fn (Carbon $date) => [
+            ->map(fn(Carbon $date) => [
                 'date' => $date->toDateString(),
                 'label' => $date->format('M j'),
                 'total' => (int) ($hitsByDay[$date->toDateString()]?->total_hits ?? 0),
@@ -275,9 +268,9 @@ new #[Title('Tracker stats')] class extends Component
 
             <section class="grid gap-4 lg:grid-cols-3">
                 @foreach ([
-                    __('Device Type') => $breakdownStats['device_types'],
-                    __('Operating System') => $breakdownStats['operating_systems'],
-                    __('Browser') => $breakdownStats['browsers'],
+                __('Device Type') => $breakdownStats['device_types'],
+                __('Operating System') => $breakdownStats['operating_systems'],
+                __('Browser') => $breakdownStats['browsers'],
                 ] as $label => $stats)
                 <flux:card>
                     <div class="space-y-3">
@@ -438,8 +431,7 @@ new #[Title('Tracker stats')] class extends Component
                 type: 'line',
                 data: {
                     labels: chartData.labels,
-                    datasets: [
-                        {
+                    datasets: [{
                             label: @js(__('Total hits')),
                             data: chartData.totals,
                             borderColor: accent,

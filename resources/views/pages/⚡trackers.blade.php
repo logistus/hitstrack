@@ -21,13 +21,6 @@ new #[Title('Trackers')] class extends Component
 
     public string $target_url = '';
 
-    public function getListeners(): array
-    {
-        return [
-            'echo-private:user-trackers.' . Auth::id() . ',.tracker.stats.updated' => '$refresh',
-        ];
-    }
-
     public function createTracker(): void
     {
         $this->resetForm();

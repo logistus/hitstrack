@@ -26,8 +26,6 @@ class TrackerRedirectController extends Controller
             ...$clientInfo,
         ]);
 
-        TrackerStatsUpdated::dispatch($tracker->id, $tracker->tracker_slug, $tracker->user_id);
-
         return redirect()->away($tracker->target_url);
     }
 }

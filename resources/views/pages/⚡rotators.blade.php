@@ -32,13 +32,6 @@ new #[Title('Rotators')] class extends Component
 
     public int $order_column = 0;
 
-    public function getListeners(): array
-    {
-        return [
-            'echo-private:user-rotators.'.Auth::id().',.rotator.stats.updated' => '$refresh',
-        ];
-    }
-
     public function createRotator(): void
     {
         $this->resetRotatorForm();
@@ -244,7 +237,7 @@ new #[Title('Rotators')] class extends Component
             'managedRotator' => $managedRotator,
             'availableTrackers' => Tracker::query()
                 ->where('user_id', Auth::id())
-                ->when($attachedTrackerIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $attachedTrackerIds))
+                ->when($attachedTrackerIds->isNotEmpty(), fn($query) => $query->whereNotIn('id', $attachedTrackerIds))
                 ->latest()
                 ->get(),
         ];
