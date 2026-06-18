@@ -24,7 +24,7 @@ new #[Title('Trackers')] class extends Component
     public function getListeners(): array
     {
         return [
-            'echo-private:user-trackers.'.Auth::id().',.tracker.stats.updated' => '$refresh',
+            'echo-private:user-trackers.' . Auth::id() . ',.tracker.stats.updated' => '$refresh',
         ];
     }
 
@@ -243,8 +243,7 @@ new #[Title('Trackers')] class extends Component
     <flux:table :paginate="$trackers">
         <flux:table.columns>
             <flux:table.column>{{ __('Created') }}</flux:table.column>
-            <flux:table.column>{{ __('Tracker URL') }}</flux:table.column>
-            <flux:table.column>{{ __('Target URL') }}</flux:table.column>
+            <flux:table.column>{{ __('Tracker URL/Target URL') }}</flux:table.column>
             <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
             <flux:table.column>{{ __('Unique Hits') }}</flux:table.column>
             <flux:table.column>{{ __('Last Hit') }}</flux:table.column>
@@ -281,9 +280,6 @@ new #[Title('Trackers')] class extends Component
                                 :aria-label="__('Copy tracker URL')" />
                         </flux:tooltip>
                     </div>
-                </flux:table.cell>
-
-                <flux:table.cell>
                     <flux:link
                         href="{{ $tracker->target_url }}"
                         target="_blank"
