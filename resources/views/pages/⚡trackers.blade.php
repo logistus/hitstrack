@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Tracker;
+use App\Models\TrackerStat;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -159,11 +160,15 @@ new #[Title('Trackers')] class extends Component
     {
         return [
             'trackers' => Tracker::query()
+                ->select('trackers.*')
                 ->where('user_id', Auth::id())
                 ->withCount('stats')
-                ->withCount([
-                    'stats as unique_hits_count' => fn ($query) => $query->selectRaw('COUNT(DISTINCT ip_address)'),
-                ])
+                ->selectSub(
+                    TrackerStat::query()
+                        ->selectRaw('COUNT(DISTINCT ip_address)')
+                        ->whereColumn('tracker_stats.tracker_id', 'trackers.id'),
+                    'unique_hits_count',
+                )
                 ->withMax('stats', 'created_at')
                 ->latest()
                 ->paginate(25),
