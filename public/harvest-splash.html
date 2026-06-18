@@ -1,280 +1,316 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>HarvestTraffic Splash Page</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HarvestTraffic Splash Page</title>
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
-body {
-  min-height: 100vh;
-  font-family: Arial, Helvetica, sans-serif;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(255, 196, 0, 0.32), transparent 28%),
-    radial-gradient(circle at 80% 80%, rgba(44, 168, 82, 0.36), transparent 30%),
-    linear-gradient(135deg, #10200d, #050803 65%, #000);
-  color: #fff;
-  overflow: hidden;
-}
+    body {
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 196, 0, 0.32), transparent 28%),
+        radial-gradient(circle at 80% 80%, rgba(44, 168, 82, 0.36), transparent 30%),
+        linear-gradient(135deg, #10200d, #050803 65%, #000);
+      color: #fff;
+      overflow: hidden;
+    }
 
-.wrapper {
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 0.95fr 1.05fr;
-  align-items: center;
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 24px;
-  gap: 30px;
-  position: relative;
-}
+    .wrapper {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 0.95fr 1.05fr;
+      align-items: center;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px;
+      gap: 30px;
+      position: relative;
+    }
 
-.ticket {
-  position: relative;
-  background: linear-gradient(180deg, #fff6bf, #ffc941);
-  color: #102016;
-  border-radius: 28px;
-  padding: 30px 22px;
-  text-align: center;
-  box-shadow:
-    0 18px 0 #795000,
-    0 0 45px rgba(255, 201, 65, 0.65);
-  transform: rotate(-3deg);
-}
+    .ticket {
+      position: relative;
+      background: linear-gradient(180deg, #fff6bf, #ffc941);
+      color: #102016;
+      border-radius: 28px;
+      padding: 30px 22px;
+      text-align: center;
+      box-shadow:
+        0 18px 0 #795000,
+        0 0 45px rgba(255, 201, 65, 0.65);
+      transform: rotate(-3deg);
+    }
 
-.ticket:before,
-.ticket:after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 42px;
-  height: 42px;
-  background: #10200d;
-  border-radius: 50%;
-  transform: translateY(-50%);
-}
+    .ticket:before,
+    .ticket:after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 42px;
+      height: 42px;
+      background: #10200d;
+      border-radius: 50%;
+      transform: translateY(-50%);
+    }
 
-.ticket:before { left: -21px; }
-.ticket:after { right: -21px; }
+    .ticket:before {
+      left: -21px;
+    }
 
-.ticket-label {
-  font-size: 15px;
-  font-weight: 1000;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-}
+    .ticket:after {
+      right: -21px;
+    }
 
-.big-number {
-  font-size: clamp(54px, 9vw, 88px);
-  font-weight: 1000;
-  line-height: 0.9;
-  color: #16833a;
-  text-shadow: 3px 3px 0 #fff;
-}
+    .ticket-label {
+      font-size: 15px;
+      font-weight: 1000;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
 
-.big-number span {
-  display: block;
-  font-size: clamp(22px, 4vw, 36px);
-  color: #111;
-  margin-top: 8px;
-}
+    .big-number {
+      font-size: clamp(54px, 9vw, 88px);
+      font-weight: 1000;
+      line-height: 0.9;
+      color: #16833a;
+      text-shadow: 3px 3px 0 #fff;
+    }
 
-.ticket-small {
-  margin-top: 18px;
-  font-weight: 900;
-  font-size: 18px;
-}
+    .big-number span {
+      display: block;
+      font-size: clamp(22px, 4vw, 36px);
+      color: #111;
+      margin-top: 8px;
+    }
 
-.main {
-  text-align: left;
-  position: relative;
-  z-index: 3;
-}
+    .ticket-small {
+      margin-top: 18px;
+      font-weight: 900;
+      font-size: 18px;
+    }
 
-.badge {
-  display: inline-block;
-  background: #2ecc71;
-  color: #031408;
-  padding: 9px 16px;
-  border-radius: 999px;
-  font-weight: 1000;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-bottom: 18px;
-}
+    .main {
+      text-align: left;
+      position: relative;
+      z-index: 3;
+    }
 
-h1 {
-  font-size: clamp(42px, 8vw, 82px);
-  line-height: 0.9;
-  text-transform: uppercase;
-  margin-bottom: 18px;
-}
+    .badge {
+      display: inline-block;
+      background: #2ecc71;
+      color: #031408;
+      padding: 9px 16px;
+      border-radius: 999px;
+      font-weight: 1000;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 18px;
+    }
 
-h1 span {
-  color: #ffc941;
-}
+    h1 {
+      font-size: clamp(42px, 8vw, 82px);
+      line-height: 0.9;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
 
-.sub {
-  font-size: clamp(20px, 3vw, 30px);
-  font-weight: 900;
-  line-height: 1.2;
-  margin-bottom: 22px;
-}
+    h1 span {
+      color: #ffc941;
+    }
 
-.steps {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 24px;
-  max-width: 540px;
-}
+    .sub {
+      font-size: clamp(20px, 3vw, 30px);
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 22px;
+    }
 
-.step {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.08);
-  border-left: 5px solid #ffc941;
-  padding: 12px 14px;
-  font-size: 17px;
-  font-weight: 900;
-}
+    .steps {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 24px;
+      max-width: 540px;
+    }
 
-.step strong {
-  color: #2ecc71;
-}
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border-left: 5px solid #ffc941;
+      padding: 12px 14px;
+      font-size: 17px;
+      font-weight: 900;
+    }
 
-.cta {
-  display: inline-block;
-  background: linear-gradient(180deg, #6dff9f, #20b85a);
-  color: #001407;
-  text-decoration: none;
-  font-size: clamp(22px, 4vw, 34px);
-  font-weight: 1000;
-  text-transform: uppercase;
-  padding: 18px 34px;
-  border-radius: 16px;
-  box-shadow:
-    0 8px 0 #0d6b32,
-    0 0 28px rgba(46, 204, 113, 0.8);
-  animation: beat 1.1s infinite;
-}
+    .step strong {
+      color: #2ecc71;
+    }
 
-.floating {
-  position: fixed;
-  font-size: 28px;
-  font-weight: 1000;
-  color: #ffc941;
-  text-shadow: 0 0 12px rgba(255, 201, 65, 0.9);
-  opacity: 0;
-  animation: pop 5s infinite;
-}
+    .cta {
+      display: inline-block;
+      background: linear-gradient(180deg, #6dff9f, #20b85a);
+      color: #001407;
+      text-decoration: none;
+      font-size: clamp(22px, 4vw, 34px);
+      font-weight: 1000;
+      text-transform: uppercase;
+      padding: 18px 34px;
+      border-radius: 16px;
+      box-shadow:
+        0 8px 0 #0d6b32,
+        0 0 28px rgba(46, 204, 113, 0.8);
+      animation: beat 1.1s infinite;
+    }
 
-.f1 { left: 8%; top: 75%; animation-delay: 0s; }
-.f2 { left: 76%; top: 18%; animation-delay: 1.1s; }
-.f3 { left: 86%; top: 70%; animation-delay: 2.2s; }
-.f4 { left: 12%; top: 18%; animation-delay: 3.3s; }
+    .floating {
+      position: fixed;
+      font-size: 28px;
+      font-weight: 1000;
+      color: #ffc941;
+      text-shadow: 0 0 12px rgba(255, 201, 65, 0.9);
+      opacity: 0;
+      animation: pop 5s infinite;
+    }
 
-@keyframes beat {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.06); }
-}
+    .f1 {
+      left: 8%;
+      top: 75%;
+      animation-delay: 0s;
+    }
 
-@keyframes pop {
-  0% {
-    opacity: 0;
-    transform: translateY(35px) scale(.8);
-  }
-  14% {
-    opacity: 1;
-    transform: translateY(0) scale(1.15);
-  }
-  32% {
-    opacity: 0;
-    transform: translateY(-70px) scale(1);
-  }
-  100% {
-    opacity: 0;
-  }
-}
+    .f2 {
+      left: 76%;
+      top: 18%;
+      animation-delay: 1.1s;
+    }
 
-@media (max-width: 760px) {
-  body {
-    overflow: auto;
-  }
+    .f3 {
+      left: 86%;
+      top: 70%;
+      animation-delay: 2.2s;
+    }
 
-  .wrapper {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
+    .f4 {
+      left: 12%;
+      top: 18%;
+      animation-delay: 3.3s;
+    }
 
-  .main {
-    text-align: center;
-  }
+    @keyframes beat {
 
-  .ticket {
-    transform: rotate(0);
-  }
+      0%,
+      100% {
+        transform: scale(1);
+      }
 
-  .steps {
-    margin-left: auto;
-    margin-right: auto;
-  }
-}
-</style>
+      50% {
+        transform: scale(1.06);
+      }
+    }
+
+    @keyframes pop {
+      0% {
+        opacity: 0;
+        transform: translateY(35px) scale(.8);
+      }
+
+      14% {
+        opacity: 1;
+        transform: translateY(0) scale(1.15);
+      }
+
+      32% {
+        opacity: 0;
+        transform: translateY(-70px) scale(1);
+      }
+
+      100% {
+        opacity: 0;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        overflow: auto;
+      }
+
+      .wrapper {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .main {
+        text-align: center;
+      }
+
+      .ticket {
+        transform: rotate(0);
+      }
+
+      .steps {
+        margin-left: auto;
+        margin-right: auto;
+      }
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="floating f1">+ Credits</div>
-<div class="floating f2">Traffic</div>
-<div class="floating f3">Reach</div>
-<div class="floating f4">Coop</div>
+  <div class="floating f1">+ Credits</div>
+  <div class="floating f2">Traffic</div>
+  <div class="floating f3">Reach</div>
+  <div class="floating f4">Coop</div>
 
-<div class="wrapper">
-  <div class="ticket">
-    <div class="ticket-label">Traffic Coop Network</div>
+  <div class="wrapper">
+    <div class="ticket">
+      <div class="ticket-label">Traffic Coop Network</div>
 
-    <div class="big-number">
-      1276+
-      <span>Traffic Sources</span>
+      <div class="big-number">
+        1276+
+        <span>Traffic Sources</span>
+      </div>
+
+      <div class="ticket-small">
+        Plant your link. Grow your reach. Reap the traffic.
+      </div>
     </div>
 
-    <div class="ticket-small">
-      Plant your link. Grow your reach. Reap the traffic.
-    </div>
+    <main class="main">
+      <div class="badge">HarvestTraffic.com</div>
+
+      <h1>
+        Harvest<br>
+        More <span>Traffic</span>
+      </h1>
+
+      <div class="sub">
+        Advertise one coop link, earn credits, and get your websites shown across a huge traffic network.
+      </div>
+
+      <div class="steps">
+        <div class="step">🌱 <strong>Plant</strong> your coop link</div>
+        <div class="step">🚦 <strong>Earn</strong> coop credits</div>
+        <div class="step">🌾 <strong>Assign</strong> credits to your websites</div>
+        <div class="step">📈 <strong>Reach</strong> hundreds of traffic sources</div>
+      </div>
+
+      <a class="cta" href="https://harvesttraffic.com/?rid=882" target="_blank">
+        Start Harvesting →
+      </a>
+    </main>
   </div>
 
-  <main class="main">
-    <div class="badge">HarvestTraffic.com</div>
-
-    <h1>
-      Harvest<br>
-      More <span>Traffic</span>
-    </h1>
-
-    <div class="sub">
-      Advertise one coop link, earn credits, and get your websites shown across a huge traffic network.
-    </div>
-
-    <div class="steps">
-      <div class="step">🌱 <strong>Plant</strong> your coop link</div>
-      <div class="step">🚦 <strong>Earn</strong> coop credits</div>
-      <div class="step">🌾 <strong>Assign</strong> credits to your websites</div>
-      <div class="step">📈 <strong>Reach</strong> hundreds of traffic sources</div>
-    </div>
-
-    <a class="cta" href="YOUR_HARVESTTRAFFIC_REF_LINK_HERE" target="_blank">
-      Start Harvesting →
-    </a>
-  </main>
-</div>
-
 </body>
+
 </html>
