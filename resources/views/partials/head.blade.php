@@ -33,5 +33,5 @@
         return mode;
     }
 
-    window.setAppAppearance(window.localStorage.getItem('flux.appearance') || 'light');
+    window.setAppAppearance(window.localStorage.getItem('flux.appearance') || 'dark');
 </script>
