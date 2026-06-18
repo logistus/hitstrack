@@ -17,8 +17,6 @@ new #[Title('Rotator stats')] class extends Component
 
     public int $rotatorId = 0;
 
-    public string $selectedDate = '';
-
     public string $sortField = 'total_hits';
 
     public string $sortDirection = 'desc';
@@ -31,7 +29,6 @@ new #[Title('Rotator stats')] class extends Component
             ->where('rotator_slug', $slug)
             ->firstOrFail()
             ->id;
-        $this->selectedDate = now()->toDateString();
     }
 
     public function getListeners(): array
@@ -46,12 +43,6 @@ new #[Title('Rotator stats')] class extends Component
         $this->dispatch('rotator-chart-updated', chartData: $this->freshChartData());
     }
 
-    public function selectDate(string $date): void
-    {
-        $this->selectedDate = Carbon::parse($date)->toDateString();
-        $this->resetPage('dailyHitsCursor');
-    }
-
     public function sortBy(string $field): void
     {
         if (! in_array($field, ['total_hits', 'unique_hits'], true)) {
@@ -60,14 +51,14 @@ new #[Title('Rotator stats')] class extends Component
 
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
-            $this->resetPage('dailyHitsCursor');
+            $this->resetPage('referrerPage');
 
             return;
         }
 
         $this->sortField = $field;
         $this->sortDirection = 'desc';
-        $this->resetPage('dailyHitsCursor');
+        $this->resetPage('referrerPage');
     }
 
     public function with(): array
@@ -81,7 +72,7 @@ new #[Title('Rotator stats')] class extends Component
             'breakdownStats' => $this->breakdownStats($rotator),
             'chartData' => $dailyHits['chartData'],
             'maxHits' => $dailyHits['maxHits'],
-            'totalHitRecords' => $this->totalHitRecords($rotator),
+            'dailyHitRecords' => $this->dailyHitRecords($rotator),
             'referrerStats' => $this->referrerStats($rotator),
         ];
     }
@@ -104,17 +95,6 @@ new #[Title('Rotator stats')] class extends Component
         return 'https://'.$refUrl;
     }
 
-    public function clientSummary($hit): string
-    {
-        return collect([
-            $hit->device_type ? str($hit->device_type)->title()->toString() : null,
-            $hit->operating_system,
-            $hit->browser,
-        ])
-            ->filter()
-            ->join(' / ') ?: __('Unknown');
-    }
-
     private function rotator(): Rotator
     {
         return Rotator::query()
@@ -129,17 +109,21 @@ new #[Title('Rotator stats')] class extends Component
         $end = now()->endOfDay();
 
         $hitsByDay = RotatorStat::query()
-            ->selectRaw('DATE(created_at) as hit_date, COUNT(*) as total')
+            ->selectRaw('DATE(created_at) as hit_date')
+            ->selectRaw('COUNT(*) as total_hits')
+            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('rotator_id', $rotator->id)
             ->whereBetween('created_at', [$start, $end])
-            ->groupBy('hit_date')
-            ->pluck('total', 'hit_date');
+            ->groupByRaw('DATE(created_at)')
+            ->get()
+            ->keyBy('hit_date');
 
         $days = collect(CarbonPeriod::create($start, $end))
             ->map(fn (Carbon $date) => [
                 'date' => $date->toDateString(),
                 'label' => $date->format('M j'),
-                'total' => (int) ($hitsByDay[$date->toDateString()] ?? 0),
+                'total' => (int) ($hitsByDay[$date->toDateString()]?->total_hits ?? 0),
+                'unique' => (int) ($hitsByDay[$date->toDateString()]?->unique_hits ?? 0),
             ])
             ->values();
 
@@ -148,7 +132,7 @@ new #[Title('Rotator stats')] class extends Component
                 'labels' => $days->pluck('label')->all(),
                 'dates' => $days->pluck('date')->all(),
                 'totals' => $days->pluck('total')->all(),
-                'selectedDate' => $this->selectedDate,
+                'uniques' => $days->pluck('unique')->all(),
             ],
             'maxHits' => max(1, $days->max('total')),
         ];
@@ -174,11 +158,10 @@ new #[Title('Rotator stats')] class extends Component
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('rotator_id', $rotator->id)
-            ->whereDate('created_at', $this->selectedDate)
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
             ->orderBy('ref_url')
-            ->cursorPaginate(25, cursorName: 'dailyHitsCursor');
+            ->simplePaginate(25, pageName: 'referrerPage');
     }
 
     private function breakdownStats(Rotator $rotator): array
@@ -200,23 +183,16 @@ new #[Title('Rotator stats')] class extends Component
             ->get();
     }
 
-    private function totalHitRecords(Rotator $rotator)
+    private function dailyHitRecords(Rotator $rotator)
     {
         return RotatorStat::query()
-            ->select([
-                'id',
-                'tracker_id',
-                'created_at',
-                'ref_url',
-                'device_type',
-                'operating_system',
-                'browser',
-            ])
-            ->with('tracker:id,tracker_slug,target_url')
+            ->selectRaw('DATE(created_at) as hit_date')
+            ->selectRaw('COUNT(*) as total_hits')
+            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('rotator_id', $rotator->id)
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->cursorPaginate(25, cursorName: 'totalHitsCursor');
+            ->groupByRaw('DATE(created_at)')
+            ->orderByDesc('hit_date')
+            ->simplePaginate(25, pageName: 'dailyHitsPage');
     }
 };
 ?>
@@ -267,7 +243,7 @@ new #[Title('Rotator stats')] class extends Component
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
                 :class="activeTab === 'hits' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
                 @click="activeTab = 'hits'">
-                {{ __('Hits') }}
+                {{ __('Daily hits') }}
             </button>
 
             <button
@@ -329,49 +305,29 @@ new #[Title('Rotator stats')] class extends Component
 
         <section class="space-y-4" x-show="activeTab === 'hits'">
             <div>
-                <flux:heading>{{ __('Hits') }}</flux:heading>
-                <flux:subheading>{{ __('Newest hits first') }}</flux:subheading>
+                <flux:heading>{{ __('Daily hits') }}</flux:heading>
+                <flux:subheading>{{ __('All hits grouped by day') }}</flux:subheading>
             </div>
 
-            <flux:pagination :paginator="$totalHitRecords" class="border-t-0 border-b pb-3 pt-0" />
+            <flux:pagination :paginator="$dailyHitRecords" class="border-t-0 border-b pb-3 pt-0" />
 
-            <flux:table :paginate="$totalHitRecords">
+            <flux:table :paginate="$dailyHitRecords">
                 <flux:table.columns>
-                    <flux:table.column>{{ __('Created at') }}</flux:table.column>
-                    <flux:table.column>{{ __('Tracker') }}</flux:table.column>
-                    <flux:table.column>{{ __('Ref URL') }}</flux:table.column>
-                    <flux:table.column>{{ __('Client') }}</flux:table.column>
+                    <flux:table.column>{{ __('Date') }}</flux:table.column>
+                    <flux:table.column>{{ __('Total hits') }}</flux:table.column>
+                    <flux:table.column>{{ __('Unique hits') }}</flux:table.column>
                 </flux:table.columns>
 
                 <flux:table.rows>
-                    @forelse ($totalHitRecords as $hit)
-                    <flux:table.row wire:key="rotator-hit-{{ $hit->id }}">
-                        <flux:table.cell>{{ $hit->created_at?->format('Y-m-d H:i:s') }}</flux:table.cell>
-                        <flux:table.cell>
-                            @if ($hit->tracker)
-                            <flux:tooltip :content="$hit->tracker->target_url">
-                                <span class="inline-block max-w-40 truncate font-mono text-sm">
-                                    {{ $hit->tracker->tracker_slug }}
-                                </span>
-                            </flux:tooltip>
-                            @else
-                            {{ __('Unknown') }}
-                            @endif
-                        </flux:table.cell>
-                        <flux:table.cell>
-                            @if ($href = $this->referrerHref($hit->ref_url))
-                            <flux:link href="{{ $href }}" target="_blank" rel="noreferrer" class="block max-w-md truncate">
-                                {{ $hit->ref_url }}
-                            </flux:link>
-                            @else
-                            {{ __('Direct / unknown') }}
-                            @endif
-                        </flux:table.cell>
-                        <flux:table.cell>{{ $this->clientSummary($hit) }}</flux:table.cell>
+                    @forelse ($dailyHitRecords as $stat)
+                    <flux:table.row wire:key="rotator-daily-hit-{{ $stat->hit_date }}">
+                        <flux:table.cell>{{ Carbon::parse($stat->hit_date)->format('Y-m-d') }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($stat->total_hits) }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($stat->unique_hits) }}</flux:table.cell>
                     </flux:table.row>
                     @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="4" align="center">
+                        <flux:table.cell colspan="3" align="center">
                             {{ __('No hits yet.') }}
                         </flux:table.cell>
                     </flux:table.row>
@@ -384,7 +340,7 @@ new #[Title('Rotator stats')] class extends Component
             <section class="space-y-4">
                 <div>
                     <flux:heading>{{ __('Referrers') }}</flux:heading>
-                    <flux:subheading>{{ Carbon::parse($selectedDate)->format('F j, Y') }}</flux:subheading>
+                    <flux:subheading>{{ __('All hits grouped by referrer') }}</flux:subheading>
                 </div>
 
                 <flux:pagination :paginator="$referrerStats" class="border-t-0 border-b pb-3 pt-0" />
@@ -422,13 +378,13 @@ new #[Title('Rotator stats')] class extends Component
                                 {{ __('Direct / unknown') }}
                                 @endif
                             </flux:table.cell>
-                            <flux:table.cell>{{ $stat->total_hits }}</flux:table.cell>
-                            <flux:table.cell>{{ $stat->unique_hits }}</flux:table.cell>
+                            <flux:table.cell>{{ number_format($stat->total_hits) }}</flux:table.cell>
+                            <flux:table.cell>{{ number_format($stat->unique_hits) }}</flux:table.cell>
                         </flux:table.row>
                         @empty
                         <flux:table.row>
                             <flux:table.cell colspan="3" align="center">
-                                {{ __('No hits for this day.') }}
+                                {{ __('No hits yet.') }}
                             </flux:table.cell>
                         </flux:table.row>
                         @endforelse
@@ -460,6 +416,7 @@ new #[Title('Rotator stats')] class extends Component
 
             let chartData = JSON.parse(canvas.dataset.chart);
             const accent = getComputedStyle(document.documentElement).getPropertyValue('--color-blue-600').trim() || '#2563eb';
+            const secondary = getComputedStyle(document.documentElement).getPropertyValue('--color-emerald-600').trim() || '#059669';
             const grid = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'rgba(255,255,255,.10)' : 'rgba(39,39,42,.10)';
             const text = window.matchMedia('(prefers-color-scheme: dark)').matches ? '#d4d4d8' : '#52525b';
 
@@ -467,21 +424,12 @@ new #[Title('Rotator stats')] class extends Component
                 canvas._rotatorChart.destroy();
             }
 
-            const selectedPointRadius = () => chartData.dates.map((date) => date === chartData.selectedDate ? 6 : 3);
-            const selectedPointBackground = () => chartData.dates.map((date) => date === chartData.selectedDate ? accent : '#fff');
             const applyChartData = (freshChartData) => {
                 chartData = freshChartData;
                 canvas.dataset.chart = JSON.stringify(freshChartData);
                 canvas._rotatorChart.data.labels = chartData.labels;
                 canvas._rotatorChart.data.datasets[0].data = chartData.totals;
-                canvas._rotatorChart.data.datasets[0].pointRadius = selectedPointRadius();
-                canvas._rotatorChart.data.datasets[0].pointBackgroundColor = selectedPointBackground();
-                canvas._rotatorChart.update();
-            };
-            const updateSelection = (date) => {
-                chartData.selectedDate = date;
-                canvas._rotatorChart.data.datasets[0].pointRadius = selectedPointRadius();
-                canvas._rotatorChart.data.datasets[0].pointBackgroundColor = selectedPointBackground();
+                canvas._rotatorChart.data.datasets[1].data = chartData.uniques;
                 canvas._rotatorChart.update();
             };
 
@@ -489,18 +437,34 @@ new #[Title('Rotator stats')] class extends Component
                 type: 'line',
                 data: {
                     labels: chartData.labels,
-                    datasets: [{
-                        data: chartData.totals,
-                        borderColor: accent,
-                        backgroundColor: 'rgba(37, 99, 235, .12)',
-                        fill: true,
-                        tension: .35,
-                        pointRadius: selectedPointRadius(),
-                        pointHoverRadius: 7,
-                        pointBackgroundColor: selectedPointBackground(),
-                        pointBorderColor: accent,
-                        pointBorderWidth: 2,
-                    }],
+                    datasets: [
+                        {
+                            label: @js(__('Total hits')),
+                            data: chartData.totals,
+                            borderColor: accent,
+                            backgroundColor: 'rgba(37, 99, 235, .12)',
+                            fill: true,
+                            tension: .35,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: accent,
+                            pointBorderWidth: 2,
+                        },
+                        {
+                            label: @js(__('Unique hits')),
+                            data: chartData.uniques,
+                            borderColor: secondary,
+                            backgroundColor: 'rgba(5, 150, 105, .10)',
+                            fill: false,
+                            tension: .35,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: secondary,
+                            pointBorderWidth: 2,
+                        },
+                    ],
                 },
                 options: {
                     responsive: true,
@@ -509,22 +473,18 @@ new #[Title('Rotator stats')] class extends Component
                         intersect: false,
                         mode: 'index',
                     },
-                    onClick: (_event, elements) => {
-                        if (!elements.length) {
-                            return;
-                        }
-
-                        updateSelection(chartData.dates[elements[0].index]);
-                        $wire.selectDate(chartData.dates[elements[0].index]);
-                    },
                     plugins: {
                         legend: {
-                            display: false,
+                            display: true,
+                            labels: {
+                                color: text,
+                                usePointStyle: true,
+                            },
                         },
                         tooltip: {
                             callbacks: {
                                 title: (items) => chartData.dates[items[0].dataIndex],
-                                label: (item) => `${item.formattedValue} hits`,
+                                label: (item) => `${item.dataset.label}: ${item.formattedValue}`,
                             },
                         },
                     },
