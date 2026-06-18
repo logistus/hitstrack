@@ -237,7 +237,7 @@ new #[Title('Rotators')] class extends Component
             'managedRotator' => $managedRotator,
             'availableTrackers' => Tracker::query()
                 ->where('user_id', Auth::id())
-                ->when($attachedTrackerIds->isNotEmpty(), fn($query) => $query->whereNotIn('id', $attachedTrackerIds))
+                ->when($attachedTrackerIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $attachedTrackerIds))
                 ->latest()
                 ->get(),
         ];
@@ -503,7 +503,14 @@ new #[Title('Rotators')] class extends Component
                 <flux:table.cell>{{ number_format($rotator->stats_count) }}</flux:table.cell>
                 <flux:table.cell>{{ number_format($rotator->unique_hits_count) }}</flux:table.cell>
                 <flux:table.cell>
-                    {{ $rotator->stats_max_created_at ? \Carbon\Carbon::parse($rotator->stats_max_created_at)->format('Y-m-d H:i') : __('Never') }}
+                    @if ($rotator->stats_max_created_at)
+                    @php($lastHitAt = \Carbon\Carbon::parse($rotator->stats_max_created_at))
+                    <span title="{{ $lastHitAt->format('Y-m-d H:i:s') }}">
+                        {{ $lastHitAt->diffForHumans(short: true) }}
+                    </span>
+                    @else
+                    {{ __('Never') }}
+                    @endif
                 </flux:table.cell>
                 <flux:table.cell align="end">
                     <div class="flex justify-end gap-3">

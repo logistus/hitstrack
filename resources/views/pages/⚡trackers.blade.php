@@ -291,7 +291,14 @@ new #[Title('Trackers')] class extends Component
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    {{ $tracker->stats_max_created_at ? \Carbon\Carbon::parse($tracker->stats_max_created_at)->format('Y-m-d H:i') : __('Never') }}
+                    @if ($tracker->stats_max_created_at)
+                    @php($lastHitAt = \Carbon\Carbon::parse($tracker->stats_max_created_at))
+                    <span title="{{ $lastHitAt->format('Y-m-d H:i:s') }}">
+                        {{ $lastHitAt->diffForHumans(short: true) }}
+                    </span>
+                    @else
+                    {{ __('Never') }}
+                    @endif
                 </flux:table.cell>
 
                 <flux:table.cell align="end">
