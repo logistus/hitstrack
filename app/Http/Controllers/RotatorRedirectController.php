@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\RotatorStatsUpdated;
-use App\Events\TrackerStatsUpdated;
 use App\Models\Rotator;
 use App\Models\RotatorStat;
 use App\Models\TrackerStat;

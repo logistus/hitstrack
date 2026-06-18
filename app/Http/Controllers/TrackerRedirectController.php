@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\TrackerStatsUpdated;
 use App\Models\Tracker;
 use App\Models\TrackerStat;
 use App\Support\ClientInfo;
