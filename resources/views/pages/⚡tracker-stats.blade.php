@@ -322,7 +322,7 @@ new #[Title('Tracker stats')] class extends Component
                 <flux:table.rows>
                     @forelse ($dailyHitRecords as $stat)
                     <flux:table.row wire:key="tracker-daily-hit-{{ $stat->hit_date }}">
-                        <flux:table.cell>{{ Carbon::parse($stat->hit_date)->format('Y-m-d') }}</flux:table.cell>
+                        <flux:table.cell>{{ \Carbon\Carbon::parse($stat->hit_date)->format('Y-m-d') }}</flux:table.cell>
                         <flux:table.cell>{{ number_format($stat->total_hits) }}</flux:table.cell>
                         <flux:table.cell>{{ number_format($stat->unique_hits) }}</flux:table.cell>
                     </flux:table.row>

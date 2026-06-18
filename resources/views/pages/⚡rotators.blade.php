@@ -510,7 +510,7 @@ new #[Title('Rotators')] class extends Component
                 <flux:table.cell>{{ number_format($rotator->stats_count) }}</flux:table.cell>
                 <flux:table.cell>{{ number_format($rotator->unique_hits_count) }}</flux:table.cell>
                 <flux:table.cell>
-                    {{ $rotator->stats_max_created_at ? Carbon::parse($rotator->stats_max_created_at)->format('Y-m-d H:i') : __('Never') }}
+                    {{ $rotator->stats_max_created_at ? \Carbon\Carbon::parse($rotator->stats_max_created_at)->format('Y-m-d H:i') : __('Never') }}
                 </flux:table.cell>
                 <flux:table.cell align="end">
                     <div class="flex justify-end gap-3">
