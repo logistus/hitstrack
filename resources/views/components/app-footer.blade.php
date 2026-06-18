@@ -1,31 +1,31 @@
 @props(['flux' => false])
 
 @php
-    $classes = 'border-t border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900';
+$classes = 'border-t border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900';
 @endphp
 
 @if ($flux)
-    <flux:footer class="{{ $classes }} !px-0">
-        <div class="container mx-auto flex flex-col gap-3 py-6 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between dark:text-zinc-400">
-            <p>&copy; {{ now()->year }} {{ config('app.name', 'HitsTrack') }}. {{ __('All rights reserved.') }}</p>
+<flux:footer class="{{ $classes }} !p-0">
+    <div class="container mx-auto flex flex-col justify-center gap-3 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between dark:text-zinc-400">
+        <p>&copy; {{ now()->year }} {{ config('app.name', 'HitsTrack') }}. {{ __('All rights reserved.') }}</p>
 
-            <nav class="flex gap-4">
-                <flux:link href="{{ route('home') }}" wire:navigate>
-                    {{ __('Home') }}
-                </flux:link>
-            </nav>
-        </div>
-    </flux:footer>
+        <nav class="flex gap-4">
+            <flux:link href="{{ route('home') }}" wire:navigate>
+                {{ __('Home') }}
+            </flux:link>
+        </nav>
+    </div>
+</flux:footer>
 @else
-    <footer class="{{ $classes }}">
-        <div class="container mx-auto flex flex-col gap-3 py-6 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between dark:text-zinc-400">
-            <p>&copy; {{ now()->year }} {{ config('app.name', 'HitsTrack') }}. {{ __('All rights reserved.') }}</p>
+<footer class="{{ $classes }}">
+    <div class="container mx-auto flex flex-col justify-center gap-3 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between dark:text-zinc-400">
+        <p>&copy; {{ now()->year }} {{ config('app.name', 'HitsTrack') }}. {{ __('All rights reserved.') }}</p>
 
-            <nav class="flex gap-4">
-                <flux:link href="{{ route('home') }}" wire:navigate>
-                    {{ __('Home') }}
-                </flux:link>
-            </nav>
-        </div>
-    </footer>
+        <nav class="flex gap-4">
+            <flux:link href="{{ route('home') }}" wire:navigate>
+                {{ __('Home') }}
+            </flux:link>
+        </nav>
+    </div>
+</footer>
 @endif
