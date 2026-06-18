@@ -222,19 +222,25 @@ new #[Title('Rotators')] class extends Component
             ? $managedRotator->trackers->pluck('id')
             : collect();
 
+        $rotators = $this->userRotatorsQuery()
+            ->withCount(['stats', 'trackers'])
+            ->withMax('stats', 'created_at')
+            ->latest()
+            ->paginate(25);
+
+        $uniqueHitCounts = RotatorStat::query()
+            ->select('rotator_id')
+            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits_count')
+            ->whereIn('rotator_id', $rotators->getCollection()->pluck('id'))
+            ->groupBy('rotator_id')
+            ->pluck('unique_hits_count', 'rotator_id');
+
+        $rotators->getCollection()->each(function (Rotator $rotator) use ($uniqueHitCounts): void {
+            $rotator->unique_hits_count = (int) ($uniqueHitCounts[$rotator->id] ?? 0);
+        });
+
         return [
-            'rotators' => $this->userRotatorsQuery()
-                ->select('rotators.*')
-                ->withCount(['stats', 'trackers'])
-                ->selectSub(
-                    RotatorStat::query()
-                        ->selectRaw('COUNT(DISTINCT ip_address)')
-                        ->whereColumn('rotator_stats.rotator_id', 'rotators.id'),
-                    'unique_hits_count',
-                )
-                ->withMax('stats', 'created_at')
-                ->latest()
-                ->paginate(25),
+            'rotators' => $rotators,
             'managedRotator' => $managedRotator,
             'availableTrackers' => Tracker::query()
                 ->where('user_id', Auth::id())
