@@ -5,7 +5,7 @@
 @endphp
 
 @if ($flux)
-    <footer class="{{ $classes }}">
+    <flux:footer class="{{ $classes }} !px-0">
         <div class="container mx-auto flex flex-col gap-3 py-6 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between dark:text-zinc-400">
             <p>&copy; {{ now()->year }} {{ config('app.name', 'HitsTrack') }}. {{ __('All rights reserved.') }}</p>
 
@@ -15,7 +15,7 @@
                 </flux:link>
             </nav>
         </div>
-    </footer>
+    </flux:footer>
 @else
     <footer class="{{ $classes }}">
         <div class="container mx-auto flex flex-col gap-3 py-6 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between dark:text-zinc-400">
