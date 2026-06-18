@@ -1,8 +1,8 @@
 <?php
 
 use App\Models\Rotator;
+use App\Models\RotatorStat;
 use App\Models\Tracker;
-use Carbon\Carbon;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -224,7 +224,14 @@ new #[Title('Rotators')] class extends Component
 
         return [
             'rotators' => $this->userRotatorsQuery()
+                ->select('rotators.*')
                 ->withCount(['stats', 'trackers'])
+                ->selectSub(
+                    RotatorStat::query()
+                        ->selectRaw('COUNT(DISTINCT ip_address)')
+                        ->whereColumn('rotator_stats.rotator_id', 'rotators.id'),
+                    'unique_hits_count',
+                )
                 ->withMax('stats', 'created_at')
                 ->latest()
                 ->paginate(25),
@@ -460,17 +467,19 @@ new #[Title('Rotators')] class extends Component
 
     <flux:table :paginate="$rotators">
         <flux:table.columns>
+            <flux:table.column>{{ __('Created') }}</flux:table.column>
             <flux:table.column>{{ __('Rotator URL') }}</flux:table.column>
             <flux:table.column>{{ __('Type') }}</flux:table.column>
             <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
+            <flux:table.column>{{ __('Unique Hits') }}</flux:table.column>
             <flux:table.column>{{ __('Last Hit') }}</flux:table.column>
-            <flux:table.column>{{ __('Created') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 
         <flux:table.rows>
             @forelse ($rotators as $rotator)
             <flux:table.row :key="$rotator->id">
+                <flux:table.cell>{{ $rotator->created_at?->format('Y-m-d H:i') }}</flux:table.cell>
                 <flux:table.cell>
                     @php($rotatorUrl = route('rotators.redirect', $rotator->rotator_slug))
 
@@ -493,10 +502,10 @@ new #[Title('Rotators')] class extends Component
                 </flux:table.cell>
                 <flux:table.cell>{{ str($rotator->rotation_type)->replace('_', ' ')->title() }}</flux:table.cell>
                 <flux:table.cell>{{ number_format($rotator->stats_count) }}</flux:table.cell>
+                <flux:table.cell>{{ number_format($rotator->unique_hits_count) }}</flux:table.cell>
                 <flux:table.cell>
                     {{ $rotator->stats_max_created_at ? Carbon::parse($rotator->stats_max_created_at)->format('Y-m-d H:i') : __('Never') }}
                 </flux:table.cell>
-                <flux:table.cell>{{ $rotator->created_at?->format('Y-m-d H:i') }}</flux:table.cell>
                 <flux:table.cell align="end">
                     <div class="flex justify-end gap-3">
                         <flux:link :href="route('rotators.stats', $rotator->rotator_slug)" wire:navigate>
@@ -516,7 +525,7 @@ new #[Title('Rotators')] class extends Component
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="6" align="center">
+                <flux:table.cell colspan="7" align="center">
                     {{ __('No rotators created yet.') }}
                 </flux:table.cell>
             </flux:table.row>
