@@ -196,12 +196,14 @@ new #[Title('Rotator stats')] class extends Component
         return RotatorStat::query()
             ->select([
                 'id',
+                'tracker_id',
                 'created_at',
                 'ref_url',
                 'device_type',
                 'operating_system',
                 'browser',
             ])
+            ->with('tracker:id,tracker_slug,target_url')
             ->where('rotator_id', $rotator->id)
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -319,6 +321,7 @@ new #[Title('Rotator stats')] class extends Component
             <flux:table :paginate="$totalHitRecords">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Created at') }}</flux:table.column>
+                    <flux:table.column>{{ __('Tracker') }}</flux:table.column>
                     <flux:table.column>{{ __('Ref URL') }}</flux:table.column>
                     <flux:table.column>{{ __('Device') }}</flux:table.column>
                     <flux:table.column>{{ __('Operating system') }}</flux:table.column>
@@ -329,6 +332,17 @@ new #[Title('Rotator stats')] class extends Component
                     @forelse ($totalHitRecords as $hit)
                     <flux:table.row wire:key="rotator-hit-{{ $hit->id }}">
                         <flux:table.cell>{{ $hit->created_at?->format('Y-m-d H:i:s') }}</flux:table.cell>
+                        <flux:table.cell>
+                            @if ($hit->tracker)
+                            <flux:tooltip :content="$hit->tracker->target_url">
+                                <span class="inline-block max-w-40 truncate font-mono text-sm">
+                                    {{ $hit->tracker->tracker_slug }}
+                                </span>
+                            </flux:tooltip>
+                            @else
+                            {{ __('Unknown') }}
+                            @endif
+                        </flux:table.cell>
                         <flux:table.cell>
                             @if ($href = $this->referrerHref($hit->ref_url))
                             <flux:link href="{{ $href }}" target="_blank" rel="noreferrer" class="block max-w-md truncate">
@@ -344,7 +358,7 @@ new #[Title('Rotator stats')] class extends Component
                     </flux:table.row>
                     @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="5" align="center">
+                        <flux:table.cell colspan="6" align="center">
                             {{ __('No hits yet.') }}
                         </flux:table.cell>
                     </flux:table.row>
