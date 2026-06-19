@@ -1,316 +1,478 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HarvestTraffic Splash Page</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harvest Traffic Coop — Plant. Grow. Harvest.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:ital,wght@0,400;0,600;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+:root{
+  --wheat:#c8851c;
+  --wheat-deep:#8a5a0e;
+  --leaf:#5a8f2e;
+  --leaf-light:#7cb342;
+  --sun:#f0b429;
+  --soil:#6b4423;
+  --cream:#fdf6e8;
+  --cream-dark:#f2e4c4;
+  --text-body:#4a3010;
+}
 
-    body {
-      min-height: 100vh;
-      font-family: Arial, Helvetica, sans-serif;
-      background:
-        radial-gradient(circle at 20% 20%, rgba(255, 196, 0, 0.32), transparent 28%),
-        radial-gradient(circle at 80% 80%, rgba(44, 168, 82, 0.36), transparent 30%),
-        linear-gradient(135deg, #10200d, #050803 65%, #000);
-      color: #fff;
-      overflow: hidden;
-    }
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Nunito',sans-serif;
+  background:var(--cream);
+  color:var(--text-body);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:100vh;
+  overflow:hidden;
+  position:relative;
+}
 
-    .wrapper {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 0.95fr 1.05fr;
-      align-items: center;
-      max-width: 1000px;
-      margin: 0 auto;
-      padding: 24px;
-      gap: 30px;
-      position: relative;
-    }
+/* ── BACKGROUND ── */
+.bg{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 60% at 10% 50%, rgba(200,133,28,0.2) 0%, transparent 60%),
+    radial-gradient(ellipse 55% 50% at 90% 40%, rgba(90,143,46,0.14) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 50% 100%, rgba(240,180,41,0.12) 0%, transparent 60%),
+    var(--cream);
+}
 
-    .ticket {
-      position: relative;
-      background: linear-gradient(180deg, #fff6bf, #ffc941);
-      color: #102016;
-      border-radius: 28px;
-      padding: 30px 22px;
-      text-align: center;
-      box-shadow:
-        0 18px 0 #795000,
-        0 0 45px rgba(255, 201, 65, 0.65);
-      transform: rotate(-3deg);
-    }
+/* dotted pattern */
+.dots{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle, rgba(200,133,28,0.12) 1.5px, transparent 1.5px);
+  background-size:32px 32px;
+}
 
-    .ticket:before,
-    .ticket:after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      width: 42px;
-      height: 42px;
-      background: #10200d;
-      border-radius: 50%;
-      transform: translateY(-50%);
-    }
+/* ── FLOATING WHEAT CANVAS ── */
+canvas{position:fixed;inset:0;z-index:1;pointer-events:none;}
 
-    .ticket:before {
-      left: -21px;
-    }
+/* ── RING (decorative) ── */
+.plate{
+  position:fixed;
+  width:560px;height:560px;
+  right:-140px;top:50%;transform:translateY(-50%);
+  border-radius:50%;
+  border:2px dashed rgba(200,133,28,0.14);
+  pointer-events:none;z-index:0;
+}
+.plate::before{
+  content:'';
+  position:absolute;inset:18px;
+  border-radius:50%;
+  border:1px dashed rgba(90,143,46,0.16);
+}
 
-    .ticket:after {
-      right: -21px;
-    }
+/* ── CARD ── */
+.card{
+  position:relative;z-index:10;
+  max-width:680px;width:100%;
+  padding:0 2rem;
+  text-align:center;
+  animation:popUp 0.7s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes popUp{
+  from{opacity:0;transform:scale(0.94) translateY(20px);}
+  to{opacity:1;transform:scale(1) translateY(0);}
+}
 
-    .ticket-label {
-      font-size: 15px;
-      font-weight: 1000;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 14px;
-    }
+/* ── BADGE ── */
+.chef-badge{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  background:var(--leaf);
+  color:#fff;
+  font-family:'Fredoka One',cursive;
+  font-size:0.78rem;
+  letter-spacing:0.05em;
+  padding:0.42rem 1.1rem 0.42rem 0.9rem;
+  border-radius:999px;
+  margin-bottom:1.8rem;
+  max-width:100%;
+  white-space:normal;
+  text-align:center;
+  animation:popUp 0.7s 0.1s cubic-bezier(0.16,1,0.3,1) both;
+  box-shadow:0 4px 14px rgba(90,143,46,0.3);
+}
+.chef-hat{font-size:1.1rem;}
+.badge-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--sun);
+  box-shadow:0 0 6px var(--sun);
+  animation:pulse 1.4s infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(0.55);}}
 
-    .big-number {
-      font-size: clamp(54px, 9vw, 88px);
-      font-weight: 1000;
-      line-height: 0.9;
-      color: #16833a;
-      text-shadow: 3px 3px 0 #fff;
-    }
+/* ── HEADLINE ── */
+.headline{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(2.4rem,7vw,5.2rem);
+  line-height:1.05;
+  letter-spacing:0.01em;
+  color:var(--wheat);
+  margin-bottom:0.18em;
+  animation:popUp 0.7s 0.15s cubic-bezier(0.16,1,0.3,1) both;
+  text-shadow:3px 4px 0 rgba(138,90,14,0.18), 0 0 60px rgba(200,133,28,0.12);
+}
+.headline .line2{
+  color:var(--soil);
+  display:block;
+}
+.headline .accent{
+  color:var(--leaf);
+  display:inline-block;
+  position:relative;
+}
+.headline .accent::after{
+  content:'';
+  position:absolute;
+  bottom:-4px;left:0;right:0;height:4px;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 6'%3E%3Cpath d='M0 4 Q7.5 0 15 4 Q22.5 8 30 4 Q37.5 0 45 4 Q52.5 8 60 4' fill='none' stroke='%235a8f2e' stroke-width='2'/%3E%3C/svg%3E") repeat-x center;
+  background-size:30px 4px;
+  animation:waveIn 0.5s 0.8s ease both;
+  transform-origin:left;
+  transform:scaleX(0);
+}
+@keyframes waveIn{to{transform:scaleX(1);}}
 
-    .big-number span {
-      display: block;
-      font-size: clamp(22px, 4vw, 36px);
-      color: #111;
-      margin-top: 8px;
-    }
+/* ── SUBLINE ── */
+.subline{
+  font-size:clamp(1rem,2.2vw,1.3rem);
+  font-weight:400;
+  color:var(--text-body);
+  opacity:0.65;
+  line-height:1.6;
+  margin-bottom:2.2rem;
+  animation:popUp 0.7s 0.25s cubic-bezier(0.16,1,0.3,1) both;
+}
+.subline strong{color:var(--wheat);font-weight:800;opacity:1;}
 
-    .ticket-small {
-      margin-top: 18px;
-      font-weight: 900;
-      font-size: 18px;
-    }
+/* ── STATS ── */
+.stats{
+  display:flex;justify-content:center;
+  margin-bottom:2.2rem;
+  border-radius:16px;
+  overflow:hidden;
+  border:2px solid rgba(200,133,28,0.14);
+  background:rgba(255,255,255,0.7);
+  backdrop-filter:blur(6px);
+  box-shadow:0 4px 24px rgba(200,133,28,0.1);
+  animation:popUp 0.7s 0.35s cubic-bezier(0.16,1,0.3,1) both;
+}
+.stat{
+  flex:1;
+  padding:0.9rem 0.5rem;
+  border-right:1px solid rgba(200,133,28,0.12);
+  position:relative;
+}
+.stat:last-child{border-right:none;}
+.stat-icon{font-size:1.3rem;display:block;line-height:1;margin-bottom:0.25rem;}
+.stat-val{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(1.3rem,3vw,1.9rem);
+  line-height:1;
+  display:block;
+  margin-bottom:0.2rem;
+}
+.stat:nth-child(1) .stat-val{color:var(--wheat);}
+.stat:nth-child(2) .stat-val{color:var(--leaf);}
+.stat:nth-child(3) .stat-val{color:var(--sun);}
+.stat:nth-child(4) .stat-val{color:var(--wheat-deep);}
+.stat-key{
+  font-size:0.58rem;
+  font-weight:800;
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  color:var(--text-body);
+  opacity:0.4;
+  display:block;
+}
 
-    .main {
-      text-align: left;
-      position: relative;
-      z-index: 3;
-    }
+/* ── CTA ── */
+.cta-group{
+  display:flex;gap:0.8rem;justify-content:center;flex-wrap:wrap;
+  animation:popUp 0.7s 0.45s cubic-bezier(0.16,1,0.3,1) both;
+}
 
-    .badge {
-      display: inline-block;
-      background: #2ecc71;
-      color: #031408;
-      padding: 9px 16px;
-      border-radius: 999px;
-      font-weight: 1000;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 18px;
-    }
+.btn-cook{
+  font-family:'Fredoka One',cursive;
+  font-size:1.1rem;
+  letter-spacing:0.04em;
+  color:#fff;
+  background:var(--wheat);
+  border:none;
+  padding:0.95rem 2.6rem;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-block;
+  border-radius:12px;
+  position:relative;
+  overflow:hidden;
+  transition:transform 0.15s, box-shadow 0.2s;
+  box-shadow:0 4px 0 var(--wheat-deep), 0 6px 20px rgba(200,133,28,0.3);
+}
+.btn-cook:hover{
+  transform:translateY(-3px);
+  box-shadow:0 7px 0 var(--wheat-deep), 0 12px 28px rgba(200,133,28,0.35);
+}
+.btn-cook:active{
+  transform:translateY(2px);
+  box-shadow:0 2px 0 var(--wheat-deep), 0 4px 12px rgba(200,133,28,0.3);
+}
+.btn-cook::after{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:40%;
+  background:rgba(255,255,255,0.12);
+  border-radius:12px 12px 50% 50%;
+  pointer-events:none;
+}
 
-    h1 {
-      font-size: clamp(42px, 8vw, 82px);
-      line-height: 0.9;
-      text-transform: uppercase;
-      margin-bottom: 18px;
-    }
+.btn-learn{
+  font-family:'Fredoka One',cursive;
+  font-size:1.1rem;
+  letter-spacing:0.04em;
+  color:var(--wheat);
+  background:rgba(255,255,255,0.8);
+  border:2px solid rgba(200,133,28,0.25);
+  padding:0.95rem 2rem;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-block;
+  border-radius:12px;
+  transition:all 0.2s;
+  box-shadow:0 4px 14px rgba(0,0,0,0.07);
+}
+.btn-learn:hover{
+  background:#fff;
+  border-color:var(--wheat);
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(200,133,28,0.15);
+}
 
-    h1 span {
-      color: #ffc941;
-    }
+/* ── FEATURE PILLS ── */
+.pills{
+  display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;
+  margin-top:1.8rem;
+  animation:popUp 0.7s 0.58s cubic-bezier(0.16,1,0.3,1) both;
+}
+.pill{
+  font-size:0.72rem;
+  font-weight:700;
+  padding:0.32rem 0.85rem;
+  border-radius:999px;
+  background:rgba(255,255,255,0.65);
+  border:1.5px solid rgba(200,133,28,0.16);
+  color:var(--text-body);
+  opacity:0.75;
+}
 
-    .sub {
-      font-size: clamp(20px, 3vw, 30px);
-      font-weight: 900;
-      line-height: 1.2;
-      margin-bottom: 22px;
-    }
+/* ── BOTTOM TICKER ── */
+.ticker{
+  position:fixed;bottom:0;left:0;right:0;z-index:20;
+  background:var(--wheat);
+  padding:0.5rem 0;
+  overflow:hidden;
+  white-space:nowrap;
+}
+.ticker-track{
+  display:inline-block;
+  animation:scroll 25s linear infinite;
+  font-family:'Fredoka One',cursive;
+  font-size:0.8rem;
+  letter-spacing:0.08em;
+  color:rgba(255,255,255,0.92);
+}
+.ticker-track span{color:rgba(255,255,255,0.4);margin:0 1.5rem;}
+@keyframes scroll{from{transform:translateX(100vw);}to{transform:translateX(-100%);}}
 
-    .steps {
-      display: grid;
-      gap: 10px;
-      margin-bottom: 24px;
-      max-width: 540px;
-    }
+/* ── INVITED BY BOX ── */
+.invite-box{
+  position:fixed;bottom:4.1rem;right:1.1rem;z-index:25;
+  display:flex;align-items:center;gap:0.55rem;
+  background:rgba(255,255,255,0.75);
+  border:1.5px solid rgba(200,133,28,0.2);
+  border-radius:999px;
+  padding:0.4rem 0.9rem 0.4rem 0.4rem;
+  backdrop-filter:blur(6px);
+  box-shadow:0 4px 16px rgba(200,133,28,0.12);
+  animation:popUp 0.7s 0.8s cubic-bezier(0.16,1,0.3,1) both;
+}
+.invite-avatar{
+  width:48px;height:48px;
+  border-radius:50%;
+  border:2px solid var(--sun);
+  object-fit:cover;
+  display:block;
+}
+.invite-text{
+  font-size:1rem;
+  font-weight:700;
+  color:var(--text-body);
+  opacity:0.8;
+  letter-spacing:0.01em;
+  white-space:nowrap;
+}
+.invite-text strong{color:var(--wheat);font-weight:800;}
 
-    .step {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      background: rgba(255, 255, 255, 0.08);
-      border-left: 5px solid #ffc941;
-      padding: 12px 14px;
-      font-size: 17px;
-      font-weight: 900;
-    }
+@media(max-width:540px){
+  .invite-box{right:0.75rem;padding:0.32rem 0.75rem 0.32rem 0.32rem;}
+  .invite-text{font-size:0.85rem;}
+}
 
-    .step strong {
-      color: #2ecc71;
-    }
-
-    .cta {
-      display: inline-block;
-      background: linear-gradient(180deg, #6dff9f, #20b85a);
-      color: #001407;
-      text-decoration: none;
-      font-size: clamp(22px, 4vw, 34px);
-      font-weight: 1000;
-      text-transform: uppercase;
-      padding: 18px 34px;
-      border-radius: 16px;
-      box-shadow:
-        0 8px 0 #0d6b32,
-        0 0 28px rgba(46, 204, 113, 0.8);
-      animation: beat 1.1s infinite;
-    }
-
-    .floating {
-      position: fixed;
-      font-size: 28px;
-      font-weight: 1000;
-      color: #ffc941;
-      text-shadow: 0 0 12px rgba(255, 201, 65, 0.9);
-      opacity: 0;
-      animation: pop 5s infinite;
-    }
-
-    .f1 {
-      left: 8%;
-      top: 75%;
-      animation-delay: 0s;
-    }
-
-    .f2 {
-      left: 76%;
-      top: 18%;
-      animation-delay: 1.1s;
-    }
-
-    .f3 {
-      left: 86%;
-      top: 70%;
-      animation-delay: 2.2s;
-    }
-
-    .f4 {
-      left: 12%;
-      top: 18%;
-      animation-delay: 3.3s;
-    }
-
-    @keyframes beat {
-
-      0%,
-      100% {
-        transform: scale(1);
-      }
-
-      50% {
-        transform: scale(1.06);
-      }
-    }
-
-    @keyframes pop {
-      0% {
-        opacity: 0;
-        transform: translateY(35px) scale(.8);
-      }
-
-      14% {
-        opacity: 1;
-        transform: translateY(0) scale(1.15);
-      }
-
-      32% {
-        opacity: 0;
-        transform: translateY(-70px) scale(1);
-      }
-
-      100% {
-        opacity: 0;
-      }
-    }
-
-    @media (max-width: 760px) {
-      body {
-        overflow: auto;
-      }
-
-      .wrapper {
-        grid-template-columns: 1fr;
-        text-align: center;
-      }
-
-      .main {
-        text-align: center;
-      }
-
-      .ticket {
-        transform: rotate(0);
-      }
-
-      .steps {
-        margin-left: auto;
-        margin-right: auto;
-      }
-    }
-  </style>
+/* ── RESPONSIVE ── */
+@media(max-width:540px){
+  html,body{overflow-y:auto;}
+  body{align-items:flex-start;padding:2.5rem 0 5rem;}
+  .card{padding:0 1.25rem;}
+  .plate{display:none;}
+  .stats{flex-wrap:wrap;}
+  .stat{min-width:45%;}
+}
+</style>
 </head>
-
 <body>
 
-  <div class="floating f1">+ Credits</div>
-  <div class="floating f2">Traffic</div>
-  <div class="floating f3">Reach</div>
-  <div class="floating f4">Coop</div>
+<div class="bg"></div>
+<div class="dots"></div>
+<div class="plate"></div>
+<canvas id="c"></canvas>
 
-  <div class="wrapper">
-    <div class="ticket">
-      <div class="ticket-label">Traffic Coop Network</div>
+<div class="card">
 
-      <div class="big-number">
-        1276+
-        <span>Traffic Sources</span>
-      </div>
-
-      <div class="ticket-small">
-        Plant your link. Grow your reach. Reap the traffic.
-      </div>
-    </div>
-
-    <main class="main">
-      <div class="badge">HarvestTraffic.com</div>
-
-      <h1>
-        Harvest<br>
-        More <span>Traffic</span>
-      </h1>
-
-      <div class="sub">
-        Advertise one coop link, earn credits, and get your websites shown across a huge traffic network.
-      </div>
-
-      <div class="steps">
-        <div class="step">🌱 <strong>Plant</strong> your coop link</div>
-        <div class="step">🚦 <strong>Earn</strong> coop credits</div>
-        <div class="step">🌾 <strong>Assign</strong> credits to your websites</div>
-        <div class="step">📈 <strong>Reach</strong> hundreds of traffic sources</div>
-      </div>
-
-      <a class="cta" href="https://harvesttraffic.com/?rid=882" target="_blank">
-        Start Harvesting →
-      </a>
-    </main>
+  <div class="chef-badge">
+    <span class="chef-hat">🌾</span>
+    1,300+ Active Traffic Sources
+    <span class="badge-dot"></span>
   </div>
 
-</body>
+  <h1 class="headline">
+    Plant. Grow.<br>
+    <span class="line2">Reap <span class="accent">Traffic.</span></span>
+  </h1>
 
+  <p class="subline">
+    A traffic coop where the whole community advertises your link.<br>
+    Earn coop credits, assign them to your sites, and <strong>harvest free traffic everywhere.</strong>
+  </p>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-icon">🌍</span>
+      <span class="stat-val">1,300+</span>
+      <span class="stat-key">Traffic Sources</span>
+    </div>
+    <div class="stat">
+      <span class="stat-icon">🌱</span>
+      <span class="stat-val">Coop</span>
+      <span class="stat-key">Credit System</span>
+    </div>
+    <div class="stat">
+      <span class="stat-icon">📊</span>
+      <span class="stat-val">Detailed</span>
+      <span class="stat-key">Live Stats</span>
+    </div>
+    <div class="stat">
+      <span class="stat-icon">🆓</span>
+      <span class="stat-val">Free</span>
+      <span class="stat-key">Forever</span>
+    </div>
+  </div>
+
+  <div class="cta-group">
+    <a href="https://harvesttraffic.com/signup.php?rid=882" target="_blank" class="btn-cook">🌾 Start Harvesting — Free</a>
+    <a href="https://harvesttraffic.com/?rid=882" target="_blank" class="btn-learn">How It Works</a>
+  </div>
+
+  <div class="pills">
+    <span class="pill">🌐 1,300+ Sources</span>
+    <span class="pill">🌱 Coop Credits</span>
+    <span class="pill">🚫 No Banners or Ads</span>
+    <span class="pill">⚙️ Source Blocking</span>
+    <span class="pill">⏱️ Hourly Hit Control</span>
+  </div>
+
+</div>
+
+<div class="ticker">
+  <div class="ticker-track">
+    🌾 Advertise once, harvest everywhere
+    <span>·</span>
+    🌍 Displayed across 1,300+ active traffic sources
+    <span>·</span>
+    🌱 Earn coop credits from your favorite exchanges
+    <span>·</span>
+    🚫 No banners, no distractions — just your link
+    <span>·</span>
+    📊 Detailed stats &amp; automatic credit assignment
+    <span>·</span>
+    ✅ 100% free membership — no hidden fees
+    <span>·</span>
+  </div>
+</div>
+
+<div class="invite-box">
+  <img class="invite-avatar" src="https://www.gravatar.com/avatar/0101c72c97a4bef379faf316240a89dd?s=96&d=identicon" alt="Sinan">
+  <span class="invite-text">Invited by <strong>Sinan</strong></span>
+</div>
+
+<script>
+// ── FLOATING WHEAT / LEAVES ──
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+resize();
+window.addEventListener('resize',resize);
+
+const items = ['🌾','🍃','🌿','✨','🌻'];
+
+class Piece{
+  constructor(rush){this.reset(rush);}
+  reset(rush){
+    this.emoji = items[Math.floor(Math.random()*items.length)];
+    this.x = Math.random()*canvas.width;
+    this.y = rush ? Math.random()*canvas.height : -30;
+    this.size = 14+Math.random()*18;
+    this.vy = 0.35+Math.random()*0.6;
+    this.vx = (Math.random()-0.5)*0.35;
+    this.rot = Math.random()*Math.PI*2;
+    this.rotV = (Math.random()-0.5)*0.02;
+    this.opacity = 0.25+Math.random()*0.35;
+    this.wave = Math.random()*Math.PI*2;
+  }
+  update(){
+    this.y+=this.vy;
+    this.x+=this.vx+Math.sin(this.wave)*0.3;
+    this.wave+=0.013;
+    this.rot+=this.rotV;
+    if(this.y>canvas.height+30) this.reset(false);
+  }
+  draw(){
+    ctx.save();
+    ctx.globalAlpha=this.opacity;
+    ctx.translate(this.x,this.y);
+    ctx.rotate(this.rot);
+    ctx.font=`${this.size}px serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(this.emoji,0,0);
+    ctx.restore();
+  }
+}
+
+const pieces = Array.from({length:45},()=>new Piece(true));
+
+function loop(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  pieces.forEach(p=>{p.update();p.draw();});
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
 </html>
