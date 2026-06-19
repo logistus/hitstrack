@@ -209,6 +209,16 @@ new #[Title('Tracker stats')] class extends Component
             <flux:heading class="sr-only">{{ __('Tracker stats') }}</flux:heading>
             <flux:heading size="xl">{{ __('Tracker stats') }}</flux:heading>
             <flux:subheading>{{ route('trackers.redirect', $tracker->tracker_slug) }}</flux:subheading>
+            <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                <span class="text-zinc-500 dark:text-zinc-400">{{ __('Target URL') }}:</span>
+                <flux:link
+                    href="{{ $tracker->target_url }}"
+                    target="_blank"
+                    rel="noreferrer"
+                    class="block min-w-0 max-w-xl truncate">
+                    {{ $tracker->target_url }}
+                </flux:link>
+            </div>
         </div>
 
         <flux:button variant="filled" :href="route('trackers')" wire:navigate>
