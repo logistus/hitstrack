@@ -26,7 +26,7 @@
 
             <div class="flex items-center gap-3 text-sm">
                 @auth
-                <a href="{{ route('trackers') }}"
+                <a href="{{ route('linktrackers') }}"
                     class="rounded-md bg-white px-4 py-2 font-medium text-zinc-950 transition hover:bg-zinc-200">
                     Open app
                 </a>
@@ -65,7 +65,7 @@
 
                     <div class="mt-9 flex flex-col gap-3 sm:flex-row">
                         @auth
-                        <a href="{{ route('trackers') }}"
+                        <a href="{{ route('linktrackers') }}"
                             class="inline-flex items-center justify-center rounded-md bg-emerald-400 px-5 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-emerald-300">
                             Go to trackers
                         </a>
@@ -100,7 +100,7 @@
                             <div class="rounded-md border border-sky-400/25 bg-sky-400/10 p-4">
                                 <div class="flex items-center justify-between text-sm">
                                     <span class="font-medium text-sky-100">/t/A7kP2q</span>
-                                    <span class="rounded bg-sky-400/20 px-2 py-1 text-xs text-sky-100">Tracker</span>
+                                    <span class="rounded bg-sky-400/20 px-2 py-1 text-xs text-sky-100">LinkTracker</span>
                                 </div>
                                 <div class="mt-4 h-2 rounded-full bg-zinc-800">
                                     <div class="h-2 w-4/5 rounded-full bg-sky-400"></div>

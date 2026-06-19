@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Tracker;
-use App\Models\TrackerStat;
+use App\Models\LinkTracker;
+use App\Models\LinkTrackerStat;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -35,7 +35,7 @@ new #[Title('Trackers')] class extends Component
         ]);
 
         if ($this->editingTrackerId) {
-            Tracker::query()
+            LinkTracker::query()
                 ->where('user_id', Auth::id())
                 ->findOrFail($this->editingTrackerId)
                 ->update($validated);
@@ -43,12 +43,12 @@ new #[Title('Trackers')] class extends Component
             $this->resetForm();
             Flux::modal('tracker-form')->close();
 
-            Flux::toast(variant: 'success', text: __('Tracker updated.'));
+            Flux::toast(variant: 'success', text: __('Link tracker updated.'));
 
             return;
         }
 
-        Tracker::create([
+        LinkTracker::create([
             ...$validated,
             'tracker_slug' => $this->generateTrackerSlug(),
             'user_id' => Auth::id(),
@@ -57,12 +57,12 @@ new #[Title('Trackers')] class extends Component
         $this->resetForm();
         Flux::modal('tracker-form')->close();
 
-        Flux::toast(variant: 'success', text: __('Tracker created.'));
+        Flux::toast(variant: 'success', text: __('Link tracker created.'));
     }
 
     public function editTracker(int $trackerId): void
     {
-        $tracker = Tracker::query()
+        $tracker = LinkTracker::query()
             ->where('user_id', Auth::id())
             ->findOrFail($trackerId);
 
@@ -87,7 +87,7 @@ new #[Title('Trackers')] class extends Component
 
     public function confirmDeleteTracker(int $trackerId): void
     {
-        $tracker = Tracker::query()
+        $tracker = LinkTracker::query()
             ->where('user_id', Auth::id())
             ->findOrFail($trackerId);
 
@@ -103,7 +103,7 @@ new #[Title('Trackers')] class extends Component
             return;
         }
 
-        Tracker::query()
+        LinkTracker::query()
             ->where('user_id', Auth::id())
             ->findOrFail($this->deletingTrackerId)
             ->delete();
@@ -115,7 +115,7 @@ new #[Title('Trackers')] class extends Component
         $this->resetDeleteState();
         Flux::modal('delete-tracker')->close();
 
-        Flux::toast(variant: 'success', text: __('Tracker deleted.'));
+        Flux::toast(variant: 'success', text: __('Link tracker deleted.'));
     }
 
     public function closeDeleteModal(): void
@@ -144,7 +144,7 @@ new #[Title('Trackers')] class extends Component
     {
         do {
             $slug = Str::random(6);
-        } while (Tracker::query()->where('tracker_slug', $slug)->exists());
+        } while (LinkTracker::query()->where('tracker_slug', $slug)->exists());
 
         return $slug;
     }
@@ -152,12 +152,12 @@ new #[Title('Trackers')] class extends Component
     public function with(): array
     {
         return [
-            'trackers' => Tracker::query()
+            'trackers' => LinkTracker::query()
                 ->select('trackers.*')
                 ->where('user_id', Auth::id())
                 ->withCount('stats')
                 ->selectSub(
-                    TrackerStat::query()
+                    LinkTrackerStat::query()
                         ->selectRaw('COUNT(DISTINCT ip_address)')
                         ->whereColumn('tracker_stats.tracker_id', 'trackers.id'),
                     'unique_hits_count',
@@ -236,7 +236,7 @@ new #[Title('Trackers')] class extends Component
     <flux:table :paginate="$trackers">
         <flux:table.columns>
             <flux:table.column>{{ __('Created') }}</flux:table.column>
-            <flux:table.column>{{ __('Tracker URL/Target URL') }}</flux:table.column>
+            <flux:table.column>{{ __('Link tracker URL/Target URL') }}</flux:table.column>
             <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
             <flux:table.column>{{ __('Unique Hits') }}</flux:table.column>
             <flux:table.column>{{ __('Last Hit') }}</flux:table.column>
@@ -251,7 +251,7 @@ new #[Title('Trackers')] class extends Component
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    @php($trackerUrl = route('trackers.redirect', $tracker->tracker_slug))
+                    @php($trackerUrl = route('linktrackers.redirect', $tracker->tracker_slug))
 
                     <div class="flex max-w-md items-center gap-2">
                         <flux:link
@@ -269,7 +269,7 @@ new #[Title('Trackers')] class extends Component
                                 icon="clipboard-document"
                                 type="button"
                                 class="shrink-0"
-                                x-on:click="navigator.clipboard.writeText(@js($trackerUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Tracker URL copied.')) }))"
+                                x-on:click="navigator.clipboard.writeText(@js($trackerUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Link tracker URL copied.')) }))"
                                 :aria-label="__('Copy tracker URL')" />
                         </flux:tooltip>
                     </div>
@@ -304,7 +304,7 @@ new #[Title('Trackers')] class extends Component
                 <flux:table.cell align="end">
                     <div class="flex justify-end gap-3">
                         <flux:link
-                            :href="route('trackers.stats', $tracker->tracker_slug)"
+                            :href="route('linktrackers.stats', $tracker->tracker_slug)"
                             wire:navigate>
                             {{ __('Stats') }}
                         </flux:link>

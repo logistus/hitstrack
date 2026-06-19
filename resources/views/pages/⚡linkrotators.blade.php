@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\Rotator;
-use App\Models\RotatorStat;
-use App\Models\Tracker;
+use App\Models\LinkRotator;
+use App\Models\LinkRotatorStat;
+use App\Models\LinkTracker;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -46,19 +46,19 @@ new #[Title('Rotators')] class extends Component
         ]);
 
         if ($this->editingRotatorId) {
-            Rotator::query()
+            LinkRotator::query()
                 ->where('user_id', Auth::id())
                 ->findOrFail($this->editingRotatorId)
                 ->update($validated);
 
             $this->resetRotatorForm();
             Flux::modal('rotator-form')->close();
-            Flux::toast(variant: 'success', text: __('Rotator updated.'));
+            Flux::toast(variant: 'success', text: __('Link rotator updated.'));
 
             return;
         }
 
-        Rotator::create([
+        LinkRotator::create([
             ...$validated,
             'rotator_slug' => $this->generateRotatorSlug(),
             'user_id' => Auth::id(),
@@ -66,7 +66,7 @@ new #[Title('Rotators')] class extends Component
 
         $this->resetRotatorForm();
         Flux::modal('rotator-form')->close();
-        Flux::toast(variant: 'success', text: __('Rotator created.'));
+        Flux::toast(variant: 'success', text: __('Link rotator created.'));
     }
 
     public function editRotator(int $rotatorId): void
@@ -113,7 +113,7 @@ new #[Title('Rotators')] class extends Component
 
         $this->resetDeleteState();
         Flux::modal('delete-rotator')->close();
-        Flux::toast(variant: 'success', text: __('Rotator deleted.'));
+        Flux::toast(variant: 'success', text: __('Link rotator deleted.'));
     }
 
     public function cancelDelete(): void
@@ -154,14 +154,14 @@ new #[Title('Rotators')] class extends Component
 
         if ($this->editingTrackerId) {
             $rotator->trackers()->updateExistingPivot($this->editingTrackerId, $pivot);
-            $message = __('Rotator tracker updated.');
+            $message = __('Link rotator tracker updated.');
         } else {
-            $tracker = Tracker::query()
+            $tracker = LinkTracker::query()
                 ->where('user_id', Auth::id())
                 ->findOrFail((int) $validated['tracker_id']);
 
             $rotator->trackers()->attach($tracker->id, $pivot);
-            $message = __('Tracker added to rotator.');
+            $message = __('Link tracker added to rotator.');
         }
 
         $this->resetTrackerForm();
@@ -191,7 +191,7 @@ new #[Title('Rotators')] class extends Component
             $this->resetTrackerForm();
         }
 
-        Flux::toast(variant: 'success', text: __('Tracker removed from rotator.'));
+        Flux::toast(variant: 'success', text: __('Link tracker removed from rotator.'));
     }
 
     public function cancelTrackerForm(): void
@@ -221,23 +221,23 @@ new #[Title('Rotators')] class extends Component
             ->latest()
             ->paginate(25);
 
-        $uniqueHitCounts = RotatorStat::query()
+        $uniqueHitCounts = LinkRotatorStat::query()
             ->select('rotator_id')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits_count')
             ->whereIn('rotator_id', $rotators->getCollection()->pluck('id'))
             ->groupBy('rotator_id')
             ->pluck('unique_hits_count', 'rotator_id');
 
-        $rotators->getCollection()->each(function (Rotator $rotator) use ($uniqueHitCounts): void {
+        $rotators->getCollection()->each(function (LinkRotator $rotator) use ($uniqueHitCounts): void {
             $rotator->unique_hits_count = (int) ($uniqueHitCounts[$rotator->id] ?? 0);
         });
 
         return [
             'rotators' => $rotators,
             'managedRotator' => $managedRotator,
-            'availableTrackers' => Tracker::query()
+            'availableTrackers' => LinkTracker::query()
                 ->where('user_id', Auth::id())
-                ->when($attachedTrackerIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $attachedTrackerIds))
+                ->when($attachedTrackerIds->isNotEmpty(), fn($query) => $query->whereNotIn('id', $attachedTrackerIds))
                 ->latest()
                 ->get(),
         ];
@@ -254,10 +254,10 @@ new #[Title('Rotators')] class extends Component
 
     private function userRotatorsQuery()
     {
-        return Rotator::query()->where('user_id', Auth::id());
+        return LinkRotator::query()->where('user_id', Auth::id());
     }
 
-    private function managedRotator(): Rotator
+    private function managedRotator(): LinkRotator
     {
         abort_if(! $this->managingRotatorId, 404);
 
@@ -288,7 +288,7 @@ new #[Title('Rotators')] class extends Component
     {
         do {
             $slug = Str::random(6);
-        } while (Rotator::query()->where('rotator_slug', $slug)->exists());
+        } while (LinkRotator::query()->where('rotator_slug', $slug)->exists());
 
         return $slug;
     }
@@ -298,7 +298,7 @@ new #[Title('Rotators')] class extends Component
 <section class="container mx-auto space-y-8">
     <div class="flex items-start justify-between gap-4">
         <div class="space-y-2">
-            <flux:heading class="sr-only">{{ __('Rotators') }}</flux:heading>
+            <flux:heading class="sr-only">{{ __('Link Rotators') }}</flux:heading>
             <flux:heading size="xl">{{ __('Rotators') }}</flux:heading>
             <flux:subheading>{{ __('Create rotating links from your trackers.') }}</flux:subheading>
         </div>
@@ -368,7 +368,7 @@ new #[Title('Rotators')] class extends Component
             </div>
 
             <form wire:submit="saveTracker" class="grid gap-4 md:grid-cols-[1fr_120px_120px_auto]">
-                <flux:select wire:model="tracker_id" :label="__('Tracker')" :disabled="(bool) $editingTrackerId">
+                <flux:select wire:model="tracker_id" :label="__('Link tracker')" :disabled="(bool) $editingTrackerId">
                     <flux:select.option value="">{{ __('Choose tracker') }}</flux:select.option>
                     @foreach ($availableTrackers as $tracker)
                     <flux:select.option value="{{ $tracker->id }}">{{ $tracker->target_url }}</flux:select.option>
@@ -425,7 +425,7 @@ new #[Title('Rotators')] class extends Component
 
             <flux:table>
                 <flux:table.columns>
-                    <flux:table.column>{{ __('Tracker') }}</flux:table.column>
+                    <flux:table.column>{{ __('Link tracker') }}</flux:table.column>
                     <flux:table.column>{{ __('Weight') }}</flux:table.column>
                     <flux:table.column>{{ __('Order') }}</flux:table.column>
                     <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
@@ -435,7 +435,7 @@ new #[Title('Rotators')] class extends Component
                     @forelse ($managedRotator?->trackers ?? [] as $tracker)
                     <flux:table.row :key="$tracker->id">
                         <flux:table.cell>
-                            <flux:link href="{{ route('trackers.redirect', $tracker->tracker_slug) }}" target="_blank" rel="noreferrer" class="block max-w-md truncate">
+                            <flux:link href="{{ route('linktrackers.redirect', $tracker->tracker_slug) }}" target="_blank" rel="noreferrer" class="block max-w-md truncate">
                                 {{ $tracker->target_url }}
                             </flux:link>
                         </flux:table.cell>
@@ -467,7 +467,7 @@ new #[Title('Rotators')] class extends Component
     <flux:table :paginate="$rotators">
         <flux:table.columns>
             <flux:table.column>{{ __('Created') }}</flux:table.column>
-            <flux:table.column>{{ __('Rotator URL') }}</flux:table.column>
+            <flux:table.column>{{ __('Link rotator URL') }}</flux:table.column>
             <flux:table.column>{{ __('Type') }}</flux:table.column>
             <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
             <flux:table.column>{{ __('Unique Hits') }}</flux:table.column>
@@ -480,7 +480,7 @@ new #[Title('Rotators')] class extends Component
             <flux:table.row :key="$rotator->id">
                 <flux:table.cell>{{ $rotator->created_at?->format('Y-m-d H:i') }}</flux:table.cell>
                 <flux:table.cell>
-                    @php($rotatorUrl = route('rotators.redirect', $rotator->rotator_slug))
+                    @php($rotatorUrl = route('linkrotators.redirect', $rotator->rotator_slug))
 
                     <div class="flex max-w-md items-center gap-2">
                         <flux:link href="{{ $rotatorUrl }}" target="_blank" rel="noreferrer" class="block min-w-0 truncate">
@@ -494,7 +494,7 @@ new #[Title('Rotators')] class extends Component
                                 icon="clipboard-document"
                                 type="button"
                                 class="shrink-0"
-                                x-on:click="navigator.clipboard.writeText(@js($rotatorUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Rotator URL copied.')) }))"
+                                x-on:click="navigator.clipboard.writeText(@js($rotatorUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Link rotator URL copied.')) }))"
                                 :aria-label="__('Copy rotator URL')" />
                         </flux:tooltip>
                     </div>
@@ -514,7 +514,7 @@ new #[Title('Rotators')] class extends Component
                 </flux:table.cell>
                 <flux:table.cell align="end">
                     <div class="flex justify-end gap-3">
-                        <flux:link :href="route('rotators.stats', $rotator->rotator_slug)" wire:navigate>
+                        <flux:link :href="route('linkrotators.stats', $rotator->rotator_slug)" wire:navigate>
                             {{ __('Stats') }}
                         </flux:link>
                         <flux:link wire:click.prevent="manageTrackers({{ $rotator->id }})" class="cursor-pointer">

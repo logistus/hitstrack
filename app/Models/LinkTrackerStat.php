@@ -4,9 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class TrackerStat extends Model
+class LinkTrackerStat extends Model
 {
     const UPDATED_AT = null; // updated_at sütunu yok, Eloquent güncellemeye çalışmasın
+
+    protected $table = 'tracker_stats';
 
     protected $fillable = [
         'tracker_id',
@@ -20,11 +22,11 @@ class TrackerStat extends Model
 
     public function tracker()
     {
-        return $this->belongsTo(Tracker::class);
+        return $this->belongsTo(LinkTracker::class, 'tracker_id');
     }
 
     public function rotator()
     {
-        return $this->belongsTo(Rotator::class);
+        return $this->belongsTo(LinkRotator::class, 'rotator_id');
     }
 }

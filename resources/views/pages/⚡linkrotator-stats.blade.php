@@ -1,7 +1,7 @@
 <?php
 
-use App\Models\Tracker;
-use App\Models\TrackerStat;
+use App\Models\LinkRotator;
+use App\Models\LinkRotatorStat;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
@@ -9,13 +9,13 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-new #[Title('Tracker stats')] class extends Component
+new #[Title('Link rotator stats')] class extends Component
 {
     use WithPagination;
 
     public string $slug = '';
 
-    public int $trackerId = 0;
+    public int $rotatorId = 0;
 
     public string $sortField = 'total_hits';
 
@@ -26,16 +26,16 @@ new #[Title('Tracker stats')] class extends Component
     public function mount(string $slug): void
     {
         $this->slug = $slug;
-        $this->trackerId = Tracker::query()
+        $this->rotatorId = LinkRotator::query()
             ->where('user_id', Auth::id())
-            ->where('tracker_slug', $slug)
+            ->where('rotator_slug', $slug)
             ->firstOrFail()
             ->id;
     }
 
     public function refreshStats(): void
     {
-        $this->dispatch('tracker-chart-updated', chartData: $this->freshChartData());
+        $this->dispatch('rotator-chart-updated', chartData: $this->freshChartData());
     }
 
     public function updatedReferrerSearch(): void
@@ -63,23 +63,23 @@ new #[Title('Tracker stats')] class extends Component
 
     public function with(): array
     {
-        $tracker = $this->tracker();
-        $dailyHits = $this->dailyHits($tracker);
+        $rotator = $this->rotator();
+        $dailyHits = $this->dailyHits($rotator);
 
         return [
-            'tracker' => $tracker,
-            'summaryStats' => $this->summaryStats($tracker),
-            'breakdownStats' => $this->breakdownStats($tracker),
+            'rotator' => $rotator,
+            'summaryStats' => $this->summaryStats($rotator),
+            'breakdownStats' => $this->breakdownStats($rotator),
             'chartData' => $dailyHits['chartData'],
             'maxHits' => $dailyHits['maxHits'],
-            'dailyHitRecords' => $this->dailyHitRecords($tracker),
-            'referrerStats' => $this->referrerStats($tracker),
+            'dailyHitRecords' => $this->dailyHitRecords($rotator),
+            'referrerStats' => $this->referrerStats($rotator),
         ];
     }
 
     public function freshChartData(): array
     {
-        return $this->dailyHits($this->tracker())['chartData'];
+        return $this->dailyHits($this->rotator())['chartData'];
     }
 
     public function referrerHref(?string $refUrl): ?string
@@ -95,24 +95,24 @@ new #[Title('Tracker stats')] class extends Component
         return 'https://'.$refUrl;
     }
 
-    private function tracker(): Tracker
+    private function rotator(): LinkRotator
     {
-        return Tracker::query()
+        return LinkRotator::query()
             ->where('user_id', Auth::id())
-            ->whereKey($this->trackerId)
+            ->whereKey($this->rotatorId)
             ->firstOrFail();
     }
 
-    private function dailyHits(Tracker $tracker): array
+    private function dailyHits(LinkRotator $rotator): array
     {
         $start = now()->subDays(29)->startOfDay();
         $end = now()->endOfDay();
 
-        $hitsByDay = TrackerStat::query()
+        $hitsByDay = LinkRotatorStat::query()
             ->selectRaw('DATE(created_at) as hit_date')
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->where('tracker_id', $tracker->id)
+            ->where('rotator_id', $rotator->id)
             ->whereBetween('created_at', [$start, $end])
             ->groupByRaw('DATE(created_at)')
             ->get()
@@ -138,47 +138,28 @@ new #[Title('Tracker stats')] class extends Component
         ];
     }
 
-    private function summaryStats(Tracker $tracker): array
+    private function summaryStats(LinkRotator $rotator): array
     {
         return [
-            'total_hits' => TrackerStat::query()
-                ->where('tracker_id', $tracker->id)
+            'total_hits' => LinkRotatorStat::query()
+                ->where('rotator_id', $rotator->id)
                 ->count(),
-            'unique_hits' => TrackerStat::query()
-                ->where('tracker_id', $tracker->id)
+            'unique_hits' => LinkRotatorStat::query()
+                ->where('rotator_id', $rotator->id)
                 ->distinct('ip_address')
                 ->count('ip_address'),
         ];
     }
 
-    private function breakdownStats(Tracker $tracker): array
-    {
-        return [
-            'device_types' => $this->groupedStatCounts($tracker, 'device_type'),
-            'operating_systems' => $this->groupedStatCounts($tracker, 'operating_system'),
-            'browsers' => $this->groupedStatCounts($tracker, 'browser'),
-        ];
-    }
-
-    private function groupedStatCounts(Tracker $tracker, string $field)
-    {
-        return TrackerStat::query()
-            ->selectRaw("COALESCE({$field}, ?) as label, COUNT(*) as total", [__('Unknown')])
-            ->where('tracker_id', $tracker->id)
-            ->groupBy('label')
-            ->orderByDesc('total')
-            ->get();
-    }
-
-    private function referrerStats(Tracker $tracker)
+    private function referrerStats(LinkRotator $rotator)
     {
         $search = trim($this->referrerSearch);
 
-        return TrackerStat::query()
+        return LinkRotatorStat::query()
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->where('tracker_id', $tracker->id)
+            ->where('rotator_id', $rotator->id)
             ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
@@ -186,13 +167,32 @@ new #[Title('Tracker stats')] class extends Component
             ->paginate(25, pageName: 'referrerPage');
     }
 
-    private function dailyHitRecords(Tracker $tracker)
+    private function breakdownStats(LinkRotator $rotator): array
     {
-        return TrackerStat::query()
+        return [
+            'device_types' => $this->groupedStatCounts($rotator, 'device_type'),
+            'operating_systems' => $this->groupedStatCounts($rotator, 'operating_system'),
+            'browsers' => $this->groupedStatCounts($rotator, 'browser'),
+        ];
+    }
+
+    private function groupedStatCounts(LinkRotator $rotator, string $field)
+    {
+        return LinkRotatorStat::query()
+            ->selectRaw("COALESCE({$field}, ?) as label, COUNT(*) as total", [__('Unknown')])
+            ->where('rotator_id', $rotator->id)
+            ->groupBy('label')
+            ->orderByDesc('total')
+            ->get();
+    }
+
+    private function dailyHitRecords(LinkRotator $rotator)
+    {
+        return LinkRotatorStat::query()
             ->selectRaw('DATE(created_at) as hit_date')
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->where('tracker_id', $tracker->id)
+            ->where('rotator_id', $rotator->id)
             ->groupByRaw('DATE(created_at)')
             ->orderByDesc('hit_date')
             ->simplePaginate(25, pageName: 'dailyHitsPage');
@@ -202,26 +202,15 @@ new #[Title('Tracker stats')] class extends Component
 
 <section
     class="container mx-auto space-y-8"
-    x-data="{ activeTab: 'overview' }"
-    data-tracker-stats-root>
+    x-data="{ activeTab: 'overview' }">
     <div class="flex items-start justify-between gap-4">
         <div class="space-y-2">
-            <flux:heading class="sr-only">{{ __('Tracker stats') }}</flux:heading>
-            <flux:heading size="xl">{{ __('Tracker stats') }}</flux:heading>
-            <flux:subheading>{{ route('trackers.redirect', $tracker->tracker_slug) }}</flux:subheading>
-            <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                <span class="text-zinc-500 dark:text-zinc-400">{{ __('Target URL') }}:</span>
-                <flux:link
-                    href="{{ $tracker->target_url }}"
-                    target="_blank"
-                    rel="noreferrer"
-                    class="block min-w-0 max-w-xl truncate">
-                    {{ $tracker->target_url }}
-                </flux:link>
-            </div>
+            <flux:heading class="sr-only">{{ __('Link rotator stats') }}</flux:heading>
+            <flux:heading size="xl">{{ __('Link rotator stats') }}</flux:heading>
+            <flux:subheading>{{ route('linkrotators.redirect', $rotator->rotator_slug) }}</flux:subheading>
         </div>
 
-        <flux:button variant="filled" :href="route('trackers')" wire:navigate>
+        <flux:button variant="filled" :href="route('linkrotators')" wire:navigate>
             {{ __('Back') }}
         </flux:button>
     </div>
@@ -248,7 +237,7 @@ new #[Title('Tracker stats')] class extends Component
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
                 :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
-                @click="activeTab = 'overview'; $nextTick(() => document.dispatchEvent(new CustomEvent('tracker-chart-resize')))">
+                @click="activeTab = 'overview'; $nextTick(() => document.dispatchEvent(new CustomEvent('rotator-chart-resize')))">
                 {{ __('Overview') }}
             </button>
 
@@ -282,7 +271,7 @@ new #[Title('Tracker stats')] class extends Component
                 <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" wire:ignore>
                     <div class="h-80">
                         <canvas
-                            data-tracker-chart
+                            data-rotator-chart
                             data-chart='@json($chartData)'
                             data-total-hits-label="{{ __('Total hits') }}"
                             data-unique-hits-label="{{ __('Unique hits') }}"></canvas>
@@ -338,7 +327,7 @@ new #[Title('Tracker stats')] class extends Component
 
                 <flux:table.rows>
                     @forelse ($dailyHitRecords as $stat)
-                    <flux:table.row wire:key="tracker-daily-hit-{{ $stat->hit_date }}">
+                    <flux:table.row wire:key="rotator-daily-hit-{{ $stat->hit_date }}">
                         <flux:table.cell>{{ \Carbon\Carbon::parse($stat->hit_date)->format('Y-m-d') }}</flux:table.cell>
                         <flux:table.cell>{{ number_format($stat->total_hits) }}</flux:table.cell>
                         <flux:table.cell>{{ number_format($stat->unique_hits) }}</flux:table.cell>
@@ -401,7 +390,7 @@ new #[Title('Tracker stats')] class extends Component
 
                     <flux:table.rows>
                         @forelse ($referrerStats as $stat)
-                        <flux:table.row wire:key="tracker-referrer-{{ md5($stat->ref_url ?: 'direct') }}">
+                        <flux:table.row wire:key="rotator-referrer-{{ md5($stat->ref_url ?: 'direct') }}">
                             <flux:table.cell>
                                 @if ($href = $this->referrerHref($stat->ref_url))
                                 <flux:link href="{{ $href }}" target="_blank" rel="noreferrer" class="block max-w-md truncate">
@@ -441,7 +430,7 @@ new #[Title('Tracker stats')] class extends Component
                 return;
             }
 
-            const canvas = $wire.$el.querySelector('[data-tracker-chart]');
+            const canvas = $wire.$el.querySelector('[data-rotator-chart]');
 
             if (!canvas) {
                 return;
@@ -453,20 +442,20 @@ new #[Title('Tracker stats')] class extends Component
             const grid = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'rgba(255,255,255,.10)' : 'rgba(39,39,42,.10)';
             const text = window.matchMedia('(prefers-color-scheme: dark)').matches ? '#d4d4d8' : '#52525b';
 
-            if (canvas._trackerChart) {
-                canvas._trackerChart.destroy();
+            if (canvas._rotatorChart) {
+                canvas._rotatorChart.destroy();
             }
 
             const applyChartData = (freshChartData) => {
                 chartData = freshChartData;
                 canvas.dataset.chart = JSON.stringify(freshChartData);
-                canvas._trackerChart.data.labels = chartData.labels;
-                canvas._trackerChart.data.datasets[0].data = chartData.totals;
-                canvas._trackerChart.data.datasets[1].data = chartData.uniques;
-                canvas._trackerChart.update();
+                canvas._rotatorChart.data.labels = chartData.labels;
+                canvas._rotatorChart.data.datasets[0].data = chartData.totals;
+                canvas._rotatorChart.data.datasets[1].data = chartData.uniques;
+                canvas._rotatorChart.update();
             };
 
-            canvas._trackerChart = new Chart(canvas, {
+            canvas._rotatorChart = new Chart(canvas, {
                 type: 'line',
                 data: {
                     labels: chartData.labels,
@@ -545,11 +534,11 @@ new #[Title('Tracker stats')] class extends Component
                 },
             });
 
-            if (canvas._trackerChartUpdateListener) {
-                document.removeEventListener('tracker-chart-updated', canvas._trackerChartUpdateListener);
+            if (canvas._rotatorChartUpdateListener) {
+                document.removeEventListener('rotator-chart-updated', canvas._rotatorChartUpdateListener);
             }
 
-            canvas._trackerChartUpdateListener = (event) => {
+            canvas._rotatorChartUpdateListener = (event) => {
                 const detail = Array.isArray(event.detail) ? event.detail[0] : event.detail;
                 const freshChartData = detail?.chartData;
 
@@ -560,17 +549,17 @@ new #[Title('Tracker stats')] class extends Component
                 applyChartData(freshChartData);
             };
 
-            document.addEventListener('tracker-chart-updated', canvas._trackerChartUpdateListener);
+            document.addEventListener('rotator-chart-updated', canvas._rotatorChartUpdateListener);
 
-            if (canvas._trackerChartResizeListener) {
-                document.removeEventListener('tracker-chart-resize', canvas._trackerChartResizeListener);
+            if (canvas._rotatorChartResizeListener) {
+                document.removeEventListener('rotator-chart-resize', canvas._rotatorChartResizeListener);
             }
 
-            canvas._trackerChartResizeListener = () => {
-                canvas._trackerChart.resize();
+            canvas._rotatorChartResizeListener = () => {
+                canvas._rotatorChart.resize();
             };
 
-            document.addEventListener('tracker-chart-resize', canvas._trackerChartResizeListener);
+            document.addEventListener('rotator-chart-resize', canvas._rotatorChartResizeListener);
         };
 
         boot();

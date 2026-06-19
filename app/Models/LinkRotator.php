@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Rotator extends Model
+class LinkRotator extends Model
 {
+    protected $table = 'rotators';
+
     protected $fillable = ['user_id', 'rotator_slug', 'rotation_type'];
 
     public function user()
@@ -15,17 +17,17 @@ class Rotator extends Model
 
     public function trackers()
     {
-        return $this->belongsToMany(Tracker::class)
+        return $this->belongsToMany(LinkTracker::class, 'rotator_tracker', 'rotator_id', 'tracker_id')
             ->withPivot(['weight', 'order_column'])
             ->withTimestamps();
     }
 
     public function stats()
     {
-        return $this->hasMany(RotatorStat::class);
+        return $this->hasMany(LinkRotatorStat::class, 'rotator_id');
     }
 
-    public function pickNextTracker(): ?Tracker
+    public function pickNextTracker(): ?LinkTracker
     {
         $trackers = $this->trackers()->get();
 

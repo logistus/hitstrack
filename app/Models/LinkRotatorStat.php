@@ -4,8 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class RotatorStat extends Model
+class LinkRotatorStat extends Model
 {
+    protected $table = 'rotator_stats';
+
     protected $fillable = [
         'rotator_id',
         'tracker_id',
@@ -18,11 +20,11 @@ class RotatorStat extends Model
 
     public function rotator()
     {
-        return $this->belongsTo(Rotator::class);
+        return $this->belongsTo(LinkRotator::class, 'rotator_id');
     }
 
     public function tracker()
     {
-        return $this->belongsTo(Tracker::class);
+        return $this->belongsTo(LinkTracker::class, 'tracker_id');
     }
 }

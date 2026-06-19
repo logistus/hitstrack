@@ -21,16 +21,16 @@
         <div class="container mx-auto flex min-h-14 items-center">
             <flux:sidebar.toggle class="lg:hidden mr-2" icon="bars-2" inset="left" />
 
-            <x-app-logo href="{{ route('trackers') }}" wire:navigate />
+            <x-app-logo href="{{ route('linktrackers') }}" wire:navigate />
 
             <flux:navbar class="-mb-px max-lg:hidden">
                 <flux:navbar.item :href="route('home')" wire:navigate>
                     {{ __('Home') }}
                 </flux:navbar.item>
-                <flux:navbar.item :href="route('trackers')" :current="request()->routeIs('trackers')" wire:navigate>
+                <flux:navbar.item :href="route('linktrackers')" :current="request()->routeIs('linktrackers*')" wire:navigate>
                     {{ __('Link Trackers') }}
                 </flux:navbar.item>
-                <flux:navbar.item :href="route('rotators')" :current="request()->routeIs('rotators')" wire:navigate>
+                <flux:navbar.item :href="route('linkrotators')" :current="request()->routeIs('linkrotators*')" wire:navigate>
                     {{ __('Link Rotators') }}
                 </flux:navbar.item>
             </flux:navbar>
@@ -83,7 +83,7 @@
     <!-- Mobile Menu -->
     <flux:sidebar collapsible="mobile" sticky class="lg:hidden border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:sidebar.header>
-            <x-app-logo :sidebar="true" href="{{ route('trackers') }}" wire:navigate />
+            <x-app-logo :sidebar="true" href="{{ route('linktrackers') }}" wire:navigate />
             <flux:sidebar.collapse class="in-data-flux-sidebar-on-desktop:not-in-data-flux-sidebar-collapsed-desktop:-mr-2" />
         </flux:sidebar.header>
 
@@ -92,10 +92,10 @@
                 <flux:sidebar.item :href="route('home')" wire:navigate>
                     {{ __('Home')  }}
                 </flux:sidebar.item>
-                <flux:sidebar.item :href="route('trackers')" :current="request()->routeIs('trackers')" wire:navigate>
+                <flux:sidebar.item :href="route('linktrackers')" :current="request()->routeIs('linktrackers*')" wire:navigate>
                     {{ __('Link Trackers')  }}
                 </flux:sidebar.item>
-                <flux:sidebar.item :href="route('rotators')" :current="request()->routeIs('rotators')" wire:navigate>
+                <flux:sidebar.item :href="route('linkrotators')" :current="request()->routeIs('linkrotators*')" wire:navigate>
                     {{ __('Link Rotators')  }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
