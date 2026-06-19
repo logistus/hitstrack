@@ -2,211 +2,160 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FoodGame Cash Prize Splash</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Food Game — Cook. Collect. Win Cash.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:ital,wght@0,400;0,600;0,800;1,400&display=swap"
+    rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --tomato: #e8340a;
+      --tomato-deep: #9e2007;
+      --saffron: #f5a623;
+      --lemon: #ffe234;
+      --basil: #2d6a2f;
+      --basil-light: #4caf52;
+      --cream: #fff8ee;
+      --cream-dark: #f5e6cc;
+      --brown: #3d1c02;
+      --text-body: #4a2800;
+      --white: #ffffff;
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden
     }
 
     body {
-      min-height: 100vh;
-      font-family: Arial, Helvetica, sans-serif;
-      background:
-        radial-gradient(circle at 20% 20%, rgba(0, 255, 153, 0.28), transparent 28%),
-        radial-gradient(circle at 80% 80%, rgba(255, 215, 0, 0.28), transparent 30%),
-        linear-gradient(135deg, #03160c, #010403 65%, #000);
-      color: #fff;
-      overflow: hidden;
-    }
-
-    .wrapper {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 0.9fr 1.1fr;
-      align-items: center;
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 24px;
-      gap: 28px;
-      position: relative;
-    }
-
-    .ticket {
-      position: relative;
-      background: linear-gradient(180deg, #fff7c2, #ffd84d);
-      color: #102016;
-      border-radius: 28px;
-      padding: 30px 22px;
-      text-align: center;
-      box-shadow:
-        0 18px 0 #7d5b00,
-        0 0 45px rgba(255, 215, 0, 0.65);
-      transform: rotate(-3deg);
-    }
-
-    .ticket:before,
-    .ticket:after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      width: 42px;
-      height: 42px;
-      background: #03160c;
-      border-radius: 50%;
-      transform: translateY(-50%);
-    }
-
-    .ticket:before {
-      left: -21px;
-    }
-
-    .ticket:after {
-      right: -21px;
-    }
-
-    .ticket-label {
-      font-size: 15px;
-      font-weight: 1000;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 14px;
-    }
-
-    .cash {
-      font-size: clamp(56px, 9vw, 92px);
-      font-weight: 1000;
-      line-height: 0.9;
-      color: #087c37;
-      text-shadow: 3px 3px 0 #fff;
-    }
-
-    .cash span {
-      display: block;
-      font-size: clamp(24px, 4vw, 38px);
-      color: #111;
-      margin-top: 8px;
-    }
-
-    .ticket-small {
-      margin-top: 18px;
-      font-weight: 900;
-      font-size: 18px;
-    }
-
-    .main {
-      text-align: left;
-      position: relative;
-      z-index: 3;
-    }
-
-    .badge {
-      display: inline-block;
-      background: #00ff99;
-      color: #022010;
-      padding: 9px 16px;
-      border-radius: 999px;
-      font-weight: 1000;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 18px;
-    }
-
-    h1 {
-      font-size: clamp(42px, 8vw, 82px);
-      line-height: 0.9;
-      text-transform: uppercase;
-      margin-bottom: 18px;
-    }
-
-    h1 span {
-      color: #ffd700;
-    }
-
-    .sub {
-      font-size: clamp(20px, 3vw, 30px);
-      font-weight: 900;
-      line-height: 1.2;
-      margin-bottom: 22px;
-    }
-
-    .steps {
-      display: grid;
-      gap: 10px;
-      margin-bottom: 24px;
-      max-width: 520px;
-    }
-
-    .step {
+      font-family: 'Nunito', sans-serif;
+      background: var(--cream);
+      color: var(--text-body);
       display: flex;
       align-items: center;
-      gap: 12px;
-      background: rgba(255, 255, 255, 0.08);
-      border-left: 5px solid #ffd700;
-      padding: 12px 14px;
-      font-size: 17px;
-      font-weight: 900;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
     }
 
-    .step strong {
-      color: #00ff99;
-    }
-
-    .cta {
-      display: inline-block;
-      background: linear-gradient(180deg, #00ff99, #00a85f);
-      color: #00140a;
-      text-decoration: none;
-      font-size: clamp(22px, 4vw, 34px);
-      font-weight: 1000;
-      text-transform: uppercase;
-      padding: 18px 34px;
-      border-radius: 16px;
-      box-shadow:
-        0 8px 0 #005c34,
-        0 0 28px rgba(0, 255, 153, 0.8);
-      animation: beat 1.1s infinite;
-    }
-
-    .floating-money {
+    /* ── BACKGROUND ── */
+    .bg {
       position: fixed;
-      font-size: 28px;
-      font-weight: 1000;
-      color: #00ff99;
-      text-shadow: 0 0 12px rgba(0, 255, 153, 0.9);
-      opacity: 0;
-      animation: money 5s infinite;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 10% 50%, rgba(245, 166, 35, 0.2) 0%, transparent 60%),
+        radial-gradient(ellipse 55% 50% at 90% 40%, rgba(232, 52, 10, 0.13) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 50% 100%, rgba(76, 175, 82, 0.1) 0%, transparent 60%),
+        var(--cream);
     }
 
-    .m1 {
-      left: 8%;
-      top: 75%;
-      animation-delay: 0s;
+    /* dotted pattern */
+    .dots {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: radial-gradient(circle, rgba(232, 52, 10, 0.1) 1.5px, transparent 1.5px);
+      background-size: 32px 32px;
     }
 
-    .m2 {
-      left: 76%;
-      top: 18%;
-      animation-delay: 1.1s;
+    /* ── FLOATING INGREDIENTS CANVAS ── */
+    canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
     }
 
-    .m3 {
-      left: 86%;
-      top: 70%;
-      animation-delay: 2.2s;
+    /* ── PLATE RING (decorative) ── */
+    .plate {
+      position: fixed;
+      width: 560px;
+      height: 560px;
+      right: -140px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-radius: 50%;
+      border: 2px dashed rgba(232, 52, 10, 0.12);
+      pointer-events: none;
+      z-index: 0;
     }
 
-    .m4 {
-      left: 12%;
-      top: 18%;
-      animation-delay: 3.3s;
+    .plate::before {
+      content: '';
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      border: 1px dashed rgba(245, 166, 35, 0.15);
     }
 
-    @keyframes beat {
+    /* ── CARD ── */
+    .card {
+      position: relative;
+      z-index: 10;
+      max-width: 680px;
+      width: 100%;
+      padding: 0 2rem;
+      text-align: center;
+      animation: popUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    @keyframes popUp {
+      from {
+        opacity: 0;
+        transform: scale(0.94) translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* ── CHEF BADGE ── */
+    .chef-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--basil);
+      color: #fff;
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      padding: 0.42rem 1.2rem 0.42rem 0.9rem;
+      border-radius: 999px;
+      margin-bottom: 1.8rem;
+      animation: popUp 0.7s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+      box-shadow: 0 4px 14px rgba(45, 106, 47, 0.3);
+    }
+
+    .chef-hat {
+      font-size: 1.1rem;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--lemon);
+      box-shadow: 0 0 6px var(--lemon);
+      animation: pulse 1.4s infinite;
+    }
+
+    @keyframes pulse {
 
       0%,
       100% {
@@ -214,52 +163,352 @@
       }
 
       50% {
-        transform: scale(1.06);
+        transform: scale(0.55);
       }
     }
 
-    @keyframes money {
-      0% {
-        opacity: 0;
-        transform: translateY(35px) scale(.8);
-      }
+    /* ── HEADLINE ── */
+    .headline {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(3.6rem, 9.5vw, 7.2rem);
+      line-height: 0.95;
+      letter-spacing: 0.01em;
+      color: var(--tomato);
+      margin-bottom: 0.18em;
+      animation: popUp 0.7s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+      text-shadow: 3px 4px 0 rgba(158, 32, 7, 0.18), 0 0 60px rgba(232, 52, 10, 0.12);
+    }
 
-      14% {
-        opacity: 1;
-        transform: translateY(0) scale(1.15);
-      }
+    .headline .line2 {
+      color: var(--brown);
+      display: block;
+    }
 
-      32% {
-        opacity: 0;
-        transform: translateY(-70px) scale(1);
-      }
+    .headline .accent {
+      color: var(--saffron);
+      display: inline-block;
+      position: relative;
+    }
 
-      100% {
-        opacity: 0;
+    /* underline squiggle */
+    .headline .accent::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 6'%3E%3Cpath d='M0 4 Q7.5 0 15 4 Q22.5 8 30 4 Q37.5 0 45 4 Q52.5 8 60 4' fill='none' stroke='%23f5a623' stroke-width='2'/%3E%3C/svg%3E") repeat-x center;
+      background-size: 30px 4px;
+      animation: waveIn 0.5s 0.8s ease both;
+      transform-origin: left;
+      transform: scaleX(0);
+    }
+
+    @keyframes waveIn {
+      to {
+        transform: scaleX(1);
       }
     }
 
-    @media (max-width: 760px) {
+    /* ── SUBLINE ── */
+    .subline {
+      font-size: clamp(1rem, 2.2vw, 1.3rem);
+      font-weight: 400;
+      color: var(--text-body);
+      opacity: 0.65;
+      line-height: 1.6;
+      margin-bottom: 2.2rem;
+      animation: popUp 0.7s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .subline strong {
+      color: var(--tomato);
+      font-weight: 800;
+      opacity: 1;
+    }
+
+    /* ── STATS ── */
+    .stats {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2.2rem;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid rgba(232, 52, 10, 0.12);
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 24px rgba(232, 52, 10, 0.08);
+      animation: popUp 0.7s 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .stat {
+      flex: 1;
+      padding: 0.9rem 0.5rem;
+      border-right: 1px solid rgba(232, 52, 10, 0.1);
+      position: relative;
+    }
+
+    .stat:last-child {
+      border-right: none;
+    }
+
+    .stat-icon {
+      font-size: 1.3rem;
+      display: block;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-val {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(1.3rem, 3vw, 1.9rem);
+      line-height: 1;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .stat:nth-child(1) .stat-val {
+      color: var(--tomato);
+    }
+
+    .stat:nth-child(2) .stat-val {
+      color: var(--basil);
+    }
+
+    .stat:nth-child(3) .stat-val {
+      color: var(--saffron);
+    }
+
+    .stat:nth-child(4) .stat-val {
+      color: var(--tomato-deep);
+    }
+
+    .stat-key {
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-body);
+      opacity: 0.4;
+      display: block;
+    }
+
+    /* ── CTA ── */
+    .cta-group {
+      display: flex;
+      gap: 0.8rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: popUp 0.7s 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .btn-cook {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      color: #fff;
+      background: var(--tomato);
+      border: none;
+      padding: 0.95rem 2.6rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 0 var(--tomato-deep), 0 6px 20px rgba(232, 52, 10, 0.3);
+    }
+
+    .btn-cook:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 7px 0 var(--tomato-deep), 0 12px 28px rgba(232, 52, 10, 0.35);
+    }
+
+    .btn-cook:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 var(--tomato-deep), 0 4px 12px rgba(232, 52, 10, 0.3);
+    }
+
+    .btn-cook::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40%;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 12px 12px 50% 50%;
+      pointer-events: none;
+    }
+
+    .btn-learn {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      color: var(--tomato);
+      background: rgba(255, 255, 255, 0.8);
+      border: 2px solid rgba(232, 52, 10, 0.25);
+      padding: 0.95rem 2rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      border-radius: 12px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+    }
+
+    .btn-learn:hover {
+      background: #fff;
+      border-color: var(--tomato);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(232, 52, 10, 0.15);
+    }
+
+    /* ── FEATURE PILLS ── */
+    .pills {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1.8rem;
+      animation: popUp 0.7s 0.58s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.32rem 0.85rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.65);
+      border: 1.5px solid rgba(232, 52, 10, 0.15);
+      color: var(--text-body);
+      opacity: 0.75;
+    }
+
+    /* ── BOTTOM TICKER ── */
+    .ticker {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      background: var(--tomato);
+      padding: 0.5rem 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .ticker-track {
+      display: inline-block;
+      animation: scroll 25s linear infinite;
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .ticker-track span {
+      color: rgba(255, 255, 255, 0.4);
+      margin: 0 1.5rem;
+    }
+
+    @keyframes scroll {
+      from {
+        transform: translateX(100vw);
+      }
+
+      to {
+        transform: translateX(-100%);
+      }
+    }
+
+    /* ── INVITED BY BOX ── */
+    .invite-box {
+      position: fixed;
+      bottom: 4.1rem;
+      right: 1.1rem;
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1.5px solid rgba(232, 52, 10, 0.18);
+      border-radius: 999px;
+      padding: 0.4rem 0.9rem 0.4rem 0.4rem;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 16px rgba(232, 52, 10, 0.1);
+      animation: popUp 0.7s 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .invite-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid var(--saffron);
+      object-fit: cover;
+      display: block;
+    }
+
+    .invite-text {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-body);
+      opacity: 0.75;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+
+    .invite-text strong {
+      color: var(--tomato);
+      font-weight: 800;
+    }
+
+    @media(max-width:540px) {
+      .invite-box {
+        bottom: 0.75rem;
+        right: 0.75rem;
+        padding: 0.32rem 0.75rem 0.32rem 0.32rem;
+      }
+
+      .invite-avatar {
+        width: 24px;
+        height: 24px;
+      }
+
+      .invite-text {
+        font-size: 0.62rem;
+      }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:540px) {
+
+      html,
       body {
-        overflow: auto;
+        overflow-y: auto;
       }
 
-      .wrapper {
-        grid-template-columns: 1fr;
-        text-align: center;
+      body {
+        align-items: flex-start;
+        padding: 2.5rem 0 5rem;
       }
 
-      .main {
-        text-align: center;
+      .card {
+        padding: 0 1.25rem;
       }
 
-      .ticket {
-        transform: rotate(0);
+      .plate {
+        display: none;
       }
 
-      .steps {
-        margin-left: auto;
-        margin-right: auto;
+      .stats {
+        flex-wrap: wrap;
+      }
+
+      .stat {
+        min-width: 45%;
       }
     }
   </style>
@@ -267,49 +516,151 @@
 
 <body>
 
-  <div class="floating-money m1">+$</div>
-  <div class="floating-money m2">WIN</div>
-  <div class="floating-money m3">CASH</div>
-  <div class="floating-money m4">PRIZE</div>
+  <div class="bg"></div>
+  <div class="dots"></div>
+  <div class="plate"></div>
+  <canvas id="c"></canvas>
 
-  <div class="wrapper">
-    <div class="ticket">
-      <div class="ticket-label">Weekly Prize Pool</div>
-      <div class="cash">
-        $70+
-        <span>Cash Prizes</span>
+  <div class="card">
+
+    <div class="chef-badge">
+      <span class="chef-hat">👨‍🍳</span>
+      319 Traffic Exchanges · Free to Play
+      <span class="badge-dot"></span>
+    </div>
+
+    <h1 class="headline">
+      Surf. Cook.<br>
+      <span class="line2">Win <span class="accent">Cash.</span></span>
+    </h1>
+
+    <p class="subline">
+      Collect ingredients across 319 traffic exchanges,<br>
+      cook recipes, climb the leaderboard — and earn <strong>$70+ real cash every week.</strong>
+    </p>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-icon">🌐</span>
+        <span class="stat-val">319</span>
+        <span class="stat-key">TE Sites</span>
       </div>
-      <div class="ticket-small">
-        Surf. Collect. Cook. Compete.
+      <div class="stat">
+        <span class="stat-icon">💵</span>
+        <span class="stat-val">$70+</span>
+        <span class="stat-key">Weekly Cash</span>
+      </div>
+      <div class="stat">
+        <span class="stat-icon">🍳</span>
+        <span class="stat-val">100s</span>
+        <span class="stat-key">Recipes</span>
+      </div>
+      <div class="stat">
+        <span class="stat-icon">🎯</span>
+        <span class="stat-val">Free</span>
+        <span class="stat-key">Forever</span>
       </div>
     </div>
 
-    <main class="main">
-      <div class="badge">FoodGame.surf</div>
+    <div class="cta-group">
+      <a href="https://foodgame.surf/signup.php?rid=391" class="btn-cook" target="_blank">👨‍🍳 Start Cooking — Free</a>
+      <a href="https://foodgame.surf/play.php?rid=391" class="btn-learn" target="_blank">How It Works</a>
+    </div>
 
-      <h1>
-        Play For<br>
-        <span>Cash</span>
-      </h1>
+    <div class="pills">
+      <span class="pill">🥕 Collect Ingredients</span>
+      <span class="pill">📖 Learn Recipes</span>
+      <span class="pill">🏆 Weekly Winners</span>
+      <span class="pill">🛍️ Partner Shop</span>
+      <span class="pill">🔗 Downline Builder</span>
+      <span class="pill">🎰 Gold Lottery</span>
+    </div>
 
-      <div class="sub">
-        Collect ingredients while surfing traffic exchanges.
-        Cook recipes and compete for weekly cash prizes.
-      </div>
-
-      <div class="steps">
-        <div class="step">🍅 <strong>Collect</strong> ingredients</div>
-        <div class="step">🍳 <strong>Cook</strong> recipes</div>
-        <div class="step">🏆 <strong>Climb</strong> the leaderboard</div>
-        <div class="step">💵 <strong>Win</strong> weekly cash prizes</div>
-      </div>
-
-      <a class="cta" href="https://foodgame.surf/?rid=391" target="_blank">
-        Start Playing →
-      </a>
-    </main>
   </div>
 
+  <div class="ticker">
+    <div class="ticker-track">
+      👨‍🍳 Become the best chef on the internet!
+      <span>·</span>
+      🥦 Collect ingredients while you surf
+      <span>·</span>
+      🍜 Cook hundreds of recipes &amp; earn points
+      <span>·</span>
+      💵 $70+ in real cash prizes every single week
+      <span>·</span>
+      🌐 Play across 319 traffic exchanges
+      <span>·</span>
+      🏆 Weekly leaderboard winners get paid
+      <span>·</span>
+      🎰 Spend Gold in the Partner Shop
+      <span>·</span>
+      ✅ 100% Free — no hidden fees
+      <span>·</span>
+    </div>
+  </div>
+
+  <div class="invite-box">
+    <img class="invite-avatar" src="https://www.gravatar.com/avatar/0101c72c97a4bef379faf316240a89dd?s=64&d=identicon"
+      alt="Sinan">
+    <span class="invite-text">Invited by <strong>Sinan</strong></span>
+  </div>
+
+  <script>
+    // ── FLOATING INGREDIENTS ──
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resize();
+    window.addEventListener('resize', resize);
+
+    const ingredients = ['🍋', '🍊', '🥑', '🍅', '🥕', '🧅', '🍓', '🥦', '🌽', '🫑', '🍄', '🧄', '🍇', '🫐', '🥝', '🌶️', '🍞', '🧀'];
+
+    class Ingredient {
+      constructor(rush) {
+        this.reset(rush);
+      }
+      reset(rush) {
+        this.emoji = ingredients[Math.floor(Math.random() * ingredients.length)];
+        this.x = Math.random() * canvas.width;
+        this.y = rush ? Math.random() * canvas.height : canvas.height + 30;
+        this.size = 16 + Math.random() * 20;
+        this.vy = -(0.4 + Math.random() * 0.7);
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.rot = Math.random() * Math.PI * 2;
+        this.rotV = (Math.random() - 0.5) * 0.018;
+        this.opacity = 0.25 + Math.random() * 0.35;
+        this.wave = Math.random() * Math.PI * 2;
+      }
+      update() {
+        this.y += this.vy;
+        this.x += this.vx + Math.sin(this.wave) * 0.25;
+        this.wave += 0.015;
+        this.rot += this.rotV;
+        if (this.y < -40) this.reset(false);
+      }
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        ctx.font = `${this.size}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.emoji, 0, 0);
+        ctx.restore();
+      }
+    }
+
+    const items = Array.from({ length: 50 }, () => new Ingredient(true));
+
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      items.forEach(i => { i.update(); i.draw(); });
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
 </body>
 
 </html>
