@@ -28,10 +28,10 @@
                     {{ __('Home') }}
                 </flux:navbar.item>
                 <flux:navbar.item :href="route('trackers')" :current="request()->routeIs('trackers')" wire:navigate>
-                    {{ __('Trackers') }}
+                    {{ __('Link Trackers') }}
                 </flux:navbar.item>
                 <flux:navbar.item :href="route('rotators')" :current="request()->routeIs('rotators')" wire:navigate>
-                    {{ __('Rotators') }}
+                    {{ __('Link Rotators') }}
                 </flux:navbar.item>
             </flux:navbar>
 
@@ -93,10 +93,10 @@
                     {{ __('Home')  }}
                 </flux:sidebar.item>
                 <flux:sidebar.item :href="route('trackers')" :current="request()->routeIs('trackers')" wire:navigate>
-                    {{ __('Trackers')  }}
+                    {{ __('Link Trackers')  }}
                 </flux:sidebar.item>
                 <flux:sidebar.item :href="route('rotators')" :current="request()->routeIs('rotators')" wire:navigate>
-                    {{ __('Rotators')  }}
+                    {{ __('Link Rotators')  }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
         </flux:sidebar.nav>
