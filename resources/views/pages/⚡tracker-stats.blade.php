@@ -173,7 +173,7 @@ new #[Title('Tracker stats')] class extends Component
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
-            ->simplePaginate(25, pageName: 'referrerPage');
+            ->paginate(25, pageName: 'referrerPage');
     }
 
     private function dailyHitRecords(Tracker $tracker)
@@ -261,7 +261,11 @@ new #[Title('Tracker stats')] class extends Component
 
                 <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" wire:ignore>
                     <div class="h-80">
-                        <canvas data-tracker-chart data-chart='@json($chartData)'></canvas>
+                        <canvas
+                            data-tracker-chart
+                            data-chart='@json($chartData)'
+                            data-total-hits-label="{{ __('Total hits') }}"
+                            data-unique-hits-label="{{ __('Unique hits') }}"></canvas>
                     </div>
                 </div>
             </section>
@@ -284,7 +288,7 @@ new #[Title('Tracker stats')] class extends Component
                                     <span class="font-medium">{{ number_format($stat->total) }}</span>
                                 </div>
                                 <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                                    <div class="h-full rounded-full bg-blue-600" style="width: {{ $percent }}%"></div>
+                                    <div class="h-full rounded-full bg-blue-600" @style(["width: {$percent}%"])></div>
                                 </div>
                             </div>
                             @empty
@@ -439,7 +443,7 @@ new #[Title('Tracker stats')] class extends Component
                 data: {
                     labels: chartData.labels,
                     datasets: [{
-                            label: @js(__('Total hits')),
+                            label: canvas.dataset.totalHitsLabel,
                             data: chartData.totals,
                             borderColor: accent,
                             backgroundColor: 'rgba(37, 99, 235, .12)',
@@ -452,7 +456,7 @@ new #[Title('Tracker stats')] class extends Component
                             pointBorderWidth: 2,
                         },
                         {
-                            label: @js(__('Unique hits')),
+                            label: canvas.dataset.uniqueHitsLabel,
                             data: chartData.uniques,
                             borderColor: secondary,
                             backgroundColor: 'rgba(5, 150, 105, .10)',
