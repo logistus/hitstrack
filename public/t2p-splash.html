@@ -2,342 +2,510 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Time2Party Splash Page</title>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time2Party — Surf. Party. Win.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:ital,wght@0,400;0,600;0,800;1,400&display=swap"
+    rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
+    *,
+    *::before,
+    *::after {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --magenta: #e8108a;
+      --magenta-deep: #9e0a5e;
+      --purple: #7a3df5;
+      --gold: #f5a623;
+      --cyan: #1ac9d8;
+      --cream: #fff6ee;
+      --cream-dark: #f5e0ee;
+      --brown: #321047;
+      --text-body: #3a1450;
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden
     }
 
     body {
-      min-height: 100vh;
-      font-family: Arial, Helvetica, sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(255, 0, 204, 0.45), transparent 32%),
-        radial-gradient(circle at bottom right, rgba(0, 229, 255, 0.35), transparent 32%),
-        linear-gradient(135deg, #120019, #030014 60%, #000);
-      color: #fff;
-      overflow: hidden;
-    }
-
-    .splash {
-      min-height: 100vh;
-      max-width: 820px;
-      margin: 0 auto;
-      padding: 24px 16px;
+      font-family: 'Nunito', sans-serif;
+      background: var(--cream);
+      color: var(--text-body);
       display: flex;
       align-items: center;
       justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
       position: relative;
-      text-align: center;
     }
 
+    /* ── BACKGROUND ── */
+    .bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 70% 60% at 10% 50%, rgba(232, 16, 138, 0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 55% 50% at 90% 40%, rgba(122, 61, 245, 0.14) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 50% 100%, rgba(26, 201, 216, 0.1) 0%, transparent 60%),
+        var(--cream);
+    }
+
+    /* dotted pattern */
+    .dots {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image: radial-gradient(circle, rgba(232, 16, 138, 0.1) 1.5px, transparent 1.5px);
+      background-size: 32px 32px;
+    }
+
+    /* ── CONFETTI CANVAS ── */
+    canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* ── RING (decorative) ── */
+    .plate {
+      position: fixed;
+      width: 560px;
+      height: 560px;
+      right: -140px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-radius: 50%;
+      border: 2px dashed rgba(232, 16, 138, 0.12);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .plate::before {
+      content: '';
+      position: absolute;
+      inset: 18px;
+      border-radius: 50%;
+      border: 1px dashed rgba(122, 61, 245, 0.15);
+    }
+
+    /* ── CARD ── */
     .card {
       position: relative;
-      z-index: 5;
+      z-index: 10;
+      max-width: 680px;
       width: 100%;
-      padding: 34px 22px;
-      border-radius: 30px;
-      background: rgba(5, 0, 20, 0.74);
-      border: 2px solid rgba(0, 229, 255, 0.65);
-      box-shadow:
-        0 0 35px rgba(0, 229, 255, 0.55),
-        0 0 70px rgba(255, 0, 204, 0.35),
-        inset 0 0 35px rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(10px);
+      padding: 0 2rem;
+      text-align: center;
+      animation: popUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
-    .badge {
-      display: inline-block;
-      margin-bottom: 18px;
-      padding: 9px 18px;
-      border-radius: 999px;
-      background: linear-gradient(90deg, #ff00cc, #00e5ff);
-      color: #fff;
-      font-size: 14px;
-      font-weight: 900;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      animation: badgePulse 1.3s infinite;
-    }
-
-    .party {
-      font-size: 76px;
-      margin-bottom: 10px;
-      filter: drop-shadow(0 0 18px #ff00cc);
-      animation: float 2.2s ease-in-out infinite;
-    }
-
-    h1 {
-      font-size: clamp(38px, 7vw, 68px);
-      line-height: 0.95;
-      text-transform: uppercase;
-      margin-bottom: 18px;
-      color: #fff;
-      text-shadow:
-        0 0 12px #00e5ff,
-        0 0 22px #ff00cc;
-    }
-
-    h1 span {
-      color: #00e5ff;
-    }
-
-    .sub {
-      font-size: clamp(20px, 4vw, 31px);
-      font-weight: 900;
-      margin-bottom: 20px;
-    }
-
-    .sub strong {
-      color: #ffea00;
-    }
-
-    .rotating-text {
-      height: 36px;
-      margin: 18px 0;
-      font-size: clamp(22px, 4vw, 34px);
-      font-weight: 1000;
-      color: #ffea00;
-      text-shadow: 0 0 14px rgba(255, 234, 0, 0.9);
-    }
-
-    .features {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      max-width: 560px;
-      margin: 22px auto;
-    }
-
-    .feature {
-      padding: 11px 8px;
-      border-radius: 14px;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      font-weight: 900;
-      font-size: 15px;
-    }
-
-    .cta {
-      display: inline-block;
-      margin-top: 16px;
-      padding: 18px 34px;
-      border-radius: 18px;
-      background: linear-gradient(180deg, #ffea00, #ff8a00);
-      color: #130014;
-      text-decoration: none;
-      font-size: clamp(23px, 4vw, 34px);
-      font-weight: 1000;
-      text-transform: uppercase;
-      box-shadow:
-        0 8px 0 #8f3300,
-        0 0 28px rgba(255, 234, 0, 0.9);
-      animation: ctaBeat 1.05s infinite;
-    }
-
-    .note {
-      margin-top: 18px;
-      font-size: 15px;
-      opacity: 0.88;
-    }
-
-    /* Confetti */
-    .confetti {
-      position: fixed;
-      top: -20px;
-      width: 10px;
-      height: 18px;
-      opacity: 0.9;
-      animation: fall linear infinite;
-    }
-
-    .confetti:nth-child(1) {
-      left: 7%;
-      background: #ff00cc;
-      animation-duration: 4s;
-      animation-delay: 0s;
-    }
-
-    .confetti:nth-child(2) {
-      left: 15%;
-      background: #00e5ff;
-      animation-duration: 5.2s;
-      animation-delay: .4s;
-    }
-
-    .confetti:nth-child(3) {
-      left: 25%;
-      background: #ffea00;
-      animation-duration: 4.6s;
-      animation-delay: .9s;
-    }
-
-    .confetti:nth-child(4) {
-      left: 34%;
-      background: #ff7a00;
-      animation-duration: 5.6s;
-      animation-delay: .2s;
-    }
-
-    .confetti:nth-child(5) {
-      left: 44%;
-      background: #8a2be2;
-      animation-duration: 4.8s;
-      animation-delay: .7s;
-    }
-
-    .confetti:nth-child(6) {
-      left: 54%;
-      background: #00ff88;
-      animation-duration: 5.4s;
-      animation-delay: .1s;
-    }
-
-    .confetti:nth-child(7) {
-      left: 64%;
-      background: #ff00cc;
-      animation-duration: 4.4s;
-      animation-delay: 1s;
-    }
-
-    .confetti:nth-child(8) {
-      left: 74%;
-      background: #00e5ff;
-      animation-duration: 5s;
-      animation-delay: .3s;
-    }
-
-    .confetti:nth-child(9) {
-      left: 84%;
-      background: #ffea00;
-      animation-duration: 4.7s;
-      animation-delay: .8s;
-    }
-
-    .confetti:nth-child(10) {
-      left: 94%;
-      background: #ff7a00;
-      animation-duration: 5.7s;
-      animation-delay: .5s;
-    }
-
-    .money {
-      position: absolute;
-      z-index: 1;
-      font-weight: 900;
-      color: #00ff88;
-      opacity: 0;
-      text-shadow: 0 0 12px #00ff88;
-      animation: moneyPop 5s infinite;
-    }
-
-    .money.m1 {
-      left: 8%;
-      top: 65%;
-      animation-delay: 0s;
-    }
-
-    .money.m2 {
-      left: 78%;
-      top: 70%;
-      animation-delay: 1.2s;
-    }
-
-    .money.m3 {
-      left: 15%;
-      top: 28%;
-      animation-delay: 2.4s;
-    }
-
-    .money.m4 {
-      left: 82%;
-      top: 25%;
-      animation-delay: 3.5s;
-    }
-
-    @keyframes fall {
-      0% {
-        transform: translateY(-30px) rotate(0deg);
-      }
-
-      100% {
-        transform: translateY(110vh) rotate(420deg);
-      }
-    }
-
-    @keyframes badgePulse {
-
-      0%,
-      100% {
-        transform: scale(1);
-      }
-
-      50% {
-        transform: scale(1.08);
-      }
-    }
-
-    @keyframes float {
-
-      0%,
-      100% {
-        transform: translateY(0) rotate(-3deg);
-      }
-
-      50% {
-        transform: translateY(-12px) rotate(3deg);
-      }
-    }
-
-    @keyframes ctaBeat {
-
-      0%,
-      100% {
-        transform: scale(1);
-      }
-
-      50% {
-        transform: scale(1.06);
-      }
-    }
-
-    @keyframes moneyPop {
-      0% {
+    @keyframes popUp {
+      from {
         opacity: 0;
-        transform: translateY(30px) scale(.8);
+        transform: scale(0.94) translateY(20px);
       }
 
-      12% {
+      to {
         opacity: 1;
-        transform: translateY(0) scale(1.15);
-      }
-
-      28% {
-        opacity: 0;
-        transform: translateY(-55px) scale(1);
-      }
-
-      100% {
-        opacity: 0;
+        transform: scale(1) translateY(0);
       }
     }
 
-    @media (max-width: 540px) {
-      .features {
-        grid-template-columns: 1fr;
+    /* ── BADGE ── */
+    .chef-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--purple);
+      color: #fff;
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      padding: 0.42rem 1.2rem 0.42rem 0.9rem;
+      border-radius: 999px;
+      margin-bottom: 1.8rem;
+      animation: popUp 0.7s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+      box-shadow: 0 4px 14px rgba(122, 61, 245, 0.3);
+    }
+
+    .chef-hat {
+      font-size: 1.1rem;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--gold);
+      box-shadow: 0 0 6px var(--gold);
+      animation: pulse 1.4s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(0.55);
+      }
+    }
+
+    /* ── HEADLINE ── */
+    .headline {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(3.6rem, 9.5vw, 7.2rem);
+      line-height: 0.95;
+      letter-spacing: 0.01em;
+      color: var(--magenta);
+      margin-bottom: 0.18em;
+      animation: popUp 0.7s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+      text-shadow: 3px 4px 0 rgba(158, 10, 94, 0.18), 0 0 60px rgba(232, 16, 138, 0.12);
+    }
+
+    .headline .line2 {
+      color: var(--brown);
+      display: block;
+    }
+
+    .headline .accent {
+      color: var(--gold);
+      display: inline-block;
+      position: relative;
+    }
+
+    .headline .accent::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 6'%3E%3Cpath d='M0 4 Q7.5 0 15 4 Q22.5 8 30 4 Q37.5 0 45 4 Q52.5 8 60 4' fill='none' stroke='%23f5a623' stroke-width='2'/%3E%3C/svg%3E") repeat-x center;
+      background-size: 30px 4px;
+      animation: waveIn 0.5s 0.8s ease both;
+      transform-origin: left;
+      transform: scaleX(0);
+    }
+
+    @keyframes waveIn {
+      to {
+        transform: scaleX(1);
+      }
+    }
+
+    /* ── SUBLINE ── */
+    .subline {
+      font-size: clamp(1rem, 2.2vw, 1.3rem);
+      font-weight: 400;
+      color: var(--text-body);
+      opacity: 0.65;
+      line-height: 1.6;
+      margin-bottom: 2.2rem;
+      animation: popUp 0.7s 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .subline strong {
+      color: var(--magenta);
+      font-weight: 800;
+      opacity: 1;
+    }
+
+    /* ── STATS ── */
+    .stats {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 2.2rem;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid rgba(232, 16, 138, 0.12);
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 24px rgba(232, 16, 138, 0.08);
+      animation: popUp 0.7s 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .stat {
+      flex: 1;
+      padding: 0.9rem 0.5rem;
+      border-right: 1px solid rgba(232, 16, 138, 0.1);
+      position: relative;
+    }
+
+    .stat:last-child {
+      border-right: none;
+    }
+
+    .stat-icon {
+      font-size: 1.3rem;
+      display: block;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-val {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(1.3rem, 3vw, 1.9rem);
+      line-height: 1;
+      display: block;
+      margin-bottom: 0.2rem;
+    }
+
+    .stat:nth-child(1) .stat-val {
+      color: var(--magenta);
+    }
+
+    .stat:nth-child(2) .stat-val {
+      color: var(--purple);
+    }
+
+    .stat:nth-child(3) .stat-val {
+      color: var(--gold);
+    }
+
+    .stat:nth-child(4) .stat-val {
+      color: var(--magenta-deep);
+    }
+
+    .stat-key {
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-body);
+      opacity: 0.4;
+      display: block;
+    }
+
+    /* ── CTA ── */
+    .cta-group {
+      display: flex;
+      gap: 0.8rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: popUp 0.7s 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .btn-cook {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      color: #fff;
+      background: var(--magenta);
+      border: none;
+      padding: 0.95rem 2.6rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 4px 0 var(--magenta-deep), 0 6px 20px rgba(232, 16, 138, 0.3);
+    }
+
+    .btn-cook:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 7px 0 var(--magenta-deep), 0 12px 28px rgba(232, 16, 138, 0.35);
+    }
+
+    .btn-cook:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 var(--magenta-deep), 0 4px 12px rgba(232, 16, 138, 0.3);
+    }
+
+    .btn-cook::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40%;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 12px 12px 50% 50%;
+      pointer-events: none;
+    }
+
+    .btn-learn {
+      font-family: 'Fredoka One', cursive;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      color: var(--magenta);
+      background: rgba(255, 255, 255, 0.8);
+      border: 2px solid rgba(232, 16, 138, 0.25);
+      padding: 0.95rem 2rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      border-radius: 12px;
+      transition: all 0.2s;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+    }
+
+    .btn-learn:hover {
+      background: #fff;
+      border-color: var(--magenta);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(232, 16, 138, 0.15);
+    }
+
+    /* ── FEATURE PILLS ── */
+    .pills {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1.8rem;
+      animation: popUp 0.7s 0.58s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.32rem 0.85rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.65);
+      border: 1.5px solid rgba(232, 16, 138, 0.15);
+      color: var(--text-body);
+      opacity: 0.75;
+    }
+
+    /* ── BOTTOM TICKER ── */
+    .ticker {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      background: var(--magenta);
+      padding: 0.5rem 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .ticker-track {
+      display: inline-block;
+      animation: scroll 25s linear infinite;
+      font-family: 'Fredoka One', cursive;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .ticker-track span {
+      color: rgba(255, 255, 255, 0.4);
+      margin: 0 1.5rem;
+    }
+
+    @keyframes scroll {
+      from {
+        transform: translateX(100vw);
+      }
+
+      to {
+        transform: translateX(-100%);
+      }
+    }
+
+    /* ── INVITED BY BOX ── */
+    .invite-box {
+      position: fixed;
+      bottom: 4.1rem;
+      right: 1.1rem;
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      background: rgba(255, 255, 255, 0.75);
+      border: 1.5px solid rgba(232, 16, 138, 0.18);
+      border-radius: 999px;
+      padding: 0.4rem 0.9rem 0.4rem 0.4rem;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 4px 16px rgba(232, 16, 138, 0.1);
+      animation: popUp 0.7s 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .invite-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      object-fit: cover;
+      display: block;
+    }
+
+    .invite-text {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-body);
+      opacity: 0.75;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+
+    .invite-text strong {
+      color: var(--magenta);
+      font-weight: 800;
+    }
+
+    @media(max-width:540px) {
+      .invite-box {
+        bottom: 3.5rem;
+        right: 0.75rem;
+        padding: 0.32rem 0.75rem 0.32rem 0.32rem;
+      }
+
+      .invite-avatar {
+        width: 24px;
+        height: 24px;
+      }
+
+      .invite-text {
+        font-size: 0.62rem;
+      }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:540px) {
+
+      html,
+      body {
+        overflow-y: auto;
+      }
+
+      body {
+        align-items: flex-start;
+        padding: 2.5rem 0 5rem;
       }
 
       .card {
-        padding: 26px 16px;
+        padding: 0 1.25rem;
       }
 
-      .party {
-        font-size: 64px;
+      .plate {
+        display: none;
+      }
+
+      .stats {
+        flex-wrap: wrap;
+      }
+
+      .stat {
+        min-width: 45%;
       }
     }
   </style>
@@ -345,72 +513,155 @@
 
 <body>
 
-  <div class="confetti"></div>
-  <div class="confetti"></div>
-  <div class="confetti"></div>
-  <div class="confetti"></div>
-  <div class="confetti"></div>
-  <div class="confetti"></div>
-  <div class="confetti"></div>
-  <div class="confetti"></div>
-  <div class="confetti"></div>
-  <div class="confetti"></div>
+  <div class="bg"></div>
+  <div class="dots"></div>
+  <div class="plate"></div>
+  <canvas id="c"></canvas>
 
-  <div class="splash">
-    <div class="money m1">+$0.18</div>
-    <div class="money m2">+$0.42</div>
-    <div class="money m3">+$1.15</div>
-    <div class="money m4">+$0.77</div>
+  <div class="card">
 
-    <div class="card">
-      <div class="badge">Traffic Exchange Party</div>
+    <div class="chef-badge">
+      <span class="chef-hat">🎉</span>
+      Weekly Party Is Live · Free to Join
+      <span class="badge-dot"></span>
+    </div>
 
-      <div class="party">🎉</div>
+    <h1 class="headline">
+      Surf. Party.<br>
+      <span class="line2">Win <span class="accent">Cash.</span></span>
+    </h1>
 
-      <h1>
-        Stop Surfing<br>
-        For <span>Nothing</span>
-      </h1>
+    <p class="subline">
+      Surf the exchange, fill the prize pool, play Fortune Climb —<br>
+      and walk away with <strong>real cash, every single week.</strong>
+    </p>
 
-      <div class="sub">
-        You are already surfing.<br>
-        <strong>Start winning while you surf.</strong>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-icon">💵</span>
+        <span class="stat-val">$1,463</span>
+        <span class="stat-key">Prizes Paid</span>
       </div>
-
-      <div class="rotating-text" id="rotatingText">
-        SURF
+      <div class="stat">
+        <span class="stat-icon">🎲</span>
+        <span class="stat-val">498</span>
+        <span class="stat-key">Members</span>
       </div>
-
-      <div class="features">
-        <div class="feature">💰 Weekly Cash Pool</div>
-        <div class="feature">🎲 Fortune Climb Game</div>
-        <div class="feature">🏆 Leaderboards</div>
-        <div class="feature">🎁 Daily Rewards</div>
-        <div class="feature">🚀 80+ Exchanges</div>
-        <div class="feature">👥 Downline Builder</div>
+      <div class="stat">
+        <span class="stat-icon">🌐</span>
+        <span class="stat-val">75</span>
+        <span class="stat-key">TE Sites</span>
       </div>
-
-      <a class="cta" href="https://time2party.online/?ref=lordofclicking" target="_blank">
-        Join The Party →
-      </a>
-
-      <div class="note">
-        Free to join. Surf, claim prizes, climb the leaderboard.
+      <div class="stat">
+        <span class="stat-icon">🆓</span>
+        <span class="stat-val">Free</span>
+        <span class="stat-key">Forever</span>
       </div>
+    </div>
+
+    <div class="cta-group">
+      <a href="https://time2party.online/signup.php?ref=lordofclicking" class="btn-cook" target="_blank">🎉 Join the
+        Party — Free</a>
+      <a href="https://time2party.online/?ref=lordofclicking" class="btn-learn" target="_blank">How It Works</a>
+    </div>
+
+    <div class="pills">
+      <span class="pill">🎲 Fortune Climb Game</span>
+      <span class="pill">🏆 Weekly Prize Pool</span>
+      <span class="pill">💸 Wise · Skrill · Stripe</span>
+      <span class="pill">🎊 Special Events</span>
+      <span class="pill">🔗 Downline Builder</span>
+    </div>
+
+  </div>
+
+  <div class="ticker">
+    <div class="ticker-track">
+      🎉 Weekly party pool is filling up fast
+      <span>·</span>
+      🎲 Play Fortune Climb across 75 TE sites
+      <span>·</span>
+      💸 Withdraw via Wise, Skrill or Stripe
+      <span>·</span>
+      🏆 498 members already partying &amp; earning
+      <span>·</span>
+      🎊 New special events every month
+      <span>·</span>
+      ✅ 100% free membership — no hidden fees
+      <span>·</span>
     </div>
   </div>
 
+  <div class="invite-box">
+    <img class="invite-avatar" src="https://www.gravatar.com/avatar/0101c72c97a4bef379faf316240a89dd?s=64&d=identicon"
+      alt="Sinan">
+    <span class="invite-text">Invited by <strong>Sinan</strong></span>
+  </div>
+
   <script>
-    const words = ["SURF", "CLAIM", "WIN", "REPEAT"];
-    let index = 0;
-    const rotatingText = document.getElementById("rotatingText");
+    // ── CONFETTI ──
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resize();
+    window.addEventListener('resize', resize);
 
-    setInterval(() => {
-      index = (index + 1) % words.length;
-      rotatingText.textContent = words[index];
-    }, 900);
+    const colors = ['#e8108a', '#7a3df5', '#f5a623', '#1ac9d8', '#ff6b9d'];
+    const shapes = ['rect', 'circle', 'triangle'];
+
+    class Piece {
+      constructor(rush) { this.reset(rush); }
+      reset(rush) {
+        this.x = Math.random() * canvas.width;
+        this.y = rush ? Math.random() * canvas.height : -16;
+        this.w = 5 + Math.random() * 7;
+        this.h = 4 + Math.random() * 5;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.shape = shapes[Math.floor(Math.random() * shapes.length)];
+        this.vy = 0.6 + Math.random() * 1.2;
+        this.vx = (Math.random() - 0.5) * 0.6;
+        this.rot = Math.random() * Math.PI * 2;
+        this.rotV = (Math.random() - 0.5) * 0.07;
+        this.opacity = 0.4 + Math.random() * 0.35;
+        this.wave = Math.random() * Math.PI * 2;
+      }
+      update() {
+        this.y += this.vy;
+        this.x += this.vx + Math.sin(this.wave) * 0.25;
+        this.wave += 0.018;
+        this.rot += this.rotV;
+        if (this.y > canvas.height + 20) this.reset(false);
+      }
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.fillStyle = this.color;
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rot);
+        if (this.shape === 'rect') {
+          ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+        } else if (this.shape === 'circle') {
+          ctx.beginPath(); ctx.arc(0, 0, this.w / 2, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(0, -this.h / 2);
+          ctx.lineTo(this.w / 2, this.h / 2);
+          ctx.lineTo(-this.w / 2, this.h / 2);
+          ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+      }
+    }
+
+    const pieces = Array.from({ length: 60 }, () => new Piece(true));
+
+    function loop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(loop);
+    }
+    loop();
   </script>
-
 </body>
 
 </html>
