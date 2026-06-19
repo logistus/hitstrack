@@ -21,6 +21,8 @@ new #[Title('Rotator stats')] class extends Component
 
     public string $sortDirection = 'desc';
 
+    public string $referrerSearch = '';
+
     public function mount(string $slug): void
     {
         $this->slug = $slug;
@@ -34,6 +36,11 @@ new #[Title('Rotator stats')] class extends Component
     public function refreshStats(): void
     {
         $this->dispatch('rotator-chart-updated', chartData: $this->freshChartData());
+    }
+
+    public function updatedReferrerSearch(): void
+    {
+        $this->resetPage('referrerPage');
     }
 
     public function sortBy(string $field): void
@@ -146,11 +153,14 @@ new #[Title('Rotator stats')] class extends Component
 
     private function referrerStats(Rotator $rotator)
     {
+        $search = trim($this->referrerSearch);
+
         return RotatorStat::query()
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('rotator_id', $rotator->id)
+            ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
@@ -339,6 +349,14 @@ new #[Title('Rotator stats')] class extends Component
                     <flux:heading>{{ __('Referrers') }}</flux:heading>
                     <flux:subheading>{{ __('All hits grouped by referrer') }}</flux:subheading>
                 </div>
+
+                <flux:input
+                    wire:model.live.debounce.300ms="referrerSearch"
+                    :label="__('Filter by URL')"
+                    type="search"
+                    autocomplete="off"
+                    placeholder="example.com"
+                    class="max-w-md" />
 
                 <flux:pagination :paginator="$referrerStats" class="border-t-0 border-b pb-3 pt-0" />
 
