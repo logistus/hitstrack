@@ -93,7 +93,7 @@ new #[Title('Link rotator stats')] class extends Component
             return $refUrl;
         }
 
-        return 'https://'.$refUrl;
+        return 'https://' . $refUrl;
     }
 
     private function rotator(): LinkRotator
@@ -120,7 +120,7 @@ new #[Title('Link rotator stats')] class extends Component
             ->keyBy('hit_date');
 
         $days = collect(CarbonPeriod::create($start, $end))
-            ->map(fn (Carbon $date) => [
+            ->map(fn(Carbon $date) => [
                 'date' => $date->toDateString(),
                 'label' => $date->format('M j'),
                 'total' => (int) ($hitsByDay[$date->toDateString()]?->total_hits ?? 0),
@@ -161,10 +161,10 @@ new #[Title('Link rotator stats')] class extends Component
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('rotator_id', $rotator->id)
-            ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
+            ->when($search !== '', fn($query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
-            ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
+            ->when($this->sortField !== 'ref_url', fn($query) => $query->orderBy('ref_url'))
             ->paginate(25, pageName: 'referrerPage');
     }
 
@@ -310,7 +310,7 @@ new #[Title('Link rotator stats')] class extends Component
                         <div class="space-y-3">
                             @forelse ($stats as $stat)
                             @php
-                                $percent = $summaryStats['total_hits'] > 0 ? min(100, round(($stat->total / $summaryStats['total_hits']) * 100)) : 0;
+                            $percent = $summaryStats['total_hits'] > 0 ? min(100, round(($stat->total / $summaryStats['total_hits']) * 100)) : 0;
                             @endphp
                             <div class="space-y-1.5">
                                 <div class="flex items-center justify-between gap-4 text-sm">
@@ -347,7 +347,7 @@ new #[Title('Link rotator stats')] class extends Component
                     <flux:table.rows>
                         @forelse ($trackerPerformanceStats as $stat)
                         @php
-                            $share = $summaryStats['total_hits'] > 0 ? ($stat->total_hits / $summaryStats['total_hits']) * 100 : 0;
+                        $share = $summaryStats['total_hits'] > 0 ? ($stat->total_hits / $summaryStats['total_hits']) * 100 : 0;
                         @endphp
                         <flux:table.row wire:key="link-rotator-tracker-performance-{{ $stat->id }}">
                             <flux:table.cell>
@@ -359,13 +359,14 @@ new #[Title('Link rotator stats')] class extends Component
                                         class="block truncate">
                                         {{ route('linktrackers.redirect', $stat->tracker_slug) }}
                                     </flux:link>
-                                    <flux:link
+                                    <br />
+                                    (<flux:link
                                         href="{{ $stat->target_url }}"
                                         target="_blank"
                                         rel="noreferrer"
                                         class="block truncate text-zinc-500 dark:text-zinc-400">
                                         {{ $stat->target_url }}
-                                    </flux:link>
+                                    </flux:link>)
                                 </div>
                             </flux:table.cell>
                             <flux:table.cell>{{ number_format($stat->total_hits) }}</flux:table.cell>
@@ -374,7 +375,7 @@ new #[Title('Link rotator stats')] class extends Component
                                 <div class="space-y-1.5">
                                     <div class="text-sm">{{ number_format($share, 2) }}%</div>
                                     <div class="h-1.5 w-32 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                                        <div class="h-full rounded-full bg-blue-600" @style(["width: " . min(100, round($share)) . "%"])></div>
+                                        <div class="h-full rounded-full bg-blue-600" @style(["width: " . min(100, round($share)) . " %"])></div>
                                     </div>
                                 </div>
                             </flux:table.cell>
