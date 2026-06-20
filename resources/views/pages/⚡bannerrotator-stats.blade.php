@@ -204,11 +204,11 @@ new #[Title('Banner rotator stats')] class extends Component
     {
         return BannerStat::query()
             ->join('banners', 'banners.id', '=', 'banner_stats.banner_id')
-            ->select('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug')
+            ->select('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug', 'banners.width', 'banners.height')
             ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
             ->where('banner_stats.banner_rotator_id', $rotator->id)
-            ->groupBy('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug')
+            ->groupBy('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug', 'banners.width', 'banners.height')
             ->orderByDesc('impressions')
             ->get();
     }
@@ -306,9 +306,22 @@ new #[Title('Banner rotator stats')] class extends Component
                     <flux:table.columns><flux:table.column>{{ __('Banner') }}</flux:table.column><flux:table.column>{{ __('Impressions') }}</flux:table.column><flux:table.column>{{ __('Clicks') }}</flux:table.column><flux:table.column>{{ __('CTR') }}</flux:table.column></flux:table.columns>
                     <flux:table.rows>
                         @forelse ($bannerPerformanceStats as $stat)
-                        @php($ctr = $stat->impressions > 0 ? ($stat->clicks / $stat->impressions) * 100 : 0)
+                        @php
+                            $ctr = $stat->impressions > 0 ? ($stat->clicks / $stat->impressions) * 100 : 0;
+                            $previewWidth = $stat->width ? max(1, (int) round($stat->width / 2)) : 160;
+                            $previewHeight = $stat->height ? max(1, (int) round($stat->height / 2)) : 80;
+                        @endphp
                         <flux:table.row wire:key="banner-rotator-performance-{{ $stat->id }}">
-                            <flux:table.cell><div class="flex max-w-md items-center gap-3"><img src="{{ $stat->image_url }}" alt="{{ $stat->name }}" class="h-10 w-16 rounded object-cover"><span class="truncate">{{ $stat->name }}</span></div></flux:table.cell>
+                            <flux:table.cell>
+                                <div class="flex max-w-md flex-col items-start gap-2">
+                                    <img
+                                        src="{{ $stat->image_url }}"
+                                        alt="{{ $stat->name }}"
+                                        class="rounded object-cover"
+                                        style="width: {{ $previewWidth }}px; height: {{ $previewHeight }}px;">
+                                    <span class="max-w-full truncate">{{ $stat->name }}</span>
+                                </div>
+                            </flux:table.cell>
                             <flux:table.cell>{{ number_format($stat->impressions) }}</flux:table.cell>
                             <flux:table.cell>{{ number_format($stat->clicks) }}</flux:table.cell>
                             <flux:table.cell>{{ number_format($ctr, 2) }}%</flux:table.cell>
