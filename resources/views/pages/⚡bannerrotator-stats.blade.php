@@ -354,7 +354,10 @@ new #[Title('Banner rotator stats')] class extends Component
                         <div class="text-sm font-medium text-zinc-900 dark:text-white">{{ $label }}</div>
                         <div class="space-y-3">
                             @forelse ($stats as $stat)
-                            @php($percent = ($summaryStats['impressions'] + $summaryStats['clicks']) > 0 ? min(100, round(($stat->total / ($summaryStats['impressions'] + $summaryStats['clicks'])) * 100)) : 0)
+                            @php
+                                $totalEvents = $summaryStats['impressions'] + $summaryStats['clicks'];
+                                $percent = $totalEvents > 0 ? min(100, round(($stat->total / $totalEvents) * 100)) : 0;
+                            @endphp
                             <div class="space-y-1.5">
                                 <div class="flex items-center justify-between gap-4 text-sm">
                                     <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $label === __('Device Type') ? str($stat->label)->title() : $stat->label }}</span>
@@ -412,7 +415,9 @@ new #[Title('Banner rotator stats')] class extends Component
                 <flux:table.columns><flux:table.column>{{ __('Date') }}</flux:table.column><flux:table.column>{{ __('Impressions') }}</flux:table.column><flux:table.column>{{ __('Clicks') }}</flux:table.column><flux:table.column>{{ __('CTR') }}</flux:table.column></flux:table.columns>
                 <flux:table.rows>
                     @forelse ($dailyEventRecords as $stat)
-                    @php($ctr = $stat->impressions > 0 ? ($stat->clicks / $stat->impressions) * 100 : 0)
+                    @php
+                        $ctr = $stat->impressions > 0 ? ($stat->clicks / $stat->impressions) * 100 : 0;
+                    @endphp
                     <flux:table.row wire:key="banner-rotator-daily-event-{{ $stat->event_date }}"><flux:table.cell>{{ \Carbon\Carbon::parse($stat->event_date)->format('Y-m-d') }}</flux:table.cell><flux:table.cell>{{ number_format($stat->impressions) }}</flux:table.cell><flux:table.cell>{{ number_format($stat->clicks) }}</flux:table.cell><flux:table.cell>{{ number_format($ctr, 2) }}%</flux:table.cell></flux:table.row>
                     @empty
                     <flux:table.row><flux:table.cell colspan="4" align="center">{{ __('No events yet.') }}</flux:table.cell></flux:table.row>
