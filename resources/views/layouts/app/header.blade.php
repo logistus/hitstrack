@@ -33,6 +33,12 @@
                 <flux:navbar.item :href="route('linkrotators')" :current="request()->routeIs('linkrotators*')" wire:navigate>
                     {{ __('Link Rotators') }}
                 </flux:navbar.item>
+                <flux:navbar.item :href="route('bannertrackers')" :current="request()->routeIs('bannertrackers*')" wire:navigate>
+                    {{ __('Banner Trackers') }}
+                </flux:navbar.item>
+                <flux:navbar.item :href="route('bannerrotators')" :current="request()->routeIs('bannerrotators*')" wire:navigate>
+                    {{ __('Banner Rotators') }}
+                </flux:navbar.item>
             </flux:navbar>
 
             <flux:spacer />
@@ -97,6 +103,12 @@
                 </flux:sidebar.item>
                 <flux:sidebar.item :href="route('linkrotators')" :current="request()->routeIs('linkrotators*')" wire:navigate>
                     {{ __('Link Rotators')  }}
+                </flux:sidebar.item>
+                <flux:sidebar.item :href="route('bannertrackers')" :current="request()->routeIs('bannertrackers*')" wire:navigate>
+                    {{ __('Banner Trackers')  }}
+                </flux:sidebar.item>
+                <flux:sidebar.item :href="route('bannerrotators')" :current="request()->routeIs('bannerrotators*')" wire:navigate>
+                    {{ __('Banner Rotators')  }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
         </flux:sidebar.nav>
