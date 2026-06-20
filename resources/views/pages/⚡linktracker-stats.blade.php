@@ -92,7 +92,7 @@ new #[Title('Link tracker stats')] class extends Component
             return $refUrl;
         }
 
-        return 'https://'.$refUrl;
+        return 'https://' . $refUrl;
     }
 
     private function tracker(): LinkTracker
@@ -119,7 +119,7 @@ new #[Title('Link tracker stats')] class extends Component
             ->keyBy('hit_date');
 
         $days = collect(CarbonPeriod::create($start, $end))
-            ->map(fn (Carbon $date) => [
+            ->map(fn(Carbon $date) => [
                 'date' => $date->toDateString(),
                 'label' => $date->format('M j'),
                 'total' => (int) ($hitsByDay[$date->toDateString()]?->total_hits ?? 0),
@@ -157,11 +157,17 @@ new #[Title('Link tracker stats')] class extends Component
             'device_types' => $this->groupedStatCounts($tracker, 'device_type'),
             'operating_systems' => $this->groupedStatCounts($tracker, 'operating_system'),
             'browsers' => $this->groupedStatCounts($tracker, 'browser'),
+            'countries' => $this->groupedStatCounts($tracker, 'country_code'),
         ];
     }
 
     private function groupedStatCounts(LinkTracker $tracker, string $field)
     {
+        $field = match ($field) {
+            'device_type', 'operating_system', 'browser', 'country_code' => $field,
+            default => throw new \InvalidArgumentException('Invalid field'),
+        };
+
         return LinkTrackerStat::query()
             ->selectRaw("COALESCE({$field}, ?) as label, COUNT(*) as total", [__('Unknown')])
             ->where('tracker_id', $tracker->id)
@@ -179,10 +185,10 @@ new #[Title('Link tracker stats')] class extends Component
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('tracker_id', $tracker->id)
-            ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
+            ->when($search !== '', fn($query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
-            ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
+            ->when($this->sortField !== 'ref_url', fn($query) => $query->orderBy('ref_url'))
             ->paginate(25, pageName: 'referrerPage');
     }
 
@@ -290,11 +296,12 @@ new #[Title('Link tracker stats')] class extends Component
                 </div>
             </section>
 
-            <section class="grid gap-4 lg:grid-cols-3">
+            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 @foreach ([
                 __('Device Type') => $breakdownStats['device_types'],
                 __('Operating System') => $breakdownStats['operating_systems'],
                 __('Browser') => $breakdownStats['browsers'],
+                __('Country') => $breakdownStats['countries'],
                 ] as $label => $stats)
                 <flux:card>
                     <div class="space-y-3">

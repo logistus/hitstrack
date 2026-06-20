@@ -24,7 +24,7 @@ class ClientInfo
     }
 
     /**
-     * @return array{device_type: string|null, operating_system: string|null, browser: string|null}
+     * @return array{device_type: string|null, operating_system: string|null, browser: string|null, country_code: string|null}
      */
     public static function fromRequest(Request $request): array
     {
@@ -35,6 +35,7 @@ class ClientInfo
                 'device_type' => null,
                 'operating_system' => null,
                 'browser' => null,
+                'country_code' => self::countryCode($request),
             ];
         }
 
@@ -42,7 +43,29 @@ class ClientInfo
             'device_type' => self::deviceType($userAgent),
             'operating_system' => self::operatingSystem($userAgent),
             'browser' => self::browser($userAgent),
+            'country_code' => self::countryCode($request),
         ];
+    }
+
+    private static function countryCode(Request $request): ?string
+    {
+        foreach ([
+            'CF-IPCountry',
+            'CloudFront-Viewer-Country',
+            'X-Vercel-IP-Country',
+            'X-Appengine-Country',
+            'X-Country-Code',
+            'X-Geo-Country',
+            'X-Forwarded-Country',
+        ] as $header) {
+            $countryCode = strtoupper((string) $request->headers->get($header));
+
+            if (preg_match('/^[A-Z]{2}$/', $countryCode) === 1 && $countryCode !== 'XX') {
+                return $countryCode;
+            }
+        }
+
+        return null;
     }
 
     private static function deviceType(string $userAgent): string

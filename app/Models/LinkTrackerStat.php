@@ -18,6 +18,7 @@ class LinkTrackerStat extends Model
         'device_type',
         'operating_system',
         'browser',
+        'country_code',
     ];
 
     public function tracker()
