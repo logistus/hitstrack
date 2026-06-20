@@ -271,6 +271,14 @@ new #[Title('Link rotator stats')] class extends Component
             <button
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
+                :class="activeTab === 'trackers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
+                @click="activeTab = 'trackers'">
+                {{ __('Trackers') }}
+            </button>
+
+            <button
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium transition"
                 :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
                 @click="activeTab = 'referrers'">
                 {{ __('Referrers') }}
@@ -329,8 +337,9 @@ new #[Title('Link rotator stats')] class extends Component
                 </flux:card>
                 @endforeach
             </section>
+        </section>
 
-            <section class="space-y-4">
+        <section class="space-y-4" x-show="activeTab === 'trackers'">
                 <div>
                     <flux:heading>{{ __('Tracker performance') }}</flux:heading>
                     <flux:subheading>{{ __('Hits grouped by attached tracker') }}</flux:subheading>
@@ -375,7 +384,7 @@ new #[Title('Link rotator stats')] class extends Component
                                 <div class="space-y-1.5">
                                     <div class="text-sm">{{ number_format($share, 2) }}%</div>
                                     <div class="h-1.5 w-32 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                                        <div class="h-full rounded-full bg-blue-600" @style(["width: " . min(100, round($share)) . " %"])></div>
+                                        <div class="h-full rounded-full bg-blue-600" @style(["width: " . min(100, round($share)) . "%"])></div>
                                     </div>
                                 </div>
                             </flux:table.cell>
@@ -389,7 +398,6 @@ new #[Title('Link rotator stats')] class extends Component
                         @endforelse
                     </flux:table.rows>
                 </flux:table>
-            </section>
         </section>
 
         <section class="space-y-4" x-show="activeTab === 'hits'">
