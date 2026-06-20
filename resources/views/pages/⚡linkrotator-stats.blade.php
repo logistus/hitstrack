@@ -74,6 +74,7 @@ new #[Title('Link rotator stats')] class extends Component
             'maxHits' => $dailyHits['maxHits'],
             'dailyHitRecords' => $this->dailyHitRecords($rotator),
             'referrerStats' => $this->referrerStats($rotator),
+            'trackerPerformanceStats' => $this->trackerPerformanceStats($rotator),
         ];
     }
 
@@ -178,11 +179,29 @@ new #[Title('Link rotator stats')] class extends Component
 
     private function groupedStatCounts(LinkRotator $rotator, string $field)
     {
+        $field = match ($field) {
+            'device_type', 'operating_system', 'browser' => $field,
+            default => throw new \InvalidArgumentException('Invalid field'),
+        };
+
         return LinkRotatorStat::query()
             ->selectRaw("COALESCE({$field}, ?) as label, COUNT(*) as total", [__('Unknown')])
             ->where('rotator_id', $rotator->id)
             ->groupBy('label')
             ->orderByDesc('total')
+            ->get();
+    }
+
+    private function trackerPerformanceStats(LinkRotator $rotator)
+    {
+        return LinkRotatorStat::query()
+            ->join('trackers', 'trackers.id', '=', 'rotator_stats.tracker_id')
+            ->select('trackers.id', 'trackers.target_url', 'trackers.tracker_slug')
+            ->selectRaw('COUNT(*) as total_hits')
+            ->selectRaw('COUNT(DISTINCT rotator_stats.ip_address) as unique_hits')
+            ->where('rotator_stats.rotator_id', $rotator->id)
+            ->groupBy('trackers.id', 'trackers.target_url', 'trackers.tracker_slug')
+            ->orderByDesc('total_hits')
             ->get();
     }
 
@@ -290,7 +309,9 @@ new #[Title('Link rotator stats')] class extends Component
                         <div class="text-sm font-medium text-zinc-900 dark:text-white">{{ $label }}</div>
                         <div class="space-y-3">
                             @forelse ($stats as $stat)
-                            @php($percent = $summaryStats['total_hits'] > 0 ? min(100, round(($stat->total / $summaryStats['total_hits']) * 100)) : 0)
+                            @php
+                                $percent = $summaryStats['total_hits'] > 0 ? min(100, round(($stat->total / $summaryStats['total_hits']) * 100)) : 0;
+                            @endphp
                             <div class="space-y-1.5">
                                 <div class="flex items-center justify-between gap-4 text-sm">
                                     <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $label === __('Device Type') ? str($stat->label)->title() : $stat->label }}</span>
@@ -307,6 +328,66 @@ new #[Title('Link rotator stats')] class extends Component
                     </div>
                 </flux:card>
                 @endforeach
+            </section>
+
+            <section class="space-y-4">
+                <div>
+                    <flux:heading>{{ __('Tracker performance') }}</flux:heading>
+                    <flux:subheading>{{ __('Hits grouped by attached tracker') }}</flux:subheading>
+                </div>
+
+                <flux:table>
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('Tracker') }}</flux:table.column>
+                        <flux:table.column>{{ __('Total hits') }}</flux:table.column>
+                        <flux:table.column>{{ __('Unique hits') }}</flux:table.column>
+                        <flux:table.column>{{ __('Share') }}</flux:table.column>
+                    </flux:table.columns>
+
+                    <flux:table.rows>
+                        @forelse ($trackerPerformanceStats as $stat)
+                        @php
+                            $share = $summaryStats['total_hits'] > 0 ? ($stat->total_hits / $summaryStats['total_hits']) * 100 : 0;
+                        @endphp
+                        <flux:table.row wire:key="link-rotator-tracker-performance-{{ $stat->id }}">
+                            <flux:table.cell>
+                                <div class="max-w-xl space-y-1">
+                                    <flux:link
+                                        href="{{ route('linktrackers.redirect', $stat->tracker_slug) }}"
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        class="block truncate">
+                                        {{ route('linktrackers.redirect', $stat->tracker_slug) }}
+                                    </flux:link>
+                                    <flux:link
+                                        href="{{ $stat->target_url }}"
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        class="block truncate text-zinc-500 dark:text-zinc-400">
+                                        {{ $stat->target_url }}
+                                    </flux:link>
+                                </div>
+                            </flux:table.cell>
+                            <flux:table.cell>{{ number_format($stat->total_hits) }}</flux:table.cell>
+                            <flux:table.cell>{{ number_format($stat->unique_hits) }}</flux:table.cell>
+                            <flux:table.cell>
+                                <div class="space-y-1.5">
+                                    <div class="text-sm">{{ number_format($share, 2) }}%</div>
+                                    <div class="h-1.5 w-32 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                                        <div class="h-full rounded-full bg-blue-600" @style(["width: " . min(100, round($share)) . "%"])></div>
+                                    </div>
+                                </div>
+                            </flux:table.cell>
+                        </flux:table.row>
+                        @empty
+                        <flux:table.row>
+                            <flux:table.cell colspan="4" align="center">
+                                {{ __('No tracker hits yet.') }}
+                            </flux:table.cell>
+                        </flux:table.row>
+                        @endforelse
+                    </flux:table.rows>
+                </flux:table>
             </section>
         </section>
 
