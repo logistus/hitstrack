@@ -5,6 +5,7 @@ use App\Models\BannerStat;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -99,6 +100,27 @@ new #[Title('Banner rotator stats')] class extends Component
         $start = now()->subDays(29)->startOfDay();
         $end = now()->endOfDay();
 
+        if (! $this->hasRotatorStatsColumn()) {
+            $days = collect(CarbonPeriod::create($start, $end))
+                ->map(fn(Carbon $date) => [
+                    'date' => $date->toDateString(),
+                    'label' => $date->format('M j'),
+                    'impressions' => 0,
+                    'clicks' => 0,
+                ])
+                ->values();
+
+            return [
+                'chartData' => [
+                    'labels' => $days->pluck('label')->all(),
+                    'dates' => $days->pluck('date')->all(),
+                    'totals' => $days->pluck('impressions')->all(),
+                    'uniques' => $days->pluck('clicks')->all(),
+                ],
+                'maxEvents' => 1,
+            ];
+        }
+
         $eventsByDay = BannerStat::query()
             ->selectRaw('DATE(created_at) as event_date')
             ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
@@ -131,6 +153,16 @@ new #[Title('Banner rotator stats')] class extends Component
 
     private function summaryStats(BannerRotator $rotator): array
     {
+        if (! $this->hasRotatorStatsColumn()) {
+            return [
+                'impressions' => 0,
+                'clicks' => 0,
+                'unique_impressions' => 0,
+                'unique_clicks' => 0,
+                'ctr' => 0,
+            ];
+        }
+
         $impressions = BannerStat::query()
             ->where('banner_rotator_id', $rotator->id)
             ->where('event_type', 'impression')
@@ -175,6 +207,10 @@ new #[Title('Banner rotator stats')] class extends Component
             default => throw new \InvalidArgumentException('Invalid field'),
         };
 
+        if (! $this->hasRotatorStatsColumn()) {
+            return collect();
+        }
+
         return BannerStat::query()
             ->selectRaw("COALESCE({$field}, ?) as label, COUNT(*) as total", [__('Unknown')])
             ->where('banner_rotator_id', $rotator->id)
@@ -186,6 +222,12 @@ new #[Title('Banner rotator stats')] class extends Component
     private function referrerStats(BannerRotator $rotator)
     {
         $search = trim($this->referrerSearch);
+
+        if (! $this->hasRotatorStatsColumn()) {
+            return BannerStat::query()
+                ->whereRaw('1 = 0')
+                ->paginate(25, pageName: 'referrerPage');
+        }
 
         return BannerStat::query()
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
@@ -202,19 +244,37 @@ new #[Title('Banner rotator stats')] class extends Component
 
     private function bannerPerformanceStats(BannerRotator $rotator)
     {
+        if (! $this->hasRotatorStatsColumn()) {
+            return collect();
+        }
+
+        $hasBannerSizeColumns = $this->hasBannerSizeColumns();
+
         return BannerStat::query()
             ->join('banners', 'banners.id', '=', 'banner_stats.banner_id')
-            ->select('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug', 'banners.width', 'banners.height')
+            ->select('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug')
+            ->when(
+                $hasBannerSizeColumns,
+                fn($query) => $query->addSelect('banners.width', 'banners.height'),
+                fn($query) => $query->selectRaw('NULL as width, NULL as height'),
+            )
             ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
             ->where('banner_stats.banner_rotator_id', $rotator->id)
-            ->groupBy('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug', 'banners.width', 'banners.height')
+            ->groupBy('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug')
+            ->when($hasBannerSizeColumns, fn($query) => $query->groupBy('banners.width', 'banners.height'))
             ->orderByDesc('impressions')
             ->get();
     }
 
     private function dailyEventRecords(BannerRotator $rotator)
     {
+        if (! $this->hasRotatorStatsColumn()) {
+            return BannerStat::query()
+                ->whereRaw('1 = 0')
+                ->simplePaginate(25, pageName: 'dailyEventsPage');
+        }
+
         return BannerStat::query()
             ->selectRaw('DATE(created_at) as event_date')
             ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
@@ -223,6 +283,17 @@ new #[Title('Banner rotator stats')] class extends Component
             ->groupByRaw('DATE(created_at)')
             ->orderByDesc('event_date')
             ->simplePaginate(25, pageName: 'dailyEventsPage');
+    }
+
+    private function hasRotatorStatsColumn(): bool
+    {
+        return Schema::hasColumn('banner_stats', 'banner_rotator_id');
+    }
+
+    private function hasBannerSizeColumns(): bool
+    {
+        return Schema::hasColumn('banners', 'width')
+            && Schema::hasColumn('banners', 'height');
     }
 };
 ?>
