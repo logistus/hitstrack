@@ -282,7 +282,7 @@ new #[Title('Banner Trackers')] class extends Component
                 <flux:table.cell>{{ $banner->created_at?->format('Y-m-d H:i') }}</flux:table.cell>
                 <flux:table.cell>{{ $banner->name }}</flux:table.cell>
                 <flux:table.cell>
-                    <img src="{{ $banner->image_url }}" alt="{{ $banner->alt_text ?: $banner->name }}" class="h-12 w-20 rounded object-cover mb-2">
+                    <img src="{{ $banner->image_url }}" alt="{{ $banner->alt_text ?: $banner->name }}" class="rounded object-cover mb-2" width="{{ $banner->width }}" height="{{ $banner->height }}">
                     <flux:link href="{{ $banner->target_url }}" target="_blank" rel="noreferrer" class="block truncate">
                         {{ $banner->target_url }}
                     </flux:link>
