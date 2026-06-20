@@ -331,6 +331,7 @@ new #[Title('Banner rotator stats')] class extends Component
         <div class="inline-flex rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
             <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'overview'; $nextTick(() => document.dispatchEvent(new CustomEvent('tracker-chart-resize')))">{{ __('Overview') }}</button>
             <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'events' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'events'">{{ __('Daily events') }}</button>
+            <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'banners' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'banners'">{{ __('Banners') }}</button>
             <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'referrers'">{{ __('Referrers') }}</button>
         </div>
 
@@ -373,39 +374,39 @@ new #[Title('Banner rotator stats')] class extends Component
                 </flux:card>
                 @endforeach
             </section>
+        </section>
 
-            <section class="space-y-4">
-                <div><flux:heading>{{ __('Banner performance') }}</flux:heading><flux:subheading>{{ __('Events grouped by attached banner') }}</flux:subheading></div>
-                <flux:table>
-                    <flux:table.columns><flux:table.column>{{ __('Banner') }}</flux:table.column><flux:table.column>{{ __('Impressions') }}</flux:table.column><flux:table.column>{{ __('Clicks') }}</flux:table.column><flux:table.column>{{ __('CTR') }}</flux:table.column></flux:table.columns>
-                    <flux:table.rows>
-                        @forelse ($bannerPerformanceStats as $stat)
-                        @php
-                            $ctr = $stat->impressions > 0 ? ($stat->clicks / $stat->impressions) * 100 : 0;
-                            $previewWidth = $stat->width ? max(1, (int) round($stat->width / 2)) : 160;
-                            $previewHeight = $stat->height ? max(1, (int) round($stat->height / 2)) : 80;
-                        @endphp
-                        <flux:table.row wire:key="banner-rotator-performance-{{ $stat->id }}">
-                            <flux:table.cell>
-                                <div class="flex max-w-md flex-col items-start gap-2">
-                                    <img
-                                        src="{{ $stat->image_url }}"
-                                        alt="{{ $stat->name }}"
-                                        class="rounded object-cover"
-                                        style="width: {{ $previewWidth }}px; height: {{ $previewHeight }}px;">
-                                    <span class="max-w-full truncate">{{ $stat->name }}</span>
-                                </div>
-                            </flux:table.cell>
-                            <flux:table.cell>{{ number_format($stat->impressions) }}</flux:table.cell>
-                            <flux:table.cell>{{ number_format($stat->clicks) }}</flux:table.cell>
-                            <flux:table.cell>{{ number_format($ctr, 2) }}%</flux:table.cell>
-                        </flux:table.row>
-                        @empty
-                        <flux:table.row><flux:table.cell colspan="4" align="center">{{ __('No banner events yet.') }}</flux:table.cell></flux:table.row>
-                        @endforelse
-                    </flux:table.rows>
-                </flux:table>
-            </section>
+        <section class="space-y-4" x-show="activeTab === 'banners'">
+            <div><flux:heading>{{ __('Banner performance') }}</flux:heading><flux:subheading>{{ __('Events grouped by attached banner') }}</flux:subheading></div>
+            <flux:table>
+                <flux:table.columns><flux:table.column>{{ __('Banner') }}</flux:table.column><flux:table.column>{{ __('Impressions') }}</flux:table.column><flux:table.column>{{ __('Clicks') }}</flux:table.column><flux:table.column>{{ __('CTR') }}</flux:table.column></flux:table.columns>
+                <flux:table.rows>
+                    @forelse ($bannerPerformanceStats as $stat)
+                    @php
+                        $ctr = $stat->impressions > 0 ? ($stat->clicks / $stat->impressions) * 100 : 0;
+                        $previewWidth = $stat->width ? max(1, (int) round($stat->width / 2)) : 160;
+                        $previewHeight = $stat->height ? max(1, (int) round($stat->height / 2)) : 80;
+                    @endphp
+                    <flux:table.row wire:key="banner-rotator-performance-{{ $stat->id }}">
+                        <flux:table.cell>
+                            <div class="flex max-w-md flex-col items-start gap-2">
+                                <img
+                                    src="{{ $stat->image_url }}"
+                                    alt="{{ $stat->name }}"
+                                    class="rounded object-cover"
+                                    style="width: {{ $previewWidth }}px; height: {{ $previewHeight }}px;">
+                                <span class="max-w-full truncate">{{ $stat->name }}</span>
+                            </div>
+                        </flux:table.cell>
+                        <flux:table.cell>{{ number_format($stat->impressions) }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($stat->clicks) }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($ctr, 2) }}%</flux:table.cell>
+                    </flux:table.row>
+                    @empty
+                    <flux:table.row><flux:table.cell colspan="4" align="center">{{ __('No banner events yet.') }}</flux:table.cell></flux:table.row>
+                    @endforelse
+                </flux:table.rows>
+            </flux:table>
         </section>
 
         <section class="space-y-4" x-show="activeTab === 'events'">
