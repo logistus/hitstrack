@@ -16,6 +16,7 @@ class BannerRotatorClickRedirectController extends Controller
             ->firstOrFail();
 
         $banner = $this->selectedBannerFromCookie($request, $rotator)
+            ?? $this->selectedBannerFromRecentImpression($request, $rotator)
             ?? $rotator->pickNextBanner();
 
         abort_if(! $banner, 404);
@@ -42,6 +43,31 @@ class BannerRotatorClickRedirectController extends Controller
 
         return $rotator->banners()
             ->where('banners.id', (int) $bannerId)
+            ->first();
+    }
+
+    private function selectedBannerFromRecentImpression(Request $request, BannerRotator $rotator)
+    {
+        $referrerDomain = ClientInfo::referrerDomain($request);
+
+        $recentImpression = $rotator->stats()
+            ->where('event_type', 'impression')
+            ->where('ip_address', $request->ip())
+            ->when(
+                $referrerDomain,
+                fn ($query) => $query->where('ref_url', $referrerDomain),
+                fn ($query) => $query->whereNull('ref_url'),
+            )
+            ->where('created_at', '>=', now()->subMinutes(30))
+            ->latest('id')
+            ->first();
+
+        if (! $recentImpression) {
+            return null;
+        }
+
+        return $rotator->banners()
+            ->where('banners.id', $recentImpression->banner_id)
             ->first();
     }
 
