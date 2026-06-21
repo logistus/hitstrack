@@ -277,12 +277,18 @@ new #[Title('Banner Trackers')] class extends Component
             $imageUrl = route('bannertrackers.image', $banner->banner_slug);
             $clickUrl = route('bannertrackers.click', $banner->banner_slug);
             $ctr = $banner->impressions_count > 0 ? ($banner->clicks_count / $banner->impressions_count) * 100 : 0;
+            $previewWidth = $banner->width ? max(1, (int) round($banner->width / 2)) : 160;
+            $previewHeight = $banner->height ? max(1, (int) round($banner->height / 2)) : null;
             @endphp
             <flux:table.row :key="$banner->id">
                 <flux:table.cell>{{ $banner->created_at?->format('Y-m-d H:i') }}</flux:table.cell>
                 <flux:table.cell>{{ $banner->name }}</flux:table.cell>
                 <flux:table.cell>
-                    <img src="{{ $banner->image_url }}" alt="{{ $banner->alt_text ?: $banner->name }}" class="rounded object-cover mb-2" width="{{ $banner->width }}" height="{{ $banner->height }}">
+                    <img
+                        src="{{ $banner->image_url }}"
+                        alt="{{ $banner->alt_text ?: $banner->name }}"
+                        class="mb-2 block rounded object-contain"
+                        style="width: {{ $previewWidth }}px; @if ($previewHeight) height: {{ $previewHeight }}px; @else max-height: 120px; @endif">
                     <flux:link href="{{ $banner->target_url }}" target="_blank" rel="noreferrer" class="block truncate">
                         {{ $banner->target_url }}
                     </flux:link>
