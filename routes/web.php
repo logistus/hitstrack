@@ -4,8 +4,10 @@ use App\Http\Controllers\BannerClickRedirectController;
 use App\Http\Controllers\BannerImageController;
 use App\Http\Controllers\BannerRotatorClickRedirectController;
 use App\Http\Controllers\BannerRotatorImageController;
+use App\Http\Controllers\DataCroveController;
 use App\Http\Controllers\LinkRotatorRedirectController;
 use App\Http\Controllers\LinkTrackerRedirectController;
+use App\Http\Controllers\PixelTrackingController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
@@ -16,6 +18,9 @@ Route::get('b/{slug}', BannerClickRedirectController::class)->name('bannertracke
 Route::get('b/{slug}/image', BannerImageController::class)->name('bannertrackers.image');
 Route::get('br/{slug}', BannerRotatorClickRedirectController::class)->name('bannerrotators.click');
 Route::get('br/{slug}/image', BannerRotatorImageController::class)->name('bannerrotators.image');
+
+Route::get('pixel', PixelTrackingController::class)->name('pixels.track');
+Route::get('datacrove', DataCroveController::class)->name('datacrove');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('linktrackers', 'pages::linktrackers')->name('linktrackers');
