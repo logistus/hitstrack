@@ -2,6 +2,7 @@
 
 use App\Models\Banner;
 use App\Models\BannerRotator;
+use App\Models\BannerStat;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -214,15 +215,29 @@ new #[Title('Banner Rotators')] class extends Component
             ? $managedRotator->banners->pluck('id')
             : collect();
 
+        $rotators = $this->userRotatorsQuery()
+            ->withCount(['stats', 'banners'])
+            ->withMax('stats', 'created_at')
+            ->latest()
+            ->paginate(25);
+
+        $uniqueHitCounts = BannerStat::query()
+            ->select('banner_rotator_id')
+            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits_count')
+            ->whereIn('banner_rotator_id', $rotators->getCollection()->pluck('id'))
+            ->groupBy('banner_rotator_id')
+            ->pluck('unique_hits_count', 'banner_rotator_id');
+
+        $rotators->getCollection()->each(function (BannerRotator $rotator) use ($uniqueHitCounts): void {
+            $rotator->unique_hits_count = (int) ($uniqueHitCounts[$rotator->id] ?? 0);
+        });
+
         return [
-            'rotators' => $this->userRotatorsQuery()
-                ->withCount('banners')
-                ->latest()
-                ->paginate(25),
+            'rotators' => $rotators,
             'managedRotator' => $managedRotator,
             'availableBanners' => Banner::query()
                 ->where('user_id', Auth::id())
-                ->when($attachedBannerIds->isNotEmpty(), fn($query) => $query->whereNotIn('id', $attachedBannerIds))
+                ->when($attachedBannerIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $attachedBannerIds))
                 ->latest()
                 ->get(),
         ];
@@ -426,7 +441,9 @@ new #[Title('Banner Rotators')] class extends Component
             <flux:table.column>{{ __('Created') }}</flux:table.column>
             <flux:table.column>{{ __('Banner rotator URL') }}</flux:table.column>
             <flux:table.column>{{ __('Type') }}</flux:table.column>
-            <flux:table.column>{{ __('Banners') }}</flux:table.column>
+            <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
+            <flux:table.column>{{ __('Unique Hits') }}</flux:table.column>
+            <flux:table.column>{{ __('Last Hit') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 
@@ -476,14 +493,25 @@ new #[Title('Banner Rotators')] class extends Component
                     </div>
                 </flux:table.cell>
                 <flux:table.cell>{{ str($rotator->rotation_type)->replace('_', ' ')->title() }}</flux:table.cell>
-                <flux:table.cell>{{ number_format($rotator->banners_count) }}</flux:table.cell>
+                <flux:table.cell>{{ number_format($rotator->stats_count) }}</flux:table.cell>
+                <flux:table.cell>{{ number_format($rotator->unique_hits_count) }}</flux:table.cell>
+                <flux:table.cell>
+                    @if ($rotator->stats_max_created_at)
+                    @php($lastHitAt = \Carbon\Carbon::parse($rotator->stats_max_created_at))
+                    <span title="{{ $lastHitAt->format('Y-m-d H:i:s') }}">
+                        {{ $lastHitAt->diffForHumans(short: true) }}
+                    </span>
+                    @else
+                    {{ __('Never') }}
+                    @endif
+                </flux:table.cell>
                 <flux:table.cell align="end">
                     <div class="flex justify-end gap-3">
                         <flux:link :href="route('bannerrotators.stats', $rotator->rotator_slug)" wire:navigate>
                             {{ __('Stats') }}
                         </flux:link>
                         <flux:link wire:click.prevent="manageBanners({{ $rotator->id }})" class="cursor-pointer">
-                            {{ __('Banners') }}
+                            {{ __('Banners') }} ({{ number_format($rotator->banners_count) }})
                         </flux:link>
                         <flux:link wire:click.prevent="editRotator({{ $rotator->id }})" class="cursor-pointer">
                             {{ __('Edit') }}
@@ -496,7 +524,7 @@ new #[Title('Banner Rotators')] class extends Component
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="5" align="center">
+                <flux:table.cell colspan="7" align="center">
                     {{ __('No banner rotators created yet.') }}
                 </flux:table.cell>
             </flux:table.row>
