@@ -15,7 +15,8 @@ class BannerRotatorClickRedirectController extends Controller
             ->where('rotator_slug', $slug)
             ->firstOrFail();
 
-        $banner = $rotator->pickNextBanner();
+        $banner = $this->selectedBannerFromCookie($request, $rotator)
+            ?? $rotator->pickNextBanner();
 
         abort_if(! $banner, 404);
 
@@ -29,5 +30,23 @@ class BannerRotatorClickRedirectController extends Controller
         ]);
 
         return redirect()->away($banner->target_url);
+    }
+
+    private function selectedBannerFromCookie(Request $request, BannerRotator $rotator)
+    {
+        $bannerId = $request->cookie($this->selectedBannerCookieName($rotator->id));
+
+        if (! ctype_digit((string) $bannerId)) {
+            return null;
+        }
+
+        return $rotator->banners()
+            ->where('banners.id', (int) $bannerId)
+            ->first();
+    }
+
+    private function selectedBannerCookieName(int $rotatorId): string
+    {
+        return "banner_rotator_{$rotatorId}_selected_banner";
     }
 }

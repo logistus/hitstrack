@@ -28,6 +28,21 @@ class BannerRotatorImageController extends Controller
             ...ClientInfo::fromRequest($request),
         ]);
 
-        return redirect()->away($banner->image_url);
+        return redirect()
+            ->away($banner->image_url)
+            ->withCookie(cookie(
+                name: $this->selectedBannerCookieName($rotator->id),
+                value: (string) $banner->id,
+                minutes: 30,
+                path: '/',
+                secure: $request->isSecure(),
+                httpOnly: true,
+                sameSite: $request->isSecure() ? 'None' : 'Lax',
+            ));
+    }
+
+    private function selectedBannerCookieName(int $rotatorId): string
+    {
+        return "banner_rotator_{$rotatorId}_selected_banner";
     }
 }
