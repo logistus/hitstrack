@@ -406,9 +406,17 @@ new #[Title('Banner Rotators')] class extends Component
                     @forelse ($managedRotator?->banners ?? [] as $banner)
                     <flux:table.row :key="$banner->id">
                         <flux:table.cell>
-                            <div class="flex max-w-md items-center gap-3">
-                                <img src="{{ $banner->image_url }}" alt="{{ $banner->alt_text ?: $banner->name }}" class="h-10 w-16 rounded object-cover">
-                                <span class="truncate">{{ $banner->name }}</span>
+                            @php
+                                $previewWidth = $banner->width ? max(1, (int) round($banner->width / 2)) : 160;
+                                $previewHeight = $banner->height ? max(1, (int) round($banner->height / 2)) : null;
+                            @endphp
+                            <div class="max-w-md space-y-2">
+                                <img
+                                    src="{{ $banner->image_url }}"
+                                    alt="{{ $banner->alt_text ?: $banner->name }}"
+                                    class="block rounded object-contain"
+                                    style="width: {{ $previewWidth }}px; @if ($previewHeight) height: {{ $previewHeight }}px; @else max-height: 120px; @endif">
+                                <span class="block truncate text-sm font-medium">{{ $banner->name }}</span>
                             </div>
                         </flux:table.cell>
                         <flux:table.cell>{{ $banner->pivot->weight }}</flux:table.cell>
