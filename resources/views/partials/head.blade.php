@@ -1,14 +1,27 @@
-<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-2LXRWHC1C4"></script>
 <script>
-    window.dataLayer = window.dataLayer || [];
+    window.loadHitstrackAnalytics = () => {
+        if (window.hitstrackAnalyticsLoaded) {
+            return;
+        }
 
-    function gtag() {
-        dataLayer.push(arguments);
+        window.hitstrackAnalyticsLoaded = true;
+        window.dataLayer = window.dataLayer || [];
+        window.gtag = function () {
+            window.dataLayer.push(arguments);
+        };
+
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-2LXRWHC1C4';
+        document.head.appendChild(script);
+
+        window.gtag('js', new Date());
+        window.gtag('config', 'G-2LXRWHC1C4');
+    };
+
+    if (window.localStorage.getItem('hitstrack.cookieConsent') === 'accepted') {
+        window.loadHitstrackAnalytics();
     }
-    gtag('js', new Date());
-
-    gtag('config', 'G-2LXRWHC1C4');
 </script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />

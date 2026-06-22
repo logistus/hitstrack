@@ -256,6 +256,7 @@
         <x-app-footer flux />
     </div>
 
+    <x-cookie-consent />
     @fluxScripts
 </body>
 

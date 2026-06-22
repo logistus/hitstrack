@@ -193,6 +193,7 @@
         </div>
     </main>
 
+    <x-cookie-consent />
     @fluxScripts
     <script>
         (() => {
