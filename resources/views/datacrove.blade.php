@@ -16,6 +16,12 @@
                 </a>
                 <p class="mt-2 text-sm text-zinc-400">Public pixel tracking overview.</p>
             </div>
+            <div class="text-right text-sm text-zinc-400">
+                <p>Server time</p>
+                <time datetime="{{ now()->toIso8601String() }}" class="font-mono text-zinc-200">
+                    {{ now()->format('Y-m-d H:i:s') }}
+                </time>
+            </div>
         </header>
     </div>
 
