@@ -228,8 +228,17 @@ new #[Title('Banner Rotators')] class extends Component
             ->groupBy('banner_rotator_id')
             ->pluck('unique_hits_count', 'banner_rotator_id');
 
-        $rotators->getCollection()->each(function (BannerRotator $rotator) use ($uniqueHitCounts): void {
+        $clickCounts = BannerStat::query()
+            ->select('banner_rotator_id')
+            ->selectRaw('COUNT(*) as total_clicks_count')
+            ->whereIn('banner_rotator_id', $rotators->getCollection()->pluck('id'))
+            ->where('event_type', 'click')
+            ->groupBy('banner_rotator_id')
+            ->pluck('total_clicks_count', 'banner_rotator_id');
+
+        $rotators->getCollection()->each(function (BannerRotator $rotator) use ($clickCounts, $uniqueHitCounts): void {
             $rotator->unique_hits_count = (int) ($uniqueHitCounts[$rotator->id] ?? 0);
+            $rotator->total_clicks_count = (int) ($clickCounts[$rotator->id] ?? 0);
         });
 
         return [
@@ -450,6 +459,7 @@ new #[Title('Banner Rotators')] class extends Component
             <flux:table.column>{{ __('Banner rotator URL') }}</flux:table.column>
             <flux:table.column>{{ __('Type') }}</flux:table.column>
             <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
+            <flux:table.column>{{ __('Total Clicks') }}</flux:table.column>
             <flux:table.column>{{ __('Unique Hits') }}</flux:table.column>
             <flux:table.column>{{ __('Last Hit') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
@@ -502,6 +512,7 @@ new #[Title('Banner Rotators')] class extends Component
                 </flux:table.cell>
                 <flux:table.cell>{{ str($rotator->rotation_type)->replace('_', ' ')->title() }}</flux:table.cell>
                 <flux:table.cell>{{ number_format($rotator->stats_count) }}</flux:table.cell>
+                <flux:table.cell>{{ number_format($rotator->total_clicks_count) }}</flux:table.cell>
                 <flux:table.cell>{{ number_format($rotator->unique_hits_count) }}</flux:table.cell>
                 <flux:table.cell>
                     @if ($rotator->stats_max_created_at)
@@ -532,7 +543,7 @@ new #[Title('Banner Rotators')] class extends Component
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="7" align="center">
+                <flux:table.cell colspan="8" align="center">
                     {{ __('No banner rotators created yet.') }}
                 </flux:table.cell>
             </flux:table.row>
