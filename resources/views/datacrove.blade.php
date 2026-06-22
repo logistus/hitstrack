@@ -124,13 +124,11 @@
                 <p class="mt-1 text-sm text-zinc-400">Every pixel request in reverse chronological order</p>
                 <div class="mt-4">{{ $allHitRecords->links() }}</div>
                 <div class="mt-4 overflow-x-auto">
-                    <table class="w-full min-w-[960px] text-left text-sm">
+                    <table class="w-full min-w-[720px] text-left text-sm">
                         <thead class="text-xs uppercase text-zinc-500">
                             <tr>
                                 <th class="pb-3">Time</th>
-                                <th class="pb-3">Page URL</th>
                                 <th class="pb-3">Referrer</th>
-                                <th class="pb-3">IP</th>
                                 <th class="pb-3">Device</th>
                                 <th class="pb-3">OS</th>
                                 <th class="pb-3">Browser</th>
@@ -140,16 +138,14 @@
                             @forelse ($allHitRecords as $hit)
                             <tr>
                                 <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->created_at?->format('Y-m-d H:i:s') }}</td>
-                                <td class="max-w-xs truncate py-3 text-zinc-300">{{ $hit->page_url ?: 'Unknown' }}</td>
                                 <td class="max-w-xs truncate py-3 text-zinc-300">{{ $hit->ref_url ?: 'Direct / unknown' }}</td>
-                                <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->ip_address ?: 'Unknown' }}</td>
                                 <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->device_type ?: 'Unknown' }}</td>
                                 <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->operating_system ?: 'Unknown' }}</td>
                                 <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->browser ?: 'Unknown' }}</td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="py-4 text-zinc-500">No pixel hits recorded yet.</td>
+                                <td colspan="5" class="py-4 text-zinc-500">No pixel hits recorded yet.</td>
                             </tr>
                             @endforelse
                         </tbody>
