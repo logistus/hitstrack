@@ -24,3 +24,14 @@ test('pixel tracking falls back to request referrer header', function () {
 
     expect(PixelStat::query()->firstOrFail()->ref_url)->toBe('landing.example');
 });
+
+test('pixel tracking stores direct visit when referrer query parameter is empty', function () {
+    $this->withHeader('Referer', 'https://datacrove.com/')
+        ->get(route('pixels.track', [
+            'page_url' => 'https://datacrove.com/',
+            'ref_url' => '',
+        ]))
+        ->assertOk();
+
+    expect(PixelStat::query()->firstOrFail()->ref_url)->toBeNull();
+});
