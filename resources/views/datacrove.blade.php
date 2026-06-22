@@ -45,6 +45,7 @@
         <div class="space-y-6">
             <div class="inline-flex rounded-lg border border-white/10 bg-zinc-900 p-1">
                 <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'overview' ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-white'" @click="activeTab = 'overview'; $nextTick(() => window.dispatchEvent(new CustomEvent('datacrove-chart-resize')))">Overview</button>
+                <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'all-hits' ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-white'" @click="activeTab = 'all-hits'">All hits</button>
                 <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'hits' ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-white'" @click="activeTab = 'hits'">Daily hits</button>
                 <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'referrers' ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-white'" @click="activeTab = 'referrers'">Referrers</button>
             </div>
@@ -111,6 +112,44 @@
                             @empty
                             <tr>
                                 <td colspan="3" class="py-4 text-zinc-500">No pixel hits recorded yet.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="rounded-md border border-white/10 bg-white/[.04] p-5" x-show="activeTab === 'all-hits'">
+                <h2 class="text-lg font-semibold">All hits</h2>
+                <p class="mt-1 text-sm text-zinc-400">Every pixel request in reverse chronological order</p>
+                <div class="mt-4">{{ $allHitRecords->links() }}</div>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="w-full min-w-[960px] text-left text-sm">
+                        <thead class="text-xs uppercase text-zinc-500">
+                            <tr>
+                                <th class="pb-3">Time</th>
+                                <th class="pb-3">Page URL</th>
+                                <th class="pb-3">Referrer</th>
+                                <th class="pb-3">IP</th>
+                                <th class="pb-3">Device</th>
+                                <th class="pb-3">OS</th>
+                                <th class="pb-3">Browser</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/10">
+                            @forelse ($allHitRecords as $hit)
+                            <tr>
+                                <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->created_at?->format('Y-m-d H:i:s') }}</td>
+                                <td class="max-w-xs truncate py-3 text-zinc-300">{{ $hit->page_url ?: 'Unknown' }}</td>
+                                <td class="max-w-xs truncate py-3 text-zinc-300">{{ $hit->ref_url ?: 'Direct / unknown' }}</td>
+                                <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->ip_address ?: 'Unknown' }}</td>
+                                <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->device_type ?: 'Unknown' }}</td>
+                                <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->operating_system ?: 'Unknown' }}</td>
+                                <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->browser ?: 'Unknown' }}</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="7" class="py-4 text-zinc-500">No pixel hits recorded yet.</td>
                             </tr>
                             @endforelse
                         </tbody>

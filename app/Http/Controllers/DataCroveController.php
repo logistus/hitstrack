@@ -36,6 +36,7 @@ class DataCroveController extends Controller
 
         return view('datacrove', [
             'activeTab' => match (true) {
+                $request->has('allHitsPage') => 'all-hits',
                 $request->has('dailyHitsPage') => 'hits',
                 $request->has('referrerPage') => 'referrers',
                 default => 'overview',
@@ -75,6 +76,10 @@ HTML,
                 ->groupByRaw('DATE(created_at)')
                 ->orderByDesc('hit_date')
                 ->paginate(25, pageName: 'dailyHitsPage')
+                ->withQueryString(),
+            'allHitRecords' => (clone $baseQuery)
+                ->latest('created_at')
+                ->paginate(25, pageName: 'allHitsPage')
                 ->withQueryString(),
             'referrerStats' => (clone $baseQuery)
                 ->selectRaw("COALESCE(ref_url, '') as ref_url")
