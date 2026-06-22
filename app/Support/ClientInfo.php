@@ -8,13 +8,16 @@ class ClientInfo
 {
     public static function referrerDomain(Request $request): ?string
     {
-        $referer = $request->headers->get('referer');
+        return self::domainFromUrl($request->headers->get('referer'));
+    }
 
-        if (! $referer) {
+    public static function domainFromUrl(?string $url): ?string
+    {
+        if (! $url) {
             return null;
         }
 
-        $host = parse_url($referer, PHP_URL_HOST);
+        $host = parse_url($url, PHP_URL_HOST);
 
         if (! is_string($host) || $host === '') {
             return null;

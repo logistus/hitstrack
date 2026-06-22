@@ -13,10 +13,12 @@ class PixelTrackingController extends Controller
     {
         $clientInfo = ClientInfo::fromRequest($request);
         $pageUrl = $request->query('page_url');
+        $refUrl = $request->query('ref_url');
 
         PixelStat::create([
             'page_url' => is_string($pageUrl) ? $pageUrl : null,
-            'ref_url' => ClientInfo::referrerDomain($request),
+            'ref_url' => ClientInfo::domainFromUrl(is_string($refUrl) ? $refUrl : null)
+                ?? ClientInfo::referrerDomain($request),
             'ip_address' => $request->ip(),
             'device_type' => $clientInfo['device_type'],
             'operating_system' => $clientInfo['operating_system'],

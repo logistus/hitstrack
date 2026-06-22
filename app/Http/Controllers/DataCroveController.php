@@ -32,6 +32,7 @@ class DataCroveController extends Controller
                 'total' => (int) ($hitsByDay[$date->toDateString()]?->total_hits ?? 0),
                 'unique' => (int) ($hitsByDay[$date->toDateString()]?->unique_hits ?? 0),
             ]);
+        $pixelUrl = url('pixel');
 
         return view('datacrove', [
             'activeTab' => match (true) {
@@ -39,7 +40,16 @@ class DataCroveController extends Controller
                 $request->has('referrerPage') => 'referrers',
                 default => 'overview',
             },
-            'pixelUrlExample' => url('pixel'),
+            'pixelUrlExample' => $pixelUrl,
+            'pixelSnippet' => <<<HTML
+<script>
+(function () {
+    var img = new Image(1, 1);
+    img.src = '{$pixelUrl}?page_url=' + encodeURIComponent(window.location.href) + '&ref_url=' + encodeURIComponent(document.referrer || '');
+})();
+</script>
+<noscript><img src="{$pixelUrl}" width="1" height="1" style="display:none" alt=""></noscript>
+HTML,
             'summaryStats' => [
                 'total_hits' => (clone $baseQuery)->count(),
                 'unique_hits' => (clone $baseQuery)->distinct('ip_address')->count('ip_address'),

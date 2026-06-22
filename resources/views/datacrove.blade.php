@@ -31,6 +31,17 @@
             </div>
         </section>
 
+        <section class="rounded-md border border-white/10 bg-white/[.04] p-5">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold">Pixel code</h2>
+                    <p class="mt-1 text-sm text-zinc-400">Use this snippet to capture both the current page and its incoming referrer.</p>
+                </div>
+                <a href="{{ $pixelUrlExample }}" target="_blank" rel="noreferrer" class="text-sm text-blue-300 hover:text-blue-200">{{ $pixelUrlExample }}</a>
+            </div>
+            <pre class="mt-4 overflow-x-auto rounded-md border border-white/10 bg-zinc-950 p-4 text-xs leading-5 text-zinc-300"><code>{{ $pixelSnippet }}</code></pre>
+        </section>
+
         <div class="space-y-6">
             <div class="inline-flex rounded-lg border border-white/10 bg-zinc-900 p-1">
                 <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'overview' ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-white'" @click="activeTab = 'overview'; $nextTick(() => window.dispatchEvent(new CustomEvent('datacrove-chart-resize')))">Overview</button>
