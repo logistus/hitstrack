@@ -24,6 +24,8 @@ new #[Title('Banner Rotators')] class extends Component
 
     public string $deletingRotatorSlug = '';
 
+    public string $name = '';
+
     public string $rotation_type = 'round_robin';
 
     public string $banner_id = '';
@@ -42,8 +44,10 @@ new #[Title('Banner Rotators')] class extends Component
     public function saveRotator(): void
     {
         $validated = $this->validate([
+            'name' => ['nullable', 'string', 'max:255'],
             'rotation_type' => ['required', 'in:round_robin,random,weighted'],
         ]);
+        $validated['name'] = filled($validated['name']) ? trim($validated['name']) : null;
 
         if ($this->editingRotatorId) {
             BannerRotator::query()
@@ -74,6 +78,7 @@ new #[Title('Banner Rotators')] class extends Component
         $rotator = $this->userRotatorsQuery()->findOrFail($rotatorId);
 
         $this->editingRotatorId = $rotator->id;
+        $this->name = (string) ($rotator->name ?? '');
         $this->rotation_type = $rotator->rotation_type;
 
         $this->resetValidation();
@@ -275,7 +280,7 @@ new #[Title('Banner Rotators')] class extends Component
 
     private function resetRotatorForm(): void
     {
-        $this->reset('editingRotatorId', 'rotation_type');
+        $this->reset('editingRotatorId', 'name', 'rotation_type');
         $this->rotation_type = 'round_robin';
         $this->resetValidation();
     }
@@ -325,6 +330,8 @@ new #[Title('Banner Rotators')] class extends Component
                 </flux:heading>
                 <flux:text>{{ __('Choose how banner requests are distributed.') }}</flux:text>
             </div>
+
+            <flux:input wire:model="name" :label="__('Name')" autocomplete="off" />
 
             <flux:select wire:model.live="rotation_type" :label="__('Rotation type')">
                 <flux:select.option value="round_robin">{{ __('Round robin') }}</flux:select.option>
@@ -456,6 +463,7 @@ new #[Title('Banner Rotators')] class extends Component
     <flux:table :paginate="$rotators">
         <flux:table.columns>
             <flux:table.column>{{ __('Created') }}</flux:table.column>
+            <flux:table.column>{{ __('Name') }}</flux:table.column>
             <flux:table.column>{{ __('Banner rotator URL') }}</flux:table.column>
             <flux:table.column>{{ __('Type') }}</flux:table.column>
             <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
@@ -473,6 +481,9 @@ new #[Title('Banner Rotators')] class extends Component
             @endphp
             <flux:table.row :key="$rotator->id">
                 <flux:table.cell>{{ $rotator->created_at?->format('Y-m-d H:i') }}</flux:table.cell>
+                <flux:table.cell>
+                    <span class="block max-w-40 truncate">{{ $rotator->name ?: '-' }}</span>
+                </flux:table.cell>
                 <flux:table.cell>
                     <div class="flex min-w-0 max-w-md flex-col items-start gap-1">
                         <div class="flex min-w-0 max-w-full items-center gap-2">
@@ -543,7 +554,7 @@ new #[Title('Banner Rotators')] class extends Component
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="8" align="center">
+                <flux:table.cell colspan="9" align="center">
                     {{ __('No banner rotators created yet.') }}
                 </flux:table.cell>
             </flux:table.row>

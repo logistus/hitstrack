@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class BannerRotator extends Model
 {
-    protected $fillable = ['user_id', 'rotator_slug', 'rotation_type'];
+    protected $fillable = ['user_id', 'name', 'rotator_slug', 'rotation_type'];
 
     public function user()
     {
