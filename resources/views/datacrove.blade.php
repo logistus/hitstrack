@@ -144,7 +144,7 @@
                             @forelse ($allHitRecords as $hit)
                             <tr>
                                 <td class="whitespace-nowrap py-3 text-zinc-400">
-                                    {{ \Carbon\Carbon::parse($hit->getRawOriginal('created_at'), 'UTC')->timezone(config('app.timezone'))->format('Y-m-d H:i:s') }}
+                                    {{ $hit->created_at?->timezone(config('app.timezone'))->format('Y-m-d H:i:s') }}
                                 </td>
                                 <td class="max-w-xs truncate py-3 text-zinc-300">{{ $hit->ref_url ?: 'Direct / unknown' }}</td>
                                 <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->device_type ?: 'Unknown' }}</td>
