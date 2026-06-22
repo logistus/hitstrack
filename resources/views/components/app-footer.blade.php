@@ -13,6 +13,9 @@ $classes = 'border-t border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zin
             <flux:link href="{{ route('home') }}" wire:navigate>
                 {{ __('Home') }}
             </flux:link>
+            <flux:link href="https://datacrove.com/" wire:navigate>
+                {{ __('Datacrove') }}
+            </flux:link>
         </nav>
     </div>
 </flux:footer>
@@ -22,8 +25,8 @@ $classes = 'border-t border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zin
         <p>&copy; {{ now()->year }} {{ config('app.name', 'HitsTrack') }}. {{ __('All rights reserved.') }}</p>
 
         <nav class="flex gap-4">
-            <flux:link href="{{ route('home') }}" wire:navigate>
-                {{ __('Home') }}
+            <flux:link href="https://datacrove.com/" wire:navigate>
+                {{ __('Datacrove') }}
             </flux:link>
         </nav>
     </div>
