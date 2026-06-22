@@ -133,7 +133,7 @@
                     <table class="w-full min-w-[720px] text-left text-sm">
                         <thead class="text-xs uppercase text-zinc-500">
                             <tr>
-                                <th class="pb-3">Time</th>
+                                <th class="pb-3">Time (Europe/Istanbul)</th>
                                 <th class="pb-3">Referrer</th>
                                 <th class="pb-3">Device</th>
                                 <th class="pb-3">OS</th>
@@ -143,7 +143,9 @@
                         <tbody class="divide-y divide-white/10">
                             @forelse ($allHitRecords as $hit)
                             <tr>
-                                <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->created_at?->format('Y-m-d H:i:s') }}</td>
+                                <td class="whitespace-nowrap py-3 text-zinc-400">
+                                    {{ \Carbon\Carbon::parse($hit->getRawOriginal('created_at'), 'UTC')->timezone(config('app.timezone'))->format('Y-m-d H:i:s') }}
+                                </td>
                                 <td class="max-w-xs truncate py-3 text-zinc-300">{{ $hit->ref_url ?: 'Direct / unknown' }}</td>
                                 <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->device_type ?: 'Unknown' }}</td>
                                 <td class="whitespace-nowrap py-3 text-zinc-400">{{ $hit->operating_system ?: 'Unknown' }}</td>
