@@ -24,7 +24,7 @@ new #[Title('All Referrers')] class extends Component
 
     public function sortBy(string $field): void
     {
-        if (! in_array($field, ['ref_url', 'total_hits', 'unique_hits'], true)) {
+        if (! in_array($field, ['ref_url', 'total_hits', 'unique_hits', 'unique_rate'], true)) {
             return;
         }
 
@@ -40,36 +40,28 @@ new #[Title('All Referrers')] class extends Component
 
     public function with(): array
     {
-        $events = $this->hitEventsQuery();
         $search = trim($this->search);
 
-        $referrers = DB::query()
-            ->fromSub($events, 'hit_events')
-            ->selectRaw("COALESCE(ref_url, '') as ref_url")
-            ->selectRaw('COUNT(*) as total_hits')
-            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->when($search !== '', fn(Builder $query) => $query->where('ref_url', 'like', "%{$search}%"))
-            ->groupByRaw("COALESCE(ref_url, '')")
+        $referrers = $this->referrerPerformanceQuery()
+            ->when($search !== '', fn (Builder $query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->orderBy($this->sortField, $this->sortDirection)
-            ->when($this->sortField !== 'ref_url', fn(Builder $query) => $query->orderBy('ref_url'))
+            ->when($this->sortField !== 'ref_url', fn (Builder $query) => $query->orderBy('ref_url'))
             ->paginate(25, pageName: 'referrerPage');
 
         $allEvents = DB::query()->fromSub($this->hitEventsQuery(), 'hit_events');
+        $bestReferrer = $this->referrerPerformanceQuery()
+            ->orderByDesc('unique_rate')
+            ->orderByDesc('total_hits')
+            ->orderBy('ref_url')
+            ->first();
 
         return [
             'referrers' => $referrers,
             'summaryStats' => [
                 'total_hits' => (clone $allEvents)->count(),
                 'unique_hits' => (clone $allEvents)->distinct()->count('ip_address'),
-                'referrers' => DB::query()
-                    ->fromSub(
-                        DB::query()
-                            ->fromSub($this->hitEventsQuery(), 'hit_events')
-                            ->selectRaw("COALESCE(ref_url, '') as ref_url")
-                            ->groupByRaw("COALESCE(ref_url, '')"),
-                        'referrers'
-                    )
-                    ->count(),
+                'referrers' => DB::query()->fromSub($this->referrerPerformanceQuery(), 'referrers')->count(),
+                'best_referrer' => $bestReferrer,
             ],
         ];
     }
@@ -82,7 +74,7 @@ new #[Title('All Referrers')] class extends Component
 
         return str_starts_with($refUrl, 'http://') || str_starts_with($refUrl, 'https://')
             ? $refUrl
-            : 'https://' . $refUrl;
+            : 'https://'.$refUrl;
     }
 
     private function hitEventsQuery(): Builder
@@ -108,6 +100,17 @@ new #[Title('All Referrers')] class extends Component
 
         return $directTrackerHits->unionAll($rotatorHits);
     }
+
+    private function referrerPerformanceQuery(): Builder
+    {
+        return DB::query()
+            ->fromSub($this->hitEventsQuery(), 'hit_events')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('COUNT(*) as total_hits')
+            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
+            ->selectRaw('ROUND((COUNT(DISTINCT ip_address) * 100.0) / COUNT(*), 2) as unique_rate')
+            ->groupByRaw("COALESCE(ref_url, '')");
+    }
 };
 ?>
 
@@ -117,7 +120,7 @@ new #[Title('All Referrers')] class extends Component
         <flux:subheading>{{ __('Combined referrer performance across all link trackers and link rotators.') }}</flux:subheading>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-3">
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <flux:card>
             <div class="space-y-2">
                 <flux:text>{{ __('Total Hits') }}</flux:text>
@@ -134,6 +137,20 @@ new #[Title('All Referrers')] class extends Component
             <div class="space-y-2">
                 <flux:text>{{ __('Referrers') }}</flux:text>
                 <flux:heading size="xl">{{ number_format($summaryStats['referrers']) }}</flux:heading>
+            </div>
+        </flux:card>
+        <flux:card>
+            <div class="space-y-2">
+                <flux:text>{{ __('Best Unique Rate') }}</flux:text>
+                @if ($bestReferrer = $summaryStats['best_referrer'])
+                    <flux:heading size="xl">{{ number_format($bestReferrer->unique_rate, 2) }}%</flux:heading>
+                    <flux:text class="block truncate">
+                        {{ $bestReferrer->ref_url ?: __('Direct / unknown') }}
+                        · {{ number_format($bestReferrer->unique_hits) }}/{{ number_format($bestReferrer->total_hits) }}
+                    </flux:text>
+                @else
+                    <flux:heading size="xl">0.00%</flux:heading>
+                @endif
             </div>
         </flux:card>
     </div>
@@ -175,6 +192,14 @@ new #[Title('All Referrers')] class extends Component
                     class="cursor-pointer text-right">
                     {{ __('Unique Hits') }}
                 </flux:table.column>
+                <flux:table.column
+                    sortable
+                    :sorted="$sortField === 'unique_rate'"
+                    :direction="$sortDirection"
+                    wire:click="sortBy('unique_rate')"
+                    class="cursor-pointer text-right">
+                    {{ __('Unique Rate') }}
+                </flux:table.column>
             </flux:table.columns>
 
             <flux:table.rows>
@@ -191,10 +216,11 @@ new #[Title('All Referrers')] class extends Component
                     </flux:table.cell>
                     <flux:table.cell>{{ number_format($referrer->total_hits) }}</flux:table.cell>
                     <flux:table.cell>{{ number_format($referrer->unique_hits) }}</flux:table.cell>
+                    <flux:table.cell>{{ number_format($referrer->unique_rate, 2) }}%</flux:table.cell>
                 </flux:table.row>
                 @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="3">
+                    <flux:table.cell colspan="4">
                         <div class="py-6 text-center text-zinc-500 dark:text-zinc-400">
                             {{ __('No referrer data yet.') }}
                         </div>
