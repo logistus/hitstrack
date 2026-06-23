@@ -224,7 +224,7 @@ new #[Title('Banner Rotators')] class extends Component
             ->withCount(['stats', 'banners'])
             ->withMax('stats', 'created_at')
             ->latest()
-            ->paginate(25);
+            ->simplePaginate(25);
 
         $uniqueHitCounts = BannerStat::query()
             ->select('banner_rotator_id')

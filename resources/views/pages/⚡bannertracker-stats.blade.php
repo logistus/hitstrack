@@ -2,6 +2,7 @@
 
 use App\Models\Banner;
 use App\Models\BannerStat;
+use App\Support\AnalyticsCache;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
@@ -59,17 +60,37 @@ new #[Title('Banner tracker stats')] class extends Component
     public function with(): array
     {
         $banner = $this->banner();
-        $dailyEvents = $this->dailyEvents($banner);
+        $dailyEvents = AnalyticsCache::remember(
+            'banner-tracker',
+            $banner->id,
+            'daily-events',
+            fn (): array => $this->dailyEvents($banner),
+        );
 
         return [
             'banner' => $banner,
-            'summaryStats' => $this->summaryStats($banner),
-            'breakdownStats' => $this->breakdownStats($banner),
+            'summaryStats' => AnalyticsCache::remember(
+                'banner-tracker',
+                $banner->id,
+                'summary',
+                fn (): array => $this->summaryStats($banner),
+            ),
+            'breakdownStats' => AnalyticsCache::remember(
+                'banner-tracker',
+                $banner->id,
+                'breakdowns',
+                fn (): array => $this->breakdownStats($banner),
+            ),
             'chartData' => $dailyEvents['chartData'],
             'maxEvents' => $dailyEvents['maxEvents'],
             'dailyEventRecords' => $this->dailyEventRecords($banner),
             'referrerStats' => $this->referrerStats($banner),
-            'pageStats' => $this->pageStats($banner),
+            'pageStats' => AnalyticsCache::remember(
+                'banner-tracker',
+                $banner->id,
+                'page-performance',
+                fn () => $this->pageStats($banner),
+            ),
         ];
     }
 
@@ -83,7 +104,7 @@ new #[Title('Banner tracker stats')] class extends Component
             return $refUrl;
         }
 
-        return 'https://' . $refUrl;
+        return 'https://'.$refUrl;
     }
 
     private function banner(): Banner
@@ -110,7 +131,7 @@ new #[Title('Banner tracker stats')] class extends Component
             ->keyBy('event_date');
 
         $days = collect(CarbonPeriod::create($start, $end))
-            ->map(fn(Carbon $date) => [
+            ->map(fn (Carbon $date) => [
                 'date' => $date->toDateString(),
                 'label' => $date->format('M j'),
                 'impressions' => (int) ($eventsByDay[$date->toDateString()]?->impressions ?? 0),
@@ -125,7 +146,7 @@ new #[Title('Banner tracker stats')] class extends Component
                 'totals' => $days->pluck('impressions')->all(),
                 'uniques' => $days->pluck('clicks')->all(),
             ],
-            'maxEvents' => max(1, $days->max(fn($day) => max($day['impressions'], $day['clicks']))),
+            'maxEvents' => max(1, $days->max(fn ($day) => max($day['impressions'], $day['clicks']))),
         ];
     }
 
@@ -172,7 +193,7 @@ new #[Title('Banner tracker stats')] class extends Component
     {
         $field = match ($field) {
             'device_type', 'operating_system', 'browser', 'country_code' => $field,
-            default => throw new \InvalidArgumentException('Invalid field'),
+            default => throw new InvalidArgumentException('Invalid field'),
         };
 
         return BannerStat::query()
@@ -193,11 +214,11 @@ new #[Title('Banner tracker stats')] class extends Component
             ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
             ->selectRaw('COUNT(*) as total_events')
             ->where('banner_id', $banner->id)
-            ->when($search !== '', fn($query) => $query->where('ref_url', 'like', "%{$search}%"))
+            ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
-            ->when($this->sortField !== 'ref_url', fn($query) => $query->orderBy('ref_url'))
-            ->paginate(25, pageName: 'referrerPage');
+            ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
+            ->simplePaginate(25, pageName: 'referrerPage');
     }
 
     private function pageStats(Banner $banner)
@@ -321,7 +342,6 @@ new #[Title('Banner tracker stats')] class extends Component
 
         <section class="space-y-4" x-show="activeTab === 'events'">
             <div><flux:heading>{{ __('Daily events') }}</flux:heading><flux:subheading>{{ __('All banner events grouped by day') }}</flux:subheading></div>
-            <flux:pagination :paginator="$dailyEventRecords" class="border-t-0 border-b pb-3 pt-0" />
             <flux:table :paginate="$dailyEventRecords">
                 <flux:table.columns><flux:table.column>{{ __('Date') }}</flux:table.column><flux:table.column>{{ __('Impressions') }}</flux:table.column><flux:table.column>{{ __('Clicks') }}</flux:table.column><flux:table.column>{{ __('CTR') }}</flux:table.column></flux:table.columns>
                 <flux:table.rows>
@@ -340,7 +360,6 @@ new #[Title('Banner tracker stats')] class extends Component
         <section class="space-y-4" x-show="activeTab === 'referrers'">
             <div><flux:heading>{{ __('Referrers') }}</flux:heading><flux:subheading>{{ __('All banner events grouped by referrer') }}</flux:subheading></div>
             <flux:input wire:model.live.debounce.300ms="referrerSearch" :label="__('Filter by URL')" type="search" autocomplete="off" placeholder="example.com" class="max-w-md" />
-            <flux:pagination :paginator="$referrerStats" class="border-t-0 border-b pb-3 pt-0" />
             <flux:table :paginate="$referrerStats">
                 <flux:table.columns>
                     <flux:table.column sortable :sorted="$sortField === 'ref_url'" :direction="$sortDirection" wire:click="sortBy('ref_url')" class="cursor-pointer">{{ __('Ref URL') }}</flux:table.column>

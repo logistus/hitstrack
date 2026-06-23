@@ -164,7 +164,7 @@ new #[Title('Trackers')] class extends Component
                 )
                 ->withMax('stats', 'created_at')
                 ->latest()
-                ->paginate(25),
+                ->simplePaginate(25),
         ];
     }
 };

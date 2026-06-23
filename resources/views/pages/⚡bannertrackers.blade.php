@@ -150,7 +150,7 @@ new #[Title('Banner Trackers')] class extends Component
         $banners = Banner::query()
             ->where('user_id', Auth::id())
             ->latest()
-            ->paginate(25);
+            ->simplePaginate(25);
 
         $eventCounts = BannerStat::query()
             ->select('banner_id', 'event_type')

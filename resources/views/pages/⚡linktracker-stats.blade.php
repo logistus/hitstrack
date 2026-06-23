@@ -2,6 +2,7 @@
 
 use App\Models\LinkTracker;
 use App\Models\LinkTrackerStat;
+use App\Support\AnalyticsCache;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
@@ -64,12 +65,27 @@ new #[Title('Link tracker stats')] class extends Component
     public function with(): array
     {
         $tracker = $this->tracker();
-        $dailyHits = $this->dailyHits($tracker);
+        $dailyHits = AnalyticsCache::remember(
+            'link-tracker',
+            $tracker->id,
+            'daily-hits',
+            fn (): array => $this->dailyHits($tracker),
+        );
 
         return [
             'tracker' => $tracker,
-            'summaryStats' => $this->summaryStats($tracker),
-            'breakdownStats' => $this->breakdownStats($tracker),
+            'summaryStats' => AnalyticsCache::remember(
+                'link-tracker',
+                $tracker->id,
+                'summary',
+                fn (): array => $this->summaryStats($tracker),
+            ),
+            'breakdownStats' => AnalyticsCache::remember(
+                'link-tracker',
+                $tracker->id,
+                'breakdowns',
+                fn (): array => $this->breakdownStats($tracker),
+            ),
             'chartData' => $dailyHits['chartData'],
             'maxHits' => $dailyHits['maxHits'],
             'dailyHitRecords' => $this->dailyHitRecords($tracker),
@@ -79,6 +95,8 @@ new #[Title('Link tracker stats')] class extends Component
 
     public function freshChartData(): array
     {
+        AnalyticsCache::forget('link-tracker', $this->trackerId, 'daily-hits');
+
         return $this->dailyHits($this->tracker())['chartData'];
     }
 
@@ -92,7 +110,7 @@ new #[Title('Link tracker stats')] class extends Component
             return $refUrl;
         }
 
-        return 'https://' . $refUrl;
+        return 'https://'.$refUrl;
     }
 
     private function tracker(): LinkTracker
@@ -119,7 +137,7 @@ new #[Title('Link tracker stats')] class extends Component
             ->keyBy('hit_date');
 
         $days = collect(CarbonPeriod::create($start, $end))
-            ->map(fn(Carbon $date) => [
+            ->map(fn (Carbon $date) => [
                 'date' => $date->toDateString(),
                 'label' => $date->format('M j'),
                 'total' => (int) ($hitsByDay[$date->toDateString()]?->total_hits ?? 0),
@@ -165,7 +183,7 @@ new #[Title('Link tracker stats')] class extends Component
     {
         $field = match ($field) {
             'device_type', 'operating_system', 'browser', 'country_code' => $field,
-            default => throw new \InvalidArgumentException('Invalid field'),
+            default => throw new InvalidArgumentException('Invalid field'),
         };
 
         return LinkTrackerStat::query()
@@ -185,11 +203,11 @@ new #[Title('Link tracker stats')] class extends Component
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('tracker_id', $tracker->id)
-            ->when($search !== '', fn($query) => $query->where('ref_url', 'like', "%{$search}%"))
+            ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
-            ->when($this->sortField !== 'ref_url', fn($query) => $query->orderBy('ref_url'))
-            ->paginate(25, pageName: 'referrerPage');
+            ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
+            ->simplePaginate(25, pageName: 'referrerPage');
     }
 
     private function dailyHitRecords(LinkTracker $tracker)
@@ -334,8 +352,6 @@ new #[Title('Link tracker stats')] class extends Component
                 <flux:subheading>{{ __('All hits grouped by day') }}</flux:subheading>
             </div>
 
-            <flux:pagination :paginator="$dailyHitRecords" class="border-t-0 border-b pb-3 pt-0" />
-
             <flux:table :paginate="$dailyHitRecords">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Date') }}</flux:table.column>
@@ -375,8 +391,6 @@ new #[Title('Link tracker stats')] class extends Component
                     autocomplete="off"
                     placeholder="example.com"
                     class="max-w-md" />
-
-                <flux:pagination :paginator="$referrerStats" class="border-t-0 border-b pb-3 pt-0" />
 
                 <flux:table :paginate="$referrerStats">
                     <flux:table.columns>

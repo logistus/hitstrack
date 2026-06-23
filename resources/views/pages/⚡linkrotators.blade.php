@@ -219,7 +219,7 @@ new #[Title('Rotators')] class extends Component
             ->withCount(['stats', 'trackers'])
             ->withMax('stats', 'created_at')
             ->latest()
-            ->paginate(25);
+            ->simplePaginate(25);
 
         $uniqueHitCounts = LinkRotatorStat::query()
             ->select('rotator_id')
@@ -237,7 +237,7 @@ new #[Title('Rotators')] class extends Component
             'managedRotator' => $managedRotator,
             'availableTrackers' => LinkTracker::query()
                 ->where('user_id', Auth::id())
-                ->when($attachedTrackerIds->isNotEmpty(), fn($query) => $query->whereNotIn('id', $attachedTrackerIds))
+                ->when($attachedTrackerIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $attachedTrackerIds))
                 ->latest()
                 ->get(),
         ];

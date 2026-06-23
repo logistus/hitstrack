@@ -2,6 +2,7 @@
 
 use App\Models\LinkRotator;
 use App\Models\LinkRotatorStat;
+use App\Support\AnalyticsCache;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\Auth;
@@ -64,22 +65,44 @@ new #[Title('Link rotator stats')] class extends Component
     public function with(): array
     {
         $rotator = $this->rotator();
-        $dailyHits = $this->dailyHits($rotator);
+        $dailyHits = AnalyticsCache::remember(
+            'link-rotator',
+            $rotator->id,
+            'daily-hits',
+            fn (): array => $this->dailyHits($rotator),
+        );
 
         return [
             'rotator' => $rotator,
-            'summaryStats' => $this->summaryStats($rotator),
-            'breakdownStats' => $this->breakdownStats($rotator),
+            'summaryStats' => AnalyticsCache::remember(
+                'link-rotator',
+                $rotator->id,
+                'summary',
+                fn (): array => $this->summaryStats($rotator),
+            ),
+            'breakdownStats' => AnalyticsCache::remember(
+                'link-rotator',
+                $rotator->id,
+                'breakdowns',
+                fn (): array => $this->breakdownStats($rotator),
+            ),
             'chartData' => $dailyHits['chartData'],
             'maxHits' => $dailyHits['maxHits'],
             'dailyHitRecords' => $this->dailyHitRecords($rotator),
             'referrerStats' => $this->referrerStats($rotator),
-            'trackerPerformanceStats' => $this->trackerPerformanceStats($rotator),
+            'trackerPerformanceStats' => AnalyticsCache::remember(
+                'link-rotator',
+                $rotator->id,
+                'tracker-performance',
+                fn () => $this->trackerPerformanceStats($rotator),
+            ),
         ];
     }
 
     public function freshChartData(): array
     {
+        AnalyticsCache::forget('link-rotator', $this->rotatorId, 'daily-hits');
+
         return $this->dailyHits($this->rotator())['chartData'];
     }
 
@@ -93,7 +116,7 @@ new #[Title('Link rotator stats')] class extends Component
             return $refUrl;
         }
 
-        return 'https://' . $refUrl;
+        return 'https://'.$refUrl;
     }
 
     private function rotator(): LinkRotator
@@ -120,7 +143,7 @@ new #[Title('Link rotator stats')] class extends Component
             ->keyBy('hit_date');
 
         $days = collect(CarbonPeriod::create($start, $end))
-            ->map(fn(Carbon $date) => [
+            ->map(fn (Carbon $date) => [
                 'date' => $date->toDateString(),
                 'label' => $date->format('M j'),
                 'total' => (int) ($hitsByDay[$date->toDateString()]?->total_hits ?? 0),
@@ -161,11 +184,11 @@ new #[Title('Link rotator stats')] class extends Component
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('rotator_id', $rotator->id)
-            ->when($search !== '', fn($query) => $query->where('ref_url', 'like', "%{$search}%"))
+            ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
-            ->when($this->sortField !== 'ref_url', fn($query) => $query->orderBy('ref_url'))
-            ->paginate(25, pageName: 'referrerPage');
+            ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
+            ->simplePaginate(25, pageName: 'referrerPage');
     }
 
     private function breakdownStats(LinkRotator $rotator): array
@@ -181,7 +204,7 @@ new #[Title('Link rotator stats')] class extends Component
     {
         $field = match ($field) {
             'device_type', 'operating_system', 'browser' => $field,
-            default => throw new \InvalidArgumentException('Invalid field'),
+            default => throw new InvalidArgumentException('Invalid field'),
         };
 
         return LinkRotatorStat::query()
@@ -406,8 +429,6 @@ new #[Title('Link rotator stats')] class extends Component
                 <flux:subheading>{{ __('All hits grouped by day') }}</flux:subheading>
             </div>
 
-            <flux:pagination :paginator="$dailyHitRecords" class="border-t-0 border-b pb-3 pt-0" />
-
             <flux:table :paginate="$dailyHitRecords">
                 <flux:table.columns>
                     <flux:table.column>{{ __('Date') }}</flux:table.column>
@@ -447,8 +468,6 @@ new #[Title('Link rotator stats')] class extends Component
                     autocomplete="off"
                     placeholder="example.com"
                     class="max-w-md" />
-
-                <flux:pagination :paginator="$referrerStats" class="border-t-0 border-b pb-3 pt-0" />
 
                 <flux:table :paginate="$referrerStats">
                     <flux:table.columns>

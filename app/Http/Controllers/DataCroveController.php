@@ -75,11 +75,11 @@ HTML,
                 ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
                 ->groupByRaw('DATE(created_at)')
                 ->orderByDesc('hit_date')
-                ->paginate(25, pageName: 'dailyHitsPage')
+                ->simplePaginate(25, pageName: 'dailyHitsPage')
                 ->withQueryString(),
             'allHitRecords' => (clone $baseQuery)
                 ->latest('created_at')
-                ->paginate(25, pageName: 'allHitsPage')
+                ->simplePaginate(25, pageName: 'allHitsPage')
                 ->withQueryString(),
             'referrerStats' => (clone $baseQuery)
                 ->selectRaw("COALESCE(ref_url, '') as ref_url")
@@ -87,7 +87,7 @@ HTML,
                 ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
                 ->groupByRaw("COALESCE(ref_url, '')")
                 ->orderByDesc('total_hits')
-                ->paginate(25, pageName: 'referrerPage')
+                ->simplePaginate(25, pageName: 'referrerPage')
                 ->withQueryString(),
         ]);
     }

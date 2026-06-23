@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\AnalyticsCache;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -46,17 +47,24 @@ new #[Title('All Referrers')] class extends Component
             ->when($search !== '', fn (Builder $query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn (Builder $query) => $query->orderBy('ref_url'))
-            ->paginate(25, pageName: 'referrerPage');
-
-        $allEvents = DB::query()->fromSub($this->hitEventsQuery(), 'hit_events');
+            ->simplePaginate(25, pageName: 'referrerPage');
 
         return [
             'referrers' => $referrers,
-            'summaryStats' => [
-                'total_hits' => (clone $allEvents)->count(),
-                'unique_hits' => (clone $allEvents)->distinct()->count('ip_address'),
-                'referrers' => DB::query()->fromSub($this->referrerPerformanceQuery(), 'referrers')->count(),
-            ],
+            'summaryStats' => AnalyticsCache::remember(
+                'all-referrers',
+                (int) Auth::id(),
+                'summary',
+                function (): array {
+                    $allEvents = DB::query()->fromSub($this->hitEventsQuery(), 'hit_events');
+
+                    return [
+                        'total_hits' => (clone $allEvents)->count(),
+                        'unique_hits' => (clone $allEvents)->distinct()->count('ip_address'),
+                        'referrers' => DB::query()->fromSub($this->referrerPerformanceQuery(), 'referrers')->count(),
+                    ];
+                },
+            ),
         ];
     }
 
@@ -143,8 +151,6 @@ new #[Title('All Referrers')] class extends Component
             autocomplete="off"
             placeholder="example.com"
             class="max-w-md" />
-
-        <flux:pagination :paginator="$referrers" class="border-t-0 border-b pb-3 pt-0" />
 
         <flux:table :paginate="$referrers">
             <flux:table.columns>
