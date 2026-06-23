@@ -12,7 +12,7 @@ class AnalyticsCache
     public static function remember(string $scope, int $id, string $segment, Closure $callback): mixed
     {
         return Cache::remember(
-            "analytics:v1:{$scope}:{$id}:{$segment}",
+            "analytics:v2:{$scope}:{$id}:{$segment}",
             now()->addSeconds(self::TTL_SECONDS),
             $callback,
         );
@@ -20,6 +20,6 @@ class AnalyticsCache
 
     public static function forget(string $scope, int $id, string $segment): void
     {
-        Cache::forget("analytics:v1:{$scope}:{$id}:{$segment}");
+        Cache::forget("analytics:v2:{$scope}:{$id}:{$segment}");
     }
 }

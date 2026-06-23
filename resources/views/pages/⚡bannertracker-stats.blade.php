@@ -75,22 +75,12 @@ new #[Title('Banner tracker stats')] class extends Component
                 'summary',
                 fn (): array => $this->summaryStats($banner),
             ),
-            'breakdownStats' => AnalyticsCache::remember(
-                'banner-tracker',
-                $banner->id,
-                'breakdowns',
-                fn (): array => $this->breakdownStats($banner),
-            ),
+            'breakdownStats' => $this->breakdownStats($banner),
             'chartData' => $dailyEvents['chartData'],
             'maxEvents' => $dailyEvents['maxEvents'],
             'dailyEventRecords' => $this->dailyEventRecords($banner),
             'referrerStats' => $this->referrerStats($banner),
-            'pageStats' => AnalyticsCache::remember(
-                'banner-tracker',
-                $banner->id,
-                'page-performance',
-                fn () => $this->pageStats($banner),
-            ),
+            'pageStats' => $this->pageStats($banner),
         ];
     }
 

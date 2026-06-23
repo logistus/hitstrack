@@ -80,22 +80,12 @@ new #[Title('Link rotator stats')] class extends Component
                 'summary',
                 fn (): array => $this->summaryStats($rotator),
             ),
-            'breakdownStats' => AnalyticsCache::remember(
-                'link-rotator',
-                $rotator->id,
-                'breakdowns',
-                fn (): array => $this->breakdownStats($rotator),
-            ),
+            'breakdownStats' => $this->breakdownStats($rotator),
             'chartData' => $dailyHits['chartData'],
             'maxHits' => $dailyHits['maxHits'],
             'dailyHitRecords' => $this->dailyHitRecords($rotator),
             'referrerStats' => $this->referrerStats($rotator),
-            'trackerPerformanceStats' => AnalyticsCache::remember(
-                'link-rotator',
-                $rotator->id,
-                'tracker-performance',
-                fn () => $this->trackerPerformanceStats($rotator),
-            ),
+            'trackerPerformanceStats' => $this->trackerPerformanceStats($rotator),
         ];
     }
 

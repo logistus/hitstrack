@@ -80,12 +80,7 @@ new #[Title('Link tracker stats')] class extends Component
                 'summary',
                 fn (): array => $this->summaryStats($tracker),
             ),
-            'breakdownStats' => AnalyticsCache::remember(
-                'link-tracker',
-                $tracker->id,
-                'breakdowns',
-                fn (): array => $this->breakdownStats($tracker),
-            ),
+            'breakdownStats' => $this->breakdownStats($tracker),
             'chartData' => $dailyHits['chartData'],
             'maxHits' => $dailyHits['maxHits'],
             'dailyHitRecords' => $this->dailyHitRecords($tracker),

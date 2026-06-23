@@ -76,22 +76,12 @@ new #[Title('Banner rotator stats')] class extends Component
                 'summary',
                 fn (): array => $this->summaryStats($rotator),
             ),
-            'breakdownStats' => AnalyticsCache::remember(
-                'banner-rotator',
-                $rotator->id,
-                'breakdowns',
-                fn (): array => $this->breakdownStats($rotator),
-            ),
+            'breakdownStats' => $this->breakdownStats($rotator),
             'chartData' => $dailyEvents['chartData'],
             'maxEvents' => $dailyEvents['maxEvents'],
             'dailyEventRecords' => $this->dailyEventRecords($rotator),
             'referrerStats' => $this->referrerStats($rotator),
-            'bannerPerformanceStats' => AnalyticsCache::remember(
-                'banner-rotator',
-                $rotator->id,
-                'banner-performance',
-                fn () => $this->bannerPerformanceStats($rotator),
-            ),
+            'bannerPerformanceStats' => $this->bannerPerformanceStats($rotator),
         ];
     }
 
