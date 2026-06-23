@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\BannerRotator;
+use App\Support\BannerImageProxy;
 use App\Support\ClientInfo;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class BannerRotatorImageController extends Controller
 {
-    public function __invoke(Request $request, string $slug): RedirectResponse
+    public function __invoke(Request $request, string $slug, BannerImageProxy $imageProxy): Response
     {
         $rotator = BannerRotator::query()
             ->where('rotator_slug', $slug)
@@ -28,21 +29,6 @@ class BannerRotatorImageController extends Controller
             ...ClientInfo::fromRequest($request),
         ]);
 
-        return redirect()
-            ->away($banner->image_url)
-            ->withCookie(cookie(
-                name: $this->selectedBannerCookieName($rotator->id),
-                value: (string) $banner->id,
-                minutes: 30,
-                path: '/',
-                secure: $request->isSecure(),
-                httpOnly: true,
-                sameSite: $request->isSecure() ? 'None' : 'Lax',
-            ));
-    }
-
-    private function selectedBannerCookieName(int $rotatorId): string
-    {
-        return "banner_rotator_{$rotatorId}_selected_banner";
+        return $imageProxy->responseFor($banner->image_url);
     }
 }

@@ -16,8 +16,14 @@ Route::get('t/{slug}', LinkTrackerRedirectController::class)->name('linktrackers
 Route::get('r/{slug}', LinkRotatorRedirectController::class)->name('linkrotators.redirect');
 Route::get('b/{slug}', BannerClickRedirectController::class)->name('bannertrackers.click');
 Route::get('b/{slug}/image', BannerImageController::class)->name('bannertrackers.image');
+Route::get('b/{slug}/image.{extension}', BannerImageController::class)
+    ->whereIn('extension', ['jpg', 'jpeg', 'png', 'gif', 'webp'])
+    ->name('bannertrackers.image.extension');
 Route::get('br/{slug}', BannerRotatorClickRedirectController::class)->name('bannerrotators.click');
 Route::get('br/{slug}/image', BannerRotatorImageController::class)->name('bannerrotators.image');
+Route::get('br/{slug}/image.{extension}', BannerRotatorImageController::class)
+    ->whereIn('extension', ['jpg', 'jpeg', 'png', 'gif', 'webp'])
+    ->name('bannerrotators.image.extension');
 
 Route::get('pixel', PixelTrackingController::class)->name('pixels.track');
 Route::get('datacrove', DataCroveController::class)->name('datacrove');

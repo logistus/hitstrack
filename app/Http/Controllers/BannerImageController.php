@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Banner;
+use App\Support\BannerImageProxy;
 use App\Support\ClientInfo;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class BannerImageController extends Controller
 {
-    public function __invoke(Request $request, string $slug): RedirectResponse
+    public function __invoke(Request $request, string $slug, BannerImageProxy $imageProxy): Response
     {
         $banner = Banner::query()
             ->where('banner_slug', $slug)
@@ -23,6 +24,6 @@ class BannerImageController extends Controller
             ...ClientInfo::fromRequest($request),
         ]);
 
-        return redirect()->away($banner->image_url);
+        return $imageProxy->responseFor($banner->image_url);
     }
 }
