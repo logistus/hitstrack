@@ -29,7 +29,7 @@
                 </flux:navbar.item>
 
                 <flux:dropdown position="bottom" align="start">
-                    <flux:navbar.item type="button" :current="request()->routeIs('linktrackers*') || request()->routeIs('linkrotators*')" icon:trailing="chevron-down">
+                    <flux:navbar.item type="button" :current="request()->routeIs('linktrackers*') || request()->routeIs('linkrotators*') || request()->routeIs('referrers')" icon:trailing="chevron-down">
                         {{ __('Link') }}
                     </flux:navbar.item>
 
@@ -39,6 +39,9 @@
                         </flux:menu.item>
                         <flux:menu.item :href="route('linkrotators')" icon="arrows-right-left" wire:navigate>
                             {{ __('Link Rotators') }}
+                        </flux:menu.item>
+                        <flux:menu.item :href="route('referrers')" icon="globe-alt" wire:navigate>
+                            {{ __('All Referrers') }}
                         </flux:menu.item>
                     </flux:menu>
                 </flux:dropdown>
@@ -124,6 +127,9 @@
                 </flux:sidebar.item>
                 <flux:sidebar.item :href="route('linkrotators')" :current="request()->routeIs('linkrotators*')" wire:navigate>
                     {{ __('Link Rotators')  }}
+                </flux:sidebar.item>
+                <flux:sidebar.item :href="route('referrers')" :current="request()->routeIs('referrers')" wire:navigate>
+                    {{ __('All Referrers') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
