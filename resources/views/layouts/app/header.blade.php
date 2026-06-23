@@ -27,18 +27,36 @@
                 <flux:navbar.item :href="route('home')" wire:navigate>
                     {{ __('Home') }}
                 </flux:navbar.item>
-                <flux:navbar.item :href="route('linktrackers')" :current="request()->routeIs('linktrackers*')" wire:navigate>
-                    {{ __('Link Trackers') }}
-                </flux:navbar.item>
-                <flux:navbar.item :href="route('linkrotators')" :current="request()->routeIs('linkrotators*')" wire:navigate>
-                    {{ __('Link Rotators') }}
-                </flux:navbar.item>
-                <flux:navbar.item :href="route('bannertrackers')" :current="request()->routeIs('bannertrackers*')" wire:navigate>
-                    {{ __('Banner Trackers') }}
-                </flux:navbar.item>
-                <flux:navbar.item :href="route('bannerrotators')" :current="request()->routeIs('bannerrotators*')" wire:navigate>
-                    {{ __('Banner Rotators') }}
-                </flux:navbar.item>
+
+                <flux:dropdown position="bottom" align="start">
+                    <flux:navbar.item type="button" :current="request()->routeIs('linktrackers*') || request()->routeIs('linkrotators*')" icon:trailing="chevron-down">
+                        {{ __('Link') }}
+                    </flux:navbar.item>
+
+                    <flux:menu>
+                        <flux:menu.item :href="route('linktrackers')" icon="chart-bar" wire:navigate>
+                            {{ __('Link Trackers') }}
+                        </flux:menu.item>
+                        <flux:menu.item :href="route('linkrotators')" icon="arrows-right-left" wire:navigate>
+                            {{ __('Link Rotators') }}
+                        </flux:menu.item>
+                    </flux:menu>
+                </flux:dropdown>
+
+                <flux:dropdown position="bottom" align="start">
+                    <flux:navbar.item type="button" :current="request()->routeIs('bannertrackers*') || request()->routeIs('bannerrotators*')" icon:trailing="chevron-down">
+                        {{ __('Banner') }}
+                    </flux:navbar.item>
+
+                    <flux:menu>
+                        <flux:menu.item :href="route('bannertrackers')" icon="photo" wire:navigate>
+                            {{ __('Banner Trackers') }}
+                        </flux:menu.item>
+                        <flux:menu.item :href="route('bannerrotators')" icon="rectangle-stack" wire:navigate>
+                            {{ __('Banner Rotators') }}
+                        </flux:menu.item>
+                    </flux:menu>
+                </flux:dropdown>
             </flux:navbar>
 
             <flux:spacer />
@@ -98,12 +116,18 @@
                 <flux:sidebar.item :href="route('home')" wire:navigate>
                     {{ __('Home')  }}
                 </flux:sidebar.item>
+            </flux:sidebar.group>
+
+            <flux:sidebar.group :heading="__('Link')">
                 <flux:sidebar.item :href="route('linktrackers')" :current="request()->routeIs('linktrackers*')" wire:navigate>
                     {{ __('Link Trackers')  }}
                 </flux:sidebar.item>
                 <flux:sidebar.item :href="route('linkrotators')" :current="request()->routeIs('linkrotators*')" wire:navigate>
                     {{ __('Link Rotators')  }}
                 </flux:sidebar.item>
+            </flux:sidebar.group>
+
+            <flux:sidebar.group :heading="__('Banner')">
                 <flux:sidebar.item :href="route('bannertrackers')" :current="request()->routeIs('bannertrackers*')" wire:navigate>
                     {{ __('Banner Trackers')  }}
                 </flux:sidebar.item>
