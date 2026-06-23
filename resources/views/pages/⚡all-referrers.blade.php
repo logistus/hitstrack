@@ -48,10 +48,10 @@ new #[Title('All Referrers')] class extends Component
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->when($search !== '', fn (Builder $query) => $query->where('ref_url', 'like', "%{$search}%"))
+            ->when($search !== '', fn(Builder $query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
-            ->when($this->sortField !== 'ref_url', fn (Builder $query) => $query->orderBy('ref_url'))
+            ->when($this->sortField !== 'ref_url', fn(Builder $query) => $query->orderBy('ref_url'))
             ->paginate(25, pageName: 'referrerPage');
 
         $allEvents = DB::query()->fromSub($this->hitEventsQuery(), 'hit_events');
@@ -82,7 +82,7 @@ new #[Title('All Referrers')] class extends Component
 
         return str_starts_with($refUrl, 'http://') || str_starts_with($refUrl, 'https://')
             ? $refUrl
-            : 'https://'.$refUrl;
+            : 'https://' . $refUrl;
     }
 
     private function hitEventsQuery(): Builder
@@ -179,27 +179,27 @@ new #[Title('All Referrers')] class extends Component
 
             <flux:table.rows>
                 @forelse ($referrers as $referrer)
-                    <flux:table.row wire:key="all-referrer-{{ md5($referrer->ref_url ?: 'direct') }}">
-                        <flux:table.cell>
-                            @if ($href = $this->referrerHref($referrer->ref_url))
-                                <flux:link href="{{ $href }}" target="_blank" rel="noreferrer" class="block max-w-2xl truncate">
-                                    {{ $referrer->ref_url }}
-                                </flux:link>
-                            @else
-                                <span class="text-zinc-500 dark:text-zinc-400">{{ __('Direct / unknown') }}</span>
-                            @endif
-                        </flux:table.cell>
-                        <flux:table.cell class="text-right">{{ number_format($referrer->total_hits) }}</flux:table.cell>
-                        <flux:table.cell class="text-right">{{ number_format($referrer->unique_hits) }}</flux:table.cell>
-                    </flux:table.row>
+                <flux:table.row wire:key="all-referrer-{{ md5($referrer->ref_url ?: 'direct') }}">
+                    <flux:table.cell>
+                        @if ($href = $this->referrerHref($referrer->ref_url))
+                        <flux:link href="{{ $href }}" target="_blank" rel="noreferrer" class="block max-w-2xl truncate">
+                            {{ $referrer->ref_url }}
+                        </flux:link>
+                        @else
+                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('Direct / unknown') }}</span>
+                        @endif
+                    </flux:table.cell>
+                    <flux:table.cell>{{ number_format($referrer->total_hits) }}</flux:table.cell>
+                    <flux:table.cell>{{ number_format($referrer->unique_hits) }}</flux:table.cell>
+                </flux:table.row>
                 @empty
-                    <flux:table.row>
-                        <flux:table.cell colspan="3">
-                            <div class="py-6 text-center text-zinc-500 dark:text-zinc-400">
-                                {{ __('No referrer data yet.') }}
-                            </div>
-                        </flux:table.cell>
-                    </flux:table.row>
+                <flux:table.row>
+                    <flux:table.cell colspan="3">
+                        <div class="py-6 text-center text-zinc-500 dark:text-zinc-400">
+                            {{ __('No referrer data yet.') }}
+                        </div>
+                    </flux:table.cell>
+                </flux:table.row>
                 @endforelse
             </flux:table.rows>
         </flux:table>
