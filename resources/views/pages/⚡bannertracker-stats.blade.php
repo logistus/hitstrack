@@ -5,6 +5,7 @@ use App\Models\BannerStat;
 use App\Support\AnalyticsCache;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -24,6 +25,8 @@ new #[Title('Banner tracker stats')] class extends Component
 
     public string $referrerSearch = '';
 
+    public string $activeTab = 'overview';
+
     public function mount(string $slug): void
     {
         $this->slug = $slug;
@@ -36,7 +39,15 @@ new #[Title('Banner tracker stats')] class extends Component
 
     public function updatedReferrerSearch(): void
     {
+        $this->activeTab = 'referrers';
         $this->resetPage('referrerPage');
+    }
+
+    public function showTab(string $tab): void
+    {
+        if (in_array($tab, ['overview', 'events', 'referrers'], true)) {
+            $this->activeTab = $tab;
+        }
     }
 
     public function sortBy(string $field): void
@@ -75,12 +86,21 @@ new #[Title('Banner tracker stats')] class extends Component
                 'summary',
                 fn (): array => $this->summaryStats($banner),
             ),
-            'breakdownStats' => $this->breakdownStats($banner),
+            'breakdownStats' => AnalyticsCache::remember(
+                'banner-tracker',
+                $banner->id,
+                'breakdowns',
+                fn (): array => $this->breakdownStats($banner),
+            ),
             'chartData' => $dailyEvents['chartData'],
             'maxEvents' => $dailyEvents['maxEvents'],
-            'dailyEventRecords' => $this->dailyEventRecords($banner),
-            'referrerStats' => $this->referrerStats($banner),
-            'pageStats' => $this->pageStats($banner),
+            'dailyEventRecords' => $this->activeTab === 'events'
+                ? $this->dailyEventRecords($banner)
+                : $this->emptyPaginator('dailyEventsPage'),
+            'referrerStats' => $this->activeTab === 'referrers'
+                ? $this->referrerStats($banner)
+                : $this->emptyPaginator('referrerPage'),
+            'pageStats' => $this->activeTab === 'overview' ? $this->pageStats($banner) : collect(),
         ];
     }
 
@@ -191,7 +211,12 @@ new #[Title('Banner tracker stats')] class extends Component
             ->where('banner_id', $banner->id)
             ->groupBy('label')
             ->orderByDesc('total')
-            ->get();
+            ->get()
+            ->map(fn (BannerStat $stat): array => [
+                'label' => $stat->label,
+                'total' => (int) $stat->total,
+            ])
+            ->all();
     }
 
     private function referrerStats(Banner $banner)
@@ -235,6 +260,11 @@ new #[Title('Banner tracker stats')] class extends Component
             ->orderByDesc('event_date')
             ->simplePaginate(25, pageName: 'dailyEventsPage');
     }
+
+    private function emptyPaginator(string $pageName): Paginator
+    {
+        return new Paginator([], 25, 1, ['pageName' => $pageName]);
+    }
 };
 ?>
 
@@ -243,7 +273,7 @@ new #[Title('Banner tracker stats')] class extends Component
     $clickUrl = route('bannertrackers.click', $banner->banner_slug);
 @endphp
 
-<section class="container mx-auto space-y-8" x-data="{ activeTab: 'overview' }" data-tracker-stats-root>
+<section class="container mx-auto space-y-8" x-data="{ activeTab: $wire.entangle('activeTab') }" data-tracker-stats-root>
     <div class="flex items-start justify-between gap-4">
         <div class="space-y-2">
             <flux:heading class="sr-only">{{ __('Banner tracker stats') }}</flux:heading>
@@ -270,9 +300,9 @@ new #[Title('Banner tracker stats')] class extends Component
 
     <div class="space-y-6">
         <div class="inline-flex rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
-            <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'overview'; $nextTick(() => document.dispatchEvent(new CustomEvent('tracker-chart-resize')))">{{ __('Overview') }}</button>
-            <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'events' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'events'">{{ __('Daily events') }}</button>
-            <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'referrers'">{{ __('Referrers') }}</button>
+            <button type="button" wire:click="showTab('overview')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'overview'; $nextTick(() => document.dispatchEvent(new CustomEvent('tracker-chart-resize')))">{{ __('Overview') }}</button>
+            <button type="button" wire:click="showTab('events')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'events' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'events'">{{ __('Daily events') }}</button>
+            <button type="button" wire:click="showTab('referrers')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'referrers'">{{ __('Referrers') }}</button>
         </div>
 
         <section class="space-y-8" x-show="activeTab === 'overview'">
@@ -297,12 +327,12 @@ new #[Title('Banner tracker stats')] class extends Component
                             @forelse ($stats as $stat)
                             @php
                                 $totalEvents = $summaryStats['impressions'] + $summaryStats['clicks'];
-                                $percent = $totalEvents > 0 ? min(100, round(($stat->total / $totalEvents) * 100)) : 0;
+                                $percent = $totalEvents > 0 ? min(100, round(($stat['total'] / $totalEvents) * 100)) : 0;
                             @endphp
                             <div class="space-y-1.5">
                                 <div class="flex items-center justify-between gap-4 text-sm">
-                                    <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $label === __('Device Type') ? str($stat->label)->title() : $stat->label }}</span>
-                                    <span class="font-medium">{{ number_format($stat->total) }}</span>
+                                    <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $label === __('Device Type') ? str($stat['label'])->title() : $stat['label'] }}</span>
+                                    <span class="font-medium">{{ number_format($stat['total']) }}</span>
                                 </div>
                                 <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"><div class="h-full rounded-full bg-blue-600" @style(["width: {$percent}%"])></div></div>
                             </div>

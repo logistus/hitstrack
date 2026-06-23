@@ -4,6 +4,7 @@ use App\Models\LinkTracker;
 use App\Models\LinkTrackerStat;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 test('link tracker referrers can move to the next page with database cache enabled', function () {
@@ -27,9 +28,23 @@ test('link tracker referrers can move to the next page with database cache enabl
 
     $this->actingAs($user);
 
-    Livewire::test('pages::linktracker-stats', ['slug' => $tracker->tracker_slug])
+    $component = Livewire::test('pages::linktracker-stats', ['slug' => $tracker->tracker_slug])
+        ->call('showTab', 'referrers')
         ->assertSee('source-1.example')
+        ->assertDontSee('source-9.example');
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $component
         ->call('nextPage', 'referrerPage')
         ->assertSee('source-9.example')
         ->assertDontSee('source-1.example');
+
+    $queries = collect(DB::getQueryLog())->pluck('query')->implode("\n");
+
+    expect($queries)
+        ->not->toContain('DATE(created_at)')
+        ->not->toContain('device_type')
+        ->not->toContain('operating_system');
 });
