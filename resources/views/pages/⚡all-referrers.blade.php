@@ -44,10 +44,10 @@ new #[Title('All Referrers')] class extends Component
         $search = trim($this->search);
 
         $referrers = $this->referrerPerformanceQuery()
-            ->when($search !== '', fn (Builder $query) => $query->where('ref_url', 'like', "%{$search}%"))
+            ->when($search !== '', fn(Builder $query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->orderBy($this->sortField, $this->sortDirection)
-            ->when($this->sortField !== 'ref_url', fn (Builder $query) => $query->orderBy('ref_url'))
-            ->simplePaginate(25, pageName: 'referrerPage');
+            ->when($this->sortField !== 'ref_url', fn(Builder $query) => $query->orderBy('ref_url'))
+            ->simplePaginate(7, pageName: 'referrerPage');
 
         return [
             'referrers' => $referrers,
@@ -76,7 +76,7 @@ new #[Title('All Referrers')] class extends Component
 
         return str_starts_with($refUrl, 'http://') || str_starts_with($refUrl, 'https://')
             ? $refUrl
-            : 'https://'.$refUrl;
+            : 'https://' . $refUrl;
     }
 
     private function hitEventsQuery(): Builder
