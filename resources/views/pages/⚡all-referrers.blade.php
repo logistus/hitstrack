@@ -49,11 +49,6 @@ new #[Title('All Referrers')] class extends Component
             ->paginate(25, pageName: 'referrerPage');
 
         $allEvents = DB::query()->fromSub($this->hitEventsQuery(), 'hit_events');
-        $bestReferrer = $this->referrerPerformanceQuery()
-            ->orderByDesc('unique_rate')
-            ->orderByDesc('total_hits')
-            ->orderBy('ref_url')
-            ->first();
 
         return [
             'referrers' => $referrers,
@@ -61,7 +56,6 @@ new #[Title('All Referrers')] class extends Component
                 'total_hits' => (clone $allEvents)->count(),
                 'unique_hits' => (clone $allEvents)->distinct()->count('ip_address'),
                 'referrers' => DB::query()->fromSub($this->referrerPerformanceQuery(), 'referrers')->count(),
-                'best_referrer' => $bestReferrer,
             ],
         ];
     }
@@ -120,7 +114,7 @@ new #[Title('All Referrers')] class extends Component
         <flux:subheading>{{ __('Combined referrer performance across all link trackers and link rotators.') }}</flux:subheading>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-3">
         <flux:card>
             <div class="space-y-2">
                 <flux:text>{{ __('Total Hits') }}</flux:text>
@@ -137,20 +131,6 @@ new #[Title('All Referrers')] class extends Component
             <div class="space-y-2">
                 <flux:text>{{ __('Referrers') }}</flux:text>
                 <flux:heading size="xl">{{ number_format($summaryStats['referrers']) }}</flux:heading>
-            </div>
-        </flux:card>
-        <flux:card>
-            <div class="space-y-2">
-                <flux:text>{{ __('Best Unique Rate') }}</flux:text>
-                @if ($bestReferrer = $summaryStats['best_referrer'])
-                    <flux:heading size="xl">{{ number_format($bestReferrer->unique_rate, 2) }}%</flux:heading>
-                    <flux:text class="block truncate">
-                        {{ $bestReferrer->ref_url ?: __('Direct / unknown') }}
-                        · {{ number_format($bestReferrer->unique_hits) }}/{{ number_format($bestReferrer->total_hits) }}
-                    </flux:text>
-                @else
-                    <flux:heading size="xl">0.00%</flux:heading>
-                @endif
             </div>
         </flux:card>
     </div>

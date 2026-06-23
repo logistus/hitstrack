@@ -63,8 +63,8 @@ test('all referrers combines direct tracker and rotator hits without double coun
         ->assertSee('All Referrers')
         ->assertSee('source.example')
         ->assertSeeInOrder(['Total Hits', '3', 'Unique Hits', '2'])
-        ->assertSee('Best Unique Rate')
         ->assertSee('66.67%')
         ->assertSee('Unique Rate')
+        ->assertDontSee('Best Unique Rate')
         ->assertDontSee('private.example');
 });
