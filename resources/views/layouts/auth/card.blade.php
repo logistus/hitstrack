@@ -28,7 +28,6 @@
             </flux:toast.group>
         @endpersist
 
-        <x-cookie-consent />
         @fluxScripts
     </body>
 </html>
