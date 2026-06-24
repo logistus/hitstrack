@@ -21,16 +21,22 @@
   --text-body:#4a3010;
 }
 
-html,body{height:100%;overflow:hidden}
+html{
+  min-height:100%;
+  overflow-x:hidden;
+  overflow-y:auto;
+}
 body{
   font-family:'Nunito',sans-serif;
   background:var(--cream);
   color:var(--text-body);
   display:flex;
-  align-items:center;
+  align-items:safe center;
   justify-content:center;
   min-height:100vh;
-  overflow:hidden;
+  min-height:100dvh;
+  overflow-x:hidden;
+  overflow-y:auto;
   position:relative;
 }
 

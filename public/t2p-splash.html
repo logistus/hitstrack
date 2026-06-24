@@ -30,10 +30,10 @@
       --text-body: #3a1450;
     }
 
-    html,
-    body {
-      height: 100%;
-      overflow: hidden
+    html {
+      min-height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     body {
@@ -41,10 +41,12 @@
       background: var(--cream);
       color: var(--text-body);
       display: flex;
-      align-items: center;
+      align-items: safe center;
       justify-content: center;
       min-height: 100vh;
-      overflow: hidden;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
       position: relative;
     }
 
@@ -168,7 +170,7 @@
     /* ── HEADLINE ── */
     .headline {
       font-family: 'Fredoka One', cursive;
-      font-size: clamp(3.6rem, 9.5vw, 7.2rem);
+      font-size: clamp(2.4rem, 7vw, 5.2rem);
       line-height: 0.95;
       letter-spacing: 0.01em;
       color: var(--magenta);
