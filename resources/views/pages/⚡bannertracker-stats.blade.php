@@ -100,7 +100,6 @@ new #[Title('Banner tracker stats')] class extends Component
             'referrerStats' => $this->activeTab === 'referrers'
                 ? $this->referrerStats($banner)
                 : $this->emptyPaginator('referrerPage'),
-            'pageStats' => $this->activeTab === 'overview' ? $this->pageStats($banner) : collect(),
         ];
     }
 
@@ -236,19 +235,6 @@ new #[Title('Banner tracker stats')] class extends Component
             ->simplePaginate(25, pageName: 'referrerPage');
     }
 
-    private function pageStats(Banner $banner)
-    {
-        return BannerStat::query()
-            ->selectRaw("COALESCE(page_url, '') as page_url")
-            ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
-            ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->where('banner_id', $banner->id)
-            ->groupByRaw("COALESCE(page_url, '')")
-            ->orderByDesc('impressions')
-            ->limit(10)
-            ->get();
-    }
-
     private function dailyEventRecords(Banner $banner)
     {
         return BannerStat::query()
@@ -345,19 +331,6 @@ new #[Title('Banner tracker stats')] class extends Component
                 @endforeach
             </section>
 
-            <section class="space-y-4">
-                <div><flux:heading>{{ __('Top pages') }}</flux:heading><flux:subheading>{{ __('Top page URL values sent with banner requests') }}</flux:subheading></div>
-                <flux:table>
-                    <flux:table.columns><flux:table.column>{{ __('Page URL') }}</flux:table.column><flux:table.column>{{ __('Impressions') }}</flux:table.column><flux:table.column>{{ __('Clicks') }}</flux:table.column></flux:table.columns>
-                    <flux:table.rows>
-                        @forelse ($pageStats as $stat)
-                        <flux:table.row wire:key="banner-page-{{ md5($stat->page_url ?: 'unknown') }}"><flux:table.cell>{{ $stat->page_url ?: __('Unknown') }}</flux:table.cell><flux:table.cell>{{ number_format($stat->impressions) }}</flux:table.cell><flux:table.cell>{{ number_format($stat->clicks) }}</flux:table.cell></flux:table.row>
-                        @empty
-                        <flux:table.row><flux:table.cell colspan="3" align="center">{{ __('No page data yet.') }}</flux:table.cell></flux:table.row>
-                        @endforelse
-                    </flux:table.rows>
-                </flux:table>
-            </section>
         </section>
 
         <section class="space-y-4" x-show="activeTab === 'events'">

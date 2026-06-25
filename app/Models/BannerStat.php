@@ -12,7 +12,6 @@ class BannerStat extends Model
         'banner_id',
         'banner_rotator_id',
         'event_type',
-        'page_url',
         'ref_url',
         'ip_address',
         'device_type',

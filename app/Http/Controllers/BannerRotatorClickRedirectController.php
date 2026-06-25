@@ -24,7 +24,6 @@ class BannerRotatorClickRedirectController extends Controller
         $banner->stats()->create([
             'banner_rotator_id' => $rotator->id,
             'event_type' => 'click',
-            'page_url' => $request->query('page_url'),
             'ref_url' => ClientInfo::referrerDomain($request),
             'ip_address' => $request->ip(),
             ...ClientInfo::fromRequest($request),
