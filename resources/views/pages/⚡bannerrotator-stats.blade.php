@@ -76,7 +76,7 @@ new #[Title('Banner rotator stats')] class extends Component
             'banner-rotator',
             $rotator->id,
             'daily-events',
-            fn (): array => $this->dailyEvents($rotator),
+            fn(): array => $this->dailyEvents($rotator),
         );
 
         return [
@@ -85,13 +85,13 @@ new #[Title('Banner rotator stats')] class extends Component
                 'banner-rotator',
                 $rotator->id,
                 'summary',
-                fn (): array => $this->summaryStats($rotator),
+                fn(): array => $this->summaryStats($rotator),
             ),
             'breakdownStats' => AnalyticsCache::remember(
                 'banner-rotator',
                 $rotator->id,
                 'breakdowns',
-                fn (): array => $this->breakdownStats($rotator),
+                fn(): array => $this->breakdownStats($rotator),
             ),
             'chartData' => $dailyEvents['chartData'],
             'maxEvents' => $dailyEvents['maxEvents'],
@@ -117,7 +117,7 @@ new #[Title('Banner rotator stats')] class extends Component
             return $refUrl;
         }
 
-        return 'https://'.$refUrl;
+        return 'https://' . $refUrl;
     }
 
     private function rotator(): BannerRotator
@@ -135,7 +135,7 @@ new #[Title('Banner rotator stats')] class extends Component
 
         if (! $this->hasRotatorStatsColumn()) {
             $days = collect(CarbonPeriod::create($start, $end))
-                ->map(fn (Carbon $date) => [
+                ->map(fn(Carbon $date) => [
                     'date' => $date->toDateString(),
                     'label' => $date->format('M j'),
                     'impressions' => 0,
@@ -165,7 +165,7 @@ new #[Title('Banner rotator stats')] class extends Component
             ->keyBy('event_date');
 
         $days = collect(CarbonPeriod::create($start, $end))
-            ->map(fn (Carbon $date) => [
+            ->map(fn(Carbon $date) => [
                 'date' => $date->toDateString(),
                 'label' => $date->format('M j'),
                 'impressions' => (int) ($eventsByDay[$date->toDateString()]?->impressions ?? 0),
@@ -180,7 +180,7 @@ new #[Title('Banner rotator stats')] class extends Component
                 'totals' => $days->pluck('impressions')->all(),
                 'uniques' => $days->pluck('clicks')->all(),
             ],
-            'maxEvents' => max(1, $days->max(fn ($day) => max($day['impressions'], $day['clicks']))),
+            'maxEvents' => max(1, $days->max(fn($day) => max($day['impressions'], $day['clicks']))),
         ];
     }
 
@@ -195,7 +195,7 @@ new #[Title('Banner rotator stats')] class extends Component
                 'ctr' => 0,
             ];
         }
-
+        /*
         $impressions = BannerStat::query()
             ->where('banner_rotator_id', $rotator->id)
             ->where('event_type', 'impression')
@@ -220,6 +220,25 @@ new #[Title('Banner rotator stats')] class extends Component
                 ->distinct('ip_address')
                 ->count('ip_address'),
             'ctr' => $impressions > 0 ? ($clicks / $impressions) * 100 : 0,
+        ];
+        */
+        $row = BannerStat::query()
+            ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
+            ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN event_type = 'impression' THEN ip_address END) as unique_impressions")
+            ->selectRaw("COUNT(DISTINCT CASE WHEN event_type = 'click' THEN ip_address END) as unique_clicks")
+            ->where('banner_rotator_id', $rotator->id)
+            ->first();
+
+        $impressions = (int) $row->impressions;
+        $clicks      = (int) $row->clicks;
+
+        return [
+            'impressions'        => $impressions,
+            'clicks'             => $clicks,
+            'unique_impressions' => (int) $row->unique_impressions,
+            'unique_clicks'      => (int) $row->unique_clicks,
+            'ctr'                => $impressions > 0 ? ($clicks / $impressions) * 100 : 0,
         ];
     }
 
@@ -250,7 +269,7 @@ new #[Title('Banner rotator stats')] class extends Component
             ->groupBy('label')
             ->orderByDesc('total')
             ->get()
-            ->map(fn (BannerStat $stat): array => [
+            ->map(fn(BannerStat $stat): array => [
                 'label' => $stat->label,
                 'total' => (int) $stat->total,
             ])
@@ -273,10 +292,10 @@ new #[Title('Banner rotator stats')] class extends Component
             ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
             ->selectRaw('COUNT(*) as total_events')
             ->where('banner_rotator_id', $rotator->id)
-            ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
+            ->when($search !== '', fn($query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
-            ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
+            ->when($this->sortField !== 'ref_url', fn($query) => $query->orderBy('ref_url'))
             ->simplePaginate(25, pageName: 'referrerPage');
     }
 
@@ -293,14 +312,14 @@ new #[Title('Banner rotator stats')] class extends Component
             ->select('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug')
             ->when(
                 $hasBannerSizeColumns,
-                fn ($query) => $query->addSelect('banners.width', 'banners.height'),
-                fn ($query) => $query->selectRaw('NULL as width, NULL as height'),
+                fn($query) => $query->addSelect('banners.width', 'banners.height'),
+                fn($query) => $query->selectRaw('NULL as width, NULL as height'),
             )
             ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
             ->where('banner_stats.banner_rotator_id', $rotator->id)
             ->groupBy('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug')
-            ->when($hasBannerSizeColumns, fn ($query) => $query->groupBy('banners.width', 'banners.height'))
+            ->when($hasBannerSizeColumns, fn($query) => $query->groupBy('banners.width', 'banners.height'))
             ->orderByDesc('impressions')
             ->get();
     }
@@ -342,8 +361,8 @@ new #[Title('Banner rotator stats')] class extends Component
 ?>
 
 @php
-    $imageUrl = route('bannerrotators.image', $rotator->rotator_slug);
-    $clickUrl = route('bannerrotators.click', $rotator->rotator_slug);
+$imageUrl = route('bannerrotators.image', $rotator->rotator_slug);
+$clickUrl = route('bannerrotators.click', $rotator->rotator_slug);
 @endphp
 
 <section class="container mx-auto space-y-8" x-data="{ activeTab: $wire.entangle('activeTab') }" data-tracker-stats-root>
@@ -363,11 +382,36 @@ new #[Title('Banner rotator stats')] class extends Component
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <flux:card><div class="space-y-2"><flux:text>{{ __('Impressions') }}</flux:text><flux:heading size="xl">{{ number_format($summaryStats['impressions']) }}</flux:heading></div></flux:card>
-        <flux:card><div class="space-y-2"><flux:text>{{ __('Clicks') }}</flux:text><flux:heading size="xl">{{ number_format($summaryStats['clicks']) }}</flux:heading></div></flux:card>
-        <flux:card><div class="space-y-2"><flux:text>{{ __('CTR') }}</flux:text><flux:heading size="xl">{{ number_format($summaryStats['ctr'], 2) }}%</flux:heading></div></flux:card>
-        <flux:card><div class="space-y-2"><flux:text>{{ __('Unique Impressions') }}</flux:text><flux:heading size="xl">{{ number_format($summaryStats['unique_impressions']) }}</flux:heading></div></flux:card>
-        <flux:card><div class="space-y-2"><flux:text>{{ __('Unique Clicks') }}</flux:text><flux:heading size="xl">{{ number_format($summaryStats['unique_clicks']) }}</flux:heading></div></flux:card>
+        <flux:card>
+            <div class="space-y-2">
+                <flux:text>{{ __('Impressions') }}</flux:text>
+                <flux:heading size="xl">{{ number_format($summaryStats['impressions']) }}</flux:heading>
+            </div>
+        </flux:card>
+        <flux:card>
+            <div class="space-y-2">
+                <flux:text>{{ __('Clicks') }}</flux:text>
+                <flux:heading size="xl">{{ number_format($summaryStats['clicks']) }}</flux:heading>
+            </div>
+        </flux:card>
+        <flux:card>
+            <div class="space-y-2">
+                <flux:text>{{ __('CTR') }}</flux:text>
+                <flux:heading size="xl">{{ number_format($summaryStats['ctr'], 2) }}%</flux:heading>
+            </div>
+        </flux:card>
+        <flux:card>
+            <div class="space-y-2">
+                <flux:text>{{ __('Unique Impressions') }}</flux:text>
+                <flux:heading size="xl">{{ number_format($summaryStats['unique_impressions']) }}</flux:heading>
+            </div>
+        </flux:card>
+        <flux:card>
+            <div class="space-y-2">
+                <flux:text>{{ __('Unique Clicks') }}</flux:text>
+                <flux:heading size="xl">{{ number_format($summaryStats['unique_clicks']) }}</flux:heading>
+            </div>
+        </flux:card>
     </div>
 
     <div class="space-y-6">
@@ -381,7 +425,10 @@ new #[Title('Banner rotator stats')] class extends Component
         <section class="space-y-8" x-show="activeTab === 'overview'">
             <section class="space-y-4">
                 <div class="flex items-center justify-between gap-4">
-                    <div><flux:heading>{{ __('Daily events') }}</flux:heading><flux:subheading>{{ __('Last 30 days') }}</flux:subheading></div>
+                    <div>
+                        <flux:heading>{{ __('Daily events') }}</flux:heading>
+                        <flux:subheading>{{ __('Last 30 days') }}</flux:subheading>
+                    </div>
                     <flux:text>{{ __('Peak: :count', ['count' => $maxEvents]) }}</flux:text>
                 </div>
                 <div class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-700" wire:ignore>
@@ -399,15 +446,17 @@ new #[Title('Banner rotator stats')] class extends Component
                         <div class="space-y-3">
                             @forelse ($stats as $stat)
                             @php
-                                $totalEvents = $summaryStats['impressions'] + $summaryStats['clicks'];
-                                $percent = $totalEvents > 0 ? min(100, round(($stat['total'] / $totalEvents) * 100)) : 0;
+                            $totalEvents = $summaryStats['impressions'] + $summaryStats['clicks'];
+                            $percent = $totalEvents > 0 ? min(100, round(($stat['total'] / $totalEvents) * 100)) : 0;
                             @endphp
                             <div class="space-y-1.5">
                                 <div class="flex items-center justify-between gap-4 text-sm">
                                     <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $label === __('Device Type') ? str($stat['label'])->title() : $stat['label'] }}</span>
                                     <span class="font-medium">{{ number_format($stat['total']) }}</span>
                                 </div>
-                                <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"><div class="h-full rounded-full bg-blue-600" @style(["width: {$percent}%"])></div></div>
+                                <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                                    <div class="h-full rounded-full bg-blue-600" @style(["width: {$percent}%"])></div>
+                                </div>
                             </div>
                             @empty
                             <flux:text>{{ __('No data') }}</flux:text>
@@ -420,15 +469,23 @@ new #[Title('Banner rotator stats')] class extends Component
         </section>
 
         <section class="space-y-4" x-show="activeTab === 'banners'">
-            <div><flux:heading>{{ __('Banner performance') }}</flux:heading><flux:subheading>{{ __('Events grouped by attached banner') }}</flux:subheading></div>
+            <div>
+                <flux:heading>{{ __('Banner performance') }}</flux:heading>
+                <flux:subheading>{{ __('Events grouped by attached banner') }}</flux:subheading>
+            </div>
             <flux:table>
-                <flux:table.columns><flux:table.column>{{ __('Banner') }}</flux:table.column><flux:table.column>{{ __('Impressions') }}</flux:table.column><flux:table.column>{{ __('Clicks') }}</flux:table.column><flux:table.column>{{ __('CTR') }}</flux:table.column></flux:table.columns>
+                <flux:table.columns>
+                    <flux:table.column>{{ __('Banner') }}</flux:table.column>
+                    <flux:table.column>{{ __('Impressions') }}</flux:table.column>
+                    <flux:table.column>{{ __('Clicks') }}</flux:table.column>
+                    <flux:table.column>{{ __('CTR') }}</flux:table.column>
+                </flux:table.columns>
                 <flux:table.rows>
                     @forelse ($bannerPerformanceStats as $stat)
                     @php
-                        $ctr = $stat->impressions > 0 ? ($stat->clicks / $stat->impressions) * 100 : 0;
-                        $previewWidth = $stat->width ? max(1, (int) round($stat->width / 2)) : 160;
-                        $previewHeight = $stat->height ? max(1, (int) round($stat->height / 2)) : 80;
+                    $ctr = $stat->impressions > 0 ? ($stat->clicks / $stat->impressions) * 100 : 0;
+                    $previewWidth = $stat->width ? max(1, (int) round($stat->width / 2)) : 160;
+                    $previewHeight = $stat->height ? max(1, (int) round($stat->height / 2)) : 80;
                     @endphp
                     <flux:table.row wire:key="banner-rotator-performance-{{ $stat->id }}">
                         <flux:table.cell>
@@ -446,31 +503,51 @@ new #[Title('Banner rotator stats')] class extends Component
                         <flux:table.cell>{{ number_format($ctr, 2) }}%</flux:table.cell>
                     </flux:table.row>
                     @empty
-                    <flux:table.row><flux:table.cell colspan="4" align="center">{{ __('No banner events yet.') }}</flux:table.cell></flux:table.row>
+                    <flux:table.row>
+                        <flux:table.cell colspan="4" align="center">{{ __('No banner events yet.') }}</flux:table.cell>
+                    </flux:table.row>
                     @endforelse
                 </flux:table.rows>
             </flux:table>
         </section>
 
         <section class="space-y-4" x-show="activeTab === 'events'">
-            <div><flux:heading>{{ __('Daily events') }}</flux:heading><flux:subheading>{{ __('All rotator banner events grouped by day') }}</flux:subheading></div>
+            <div>
+                <flux:heading>{{ __('Daily events') }}</flux:heading>
+                <flux:subheading>{{ __('All rotator banner events grouped by day') }}</flux:subheading>
+            </div>
             <flux:table :paginate="$dailyEventRecords">
-                <flux:table.columns><flux:table.column>{{ __('Date') }}</flux:table.column><flux:table.column>{{ __('Impressions') }}</flux:table.column><flux:table.column>{{ __('Clicks') }}</flux:table.column><flux:table.column>{{ __('CTR') }}</flux:table.column></flux:table.columns>
+                <flux:table.columns>
+                    <flux:table.column>{{ __('Date') }}</flux:table.column>
+                    <flux:table.column>{{ __('Impressions') }}</flux:table.column>
+                    <flux:table.column>{{ __('Clicks') }}</flux:table.column>
+                    <flux:table.column>{{ __('CTR') }}</flux:table.column>
+                </flux:table.columns>
                 <flux:table.rows>
                     @forelse ($dailyEventRecords as $stat)
                     @php
-                        $ctr = $stat->impressions > 0 ? ($stat->clicks / $stat->impressions) * 100 : 0;
+                    $ctr = $stat->impressions > 0 ? ($stat->clicks / $stat->impressions) * 100 : 0;
                     @endphp
-                    <flux:table.row wire:key="banner-rotator-daily-event-{{ $stat->event_date }}"><flux:table.cell>{{ \Carbon\Carbon::parse($stat->event_date)->format('Y-m-d') }}</flux:table.cell><flux:table.cell>{{ number_format($stat->impressions) }}</flux:table.cell><flux:table.cell>{{ number_format($stat->clicks) }}</flux:table.cell><flux:table.cell>{{ number_format($ctr, 2) }}%</flux:table.cell></flux:table.row>
+                    <flux:table.row wire:key="banner-rotator-daily-event-{{ $stat->event_date }}">
+                        <flux:table.cell>{{ \Carbon\Carbon::parse($stat->event_date)->format('Y-m-d') }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($stat->impressions) }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($stat->clicks) }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($ctr, 2) }}%</flux:table.cell>
+                    </flux:table.row>
                     @empty
-                    <flux:table.row><flux:table.cell colspan="4" align="center">{{ __('No events yet.') }}</flux:table.cell></flux:table.row>
+                    <flux:table.row>
+                        <flux:table.cell colspan="4" align="center">{{ __('No events yet.') }}</flux:table.cell>
+                    </flux:table.row>
                     @endforelse
                 </flux:table.rows>
             </flux:table>
         </section>
 
         <section class="space-y-4" x-show="activeTab === 'referrers'">
-            <div><flux:heading>{{ __('Referrers') }}</flux:heading><flux:subheading>{{ __('All rotator events grouped by referrer') }}</flux:subheading></div>
+            <div>
+                <flux:heading>{{ __('Referrers') }}</flux:heading>
+                <flux:subheading>{{ __('All rotator events grouped by referrer') }}</flux:subheading>
+            </div>
             <flux:input wire:model.live.debounce.300ms="referrerSearch" :label="__('Filter by URL')" type="search" autocomplete="off" placeholder="example.com" class="max-w-md" />
             <flux:table :paginate="$referrerStats">
                 <flux:table.columns>
@@ -492,7 +569,9 @@ new #[Title('Banner rotator stats')] class extends Component
                         <flux:table.cell>{{ number_format($stat->clicks) }}</flux:table.cell>
                     </flux:table.row>
                     @empty
-                    <flux:table.row><flux:table.cell colspan="3" align="center">{{ __('No events yet.') }}</flux:table.cell></flux:table.row>
+                    <flux:table.row>
+                        <flux:table.cell colspan="3" align="center">{{ __('No events yet.') }}</flux:table.cell>
+                    </flux:table.row>
                     @endforelse
                 </flux:table.rows>
             </flux:table>
