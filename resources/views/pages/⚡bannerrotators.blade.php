@@ -251,7 +251,7 @@ new #[Title('Banner Rotators')] class extends Component
             'managedRotator' => $managedRotator,
             'availableBanners' => Banner::query()
                 ->where('user_id', Auth::id())
-                ->when($attachedBannerIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $attachedBannerIds))
+                ->when($attachedBannerIds->isNotEmpty(), fn($query) => $query->whereNotIn('id', $attachedBannerIds))
                 ->latest()
                 ->get(),
         ];
@@ -423,8 +423,8 @@ new #[Title('Banner Rotators')] class extends Component
                     <flux:table.row :key="$banner->id">
                         <flux:table.cell>
                             @php
-                                $previewWidth = $banner->width ? max(1, (int) round($banner->width / 2)) : 160;
-                                $previewHeight = $banner->height ? max(1, (int) round($banner->height / 2)) : null;
+                            $previewWidth = $banner->width ? max(1, (int) round($banner->width / 2)) : 160;
+                            $previewHeight = $banner->height ? max(1, (int) round($banner->height / 2)) : null;
                             @endphp
                             <div class="max-w-md space-y-2">
                                 <img
@@ -465,7 +465,6 @@ new #[Title('Banner Rotators')] class extends Component
             <flux:table.column>{{ __('Created') }}</flux:table.column>
             <flux:table.column>{{ __('Name') }}</flux:table.column>
             <flux:table.column>{{ __('Banner rotator URL') }}</flux:table.column>
-            <flux:table.column>{{ __('Type') }}</flux:table.column>
             <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
             <flux:table.column>{{ __('Total Clicks') }}</flux:table.column>
             <flux:table.column>{{ __('Unique Hits') }}</flux:table.column>
@@ -476,8 +475,8 @@ new #[Title('Banner Rotators')] class extends Component
         <flux:table.rows>
             @forelse ($rotators as $rotator)
             @php
-                $imageUrl = route('bannerrotators.image', $rotator->rotator_slug);
-                $clickUrl = route('bannerrotators.click', $rotator->rotator_slug);
+            $imageUrl = route('bannerrotators.image', $rotator->rotator_slug);
+            $clickUrl = route('bannerrotators.click', $rotator->rotator_slug);
             @endphp
             <flux:table.row :key="$rotator->id">
                 <flux:table.cell>{{ $rotator->created_at?->format('Y-m-d H:i') }}</flux:table.cell>
@@ -521,7 +520,6 @@ new #[Title('Banner Rotators')] class extends Component
                         </div>
                     </div>
                 </flux:table.cell>
-                <flux:table.cell>{{ str($rotator->rotation_type)->replace('_', ' ')->title() }}</flux:table.cell>
                 <flux:table.cell>{{ number_format($rotator->stats_count) }}</flux:table.cell>
                 <flux:table.cell>{{ number_format($rotator->total_clicks_count) }}</flux:table.cell>
                 <flux:table.cell>{{ number_format($rotator->unique_hits_count) }}</flux:table.cell>
