@@ -12,7 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->preventRequestsDuringMaintenance([
+            't/*',         // Link tracker yönlendirmeleri
+            'r/*',         // Link rotator yönlendirmeleri
+            'b/*',         // Banner click ve image
+            'br/*',        // Banner rotator click ve image
+            'pixel',       // Pixel tracking
+            'up',          // Health check
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
