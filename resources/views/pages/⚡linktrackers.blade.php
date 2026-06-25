@@ -19,6 +19,8 @@ new #[Title('Trackers')] class extends Component
 
     public string $deletingTrackerSlug = '';
 
+    public string $tracker_name = '';
+
     public string $target_url = '';
 
     public function createTracker(): void
@@ -31,8 +33,13 @@ new #[Title('Trackers')] class extends Component
     public function save(): void
     {
         $validated = $this->validate([
+            'tracker_name' => ['nullable', 'string', 'max:255'],
             'target_url' => ['required', 'url', 'max:255'],
         ]);
+
+        $validated['tracker_name'] = filled($validated['tracker_name'])
+            ? trim($validated['tracker_name'])
+            : null;
 
         if ($this->editingTrackerId) {
             LinkTracker::query()
@@ -67,6 +74,7 @@ new #[Title('Trackers')] class extends Component
             ->findOrFail($trackerId);
 
         $this->editingTrackerId = $tracker->id;
+        $this->tracker_name = $tracker->tracker_name ?? '';
         $this->target_url = $tracker->target_url;
 
         $this->resetValidation();
@@ -131,7 +139,7 @@ new #[Title('Trackers')] class extends Component
 
     private function resetForm(): void
     {
-        $this->reset('editingTrackerId', 'target_url');
+        $this->reset('editingTrackerId', 'tracker_name', 'target_url');
         $this->resetValidation();
     }
 
@@ -193,6 +201,13 @@ new #[Title('Trackers')] class extends Component
             </div>
 
             <flux:input
+                wire:model="tracker_name"
+                :label="__('Name')"
+                type="text"
+                autocomplete="off"
+                placeholder="{{ __('Optional tracker name') }}" />
+
+            <flux:input
                 wire:model="target_url"
                 :label="__('Target URL')"
                 type="url"
@@ -235,11 +250,10 @@ new #[Title('Trackers')] class extends Component
 
     <flux:table :paginate="$trackers">
         <flux:table.columns>
-            <flux:table.column>{{ __('Created') }}</flux:table.column>
-            <flux:table.column>{{ __('Link tracker URL/Target URL') }}</flux:table.column>
-            <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
-            <flux:table.column>{{ __('Unique Hits') }}</flux:table.column>
-            <flux:table.column>{{ __('Last Hit') }}</flux:table.column>
+            <flux:table.column>{{ __('Tracker') }}</flux:table.column>
+            <flux:table.column>{{ __('Link') }}</flux:table.column>
+            <flux:table.column>{{ __('Performance') }}</flux:table.column>
+            <flux:table.column>{{ __('Activity') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 
@@ -247,18 +261,29 @@ new #[Title('Trackers')] class extends Component
             @forelse ($trackers as $tracker)
             <flux:table.row :key="$tracker->id">
                 <flux:table.cell>
-                    {{ $tracker->created_at?->format('Y-m-d H:i') }}
+                    @php($trackerUrl = route('linktrackers.redirect', $tracker->tracker_slug))
+
+                    <div class="max-w-md space-y-1">
+                        <div class="font-medium">{{ $tracker->tracker_name ?: __('Unnamed tracker') }}</div>
+                        <flux:link
+                            href="{{ $tracker->target_url }}"
+                            target="_blank"
+                            rel="noreferrer"
+                            class="block break-all text-xs text-zinc-500 dark:text-zinc-400"
+                            title="{{ $tracker->target_url }}">
+                            {{ $tracker->target_url }}
+                        </flux:link>
+                    </div>
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    @php($trackerUrl = route('linktrackers.redirect', $tracker->tracker_slug))
-
-                    <div class="flex max-w-md items-center gap-2">
+                    <div class="flex max-w-md min-w-0 items-center gap-2">
                         <flux:link
                             href="{{ $trackerUrl }}"
                             target="_blank"
                             rel="noreferrer"
-                            class="block min-w-0 truncate">
+                            class="min-w-0 break-all"
+                            title="{{ $trackerUrl }}">
                             {{ $trackerUrl }}
                         </flux:link>
 
@@ -273,59 +298,45 @@ new #[Title('Trackers')] class extends Component
                                 :aria-label="__('Copy tracker URL')" />
                         </flux:tooltip>
                     </div>
-                    <flux:link
-                        href="{{ $tracker->target_url }}"
-                        target="_blank"
-                        rel="noreferrer"
-                        class="block max-w-md truncate">
-                        {{ $tracker->target_url }}
-                    </flux:link>
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    {{ number_format($tracker->stats_count) }}
+                    <div class="space-y-1 text-sm tabular-nums">
+                        <div><span class="font-medium">{{ number_format($tracker->stats_count) }}</span> <span class="text-zinc-500 dark:text-zinc-400">{{ __('hits') }}</span></div>
+                        <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ number_format($tracker->unique_hits_count) }} {{ __('unique') }}</div>
+                    </div>
                 </flux:table.cell>
 
                 <flux:table.cell>
-                    {{ number_format($tracker->unique_hits_count) }}
-                </flux:table.cell>
-
-                <flux:table.cell>
+                    <div class="space-y-1 text-sm">
                     @if ($tracker->stats_max_created_at)
                     @php($lastHitAt = \Carbon\Carbon::parse($tracker->stats_max_created_at))
-                    <span title="{{ $lastHitAt->format('Y-m-d H:i:s') }}">
+                    <div title="{{ $lastHitAt->format('Y-m-d H:i:s') }}" class="font-medium">
                         {{ $lastHitAt->diffForHumans(short: true) }}
-                    </span>
+                    </div>
                     @else
-                    {{ __('Never') }}
+                    <div class="font-medium">{{ __('Never') }}</div>
                     @endif
+                    </div>
                 </flux:table.cell>
 
                 <flux:table.cell align="end">
-                    <div class="flex justify-end gap-3">
-                        <flux:link
-                            :href="route('linktrackers.stats', $tracker->tracker_slug)"
-                            wire:navigate>
-                            {{ __('Stats') }}
-                        </flux:link>
-
-                        <flux:link
-                            wire:click.prevent="editTracker({{ $tracker->id }})"
-                            class="cursor-pointer">
-                            {{ __('Edit') }}
-                        </flux:link>
-
-                        <flux:link
-                            wire:click.prevent="confirmDeleteTracker({{ $tracker->id }})"
-                            class="cursor-pointer text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                            {{ __('Delete') }}
-                        </flux:link>
+                    <div class="flex justify-end gap-1">
+                        <flux:tooltip :content="__('Stats')">
+                            <flux:button :href="route('linktrackers.stats', $tracker->tracker_slug)" variant="ghost" size="sm" icon="chart-bar" wire:navigate :aria-label="__('Stats')" />
+                        </flux:tooltip>
+                        <flux:tooltip :content="__('Edit')">
+                            <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editTracker({{ $tracker->id }})" :aria-label="__('Edit')" />
+                        </flux:tooltip>
+                        <flux:tooltip :content="__('Delete')">
+                            <flux:button variant="ghost" size="sm" icon="trash" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" wire:click="confirmDeleteTracker({{ $tracker->id }})" :aria-label="__('Delete')" />
+                        </flux:tooltip>
                     </div>
                 </flux:table.cell>
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="7" align="center">
+                <flux:table.cell colspan="5" align="center">
                     {{ __('No trackers created yet.') }}
                 </flux:table.cell>
             </flux:table.row>

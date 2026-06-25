@@ -261,13 +261,9 @@ new #[Title('Banner Trackers')] class extends Component
 
     <flux:table :paginate="$banners">
         <flux:table.columns>
-            <flux:table.column>{{ __('Created') }}</flux:table.column>
-            <flux:table.column>{{ __('Name') }}</flux:table.column>
-            <flux:table.column>{{ __('Banner/Target') }}</flux:table.column>
-            <flux:table.column>{{ __('Image Tracker/Target Tracker') }}</flux:table.column>
-            <flux:table.column>{{ __('Impressions') }}</flux:table.column>
-            <flux:table.column>{{ __('Clicks') }}</flux:table.column>
-            <flux:table.column>{{ __('CTR') }}</flux:table.column>
+            <flux:table.column>{{ __('Banner') }}</flux:table.column>
+            <flux:table.column>{{ __('Links') }}</flux:table.column>
+            <flux:table.column>{{ __('Performance') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 
@@ -278,28 +274,27 @@ new #[Title('Banner Trackers')] class extends Component
             $clickUrl = route('bannertrackers.click', $banner->banner_slug);
             $ctr = $banner->impressions_count > 0 ? ($banner->clicks_count / $banner->impressions_count) * 100 : 0;
             $previewWidth = $banner->width ? max(1, (int) round($banner->width / 2)) : 160;
-            $previewHeight = $banner->height ? max(1, (int) round($banner->height / 2)) : null;
+            $previewHeight = $banner->height ? max(1, (int) round($banner->height / 2)) : 80;
             @endphp
             <flux:table.row :key="$banner->id">
-                <flux:table.cell>{{ $banner->created_at?->format('Y-m-d H:i') }}</flux:table.cell>
-                <flux:table.cell>{{ $banner->name }}</flux:table.cell>
                 <flux:table.cell>
-                    <img
-                        src="{{ $banner->image_url }}"
-                        alt="{{ $banner->alt_text ?: $banner->name }}"
-                        class="mb-2 block rounded object-contain"
-                        style="width: {{ $previewWidth }}px; @if ($previewHeight) height: {{ $previewHeight }}px; @else max-height: 120px; @endif">
-                    <flux:link href="{{ $banner->target_url }}" target="_blank" rel="noreferrer" class="block truncate">
-                        {{ $banner->target_url }}
-                    </flux:link>
+                    <div class="max-w-lg space-y-2">
+                        <div class="truncate font-medium">{{ $banner->name }}</div>
+                        <img
+                            src="{{ $banner->image_url }}"
+                            alt="{{ $banner->alt_text ?: $banner->name }}"
+                            class="block rounded bg-zinc-100 object-contain dark:bg-zinc-800"
+                            width="{{ $previewWidth }}"
+                            height="{{ $previewHeight }}">
+                    </div>
                 </flux:table.cell>
                 <flux:table.cell>
-                    <div class="flex min-w-0 max-w-md flex-col items-start gap-1">
-                        <div class="flex min-w-0 max-w-full items-center gap-2">
-                            <flux:link href="{{ $imageUrl }}" target="_blank" rel="noreferrer" class="min-w-0 truncate">
+                    <div class="max-w-md space-y-2 text-sm">
+                        <div class="flex min-w-0 gap-2">
+                            <span class="shrink-0 font-medium">{{ __('Image') }}:</span>
+                            <flux:link href="{{ $imageUrl }}" target="_blank" rel="noreferrer" class="min-w-0 truncate" title="{{ $imageUrl }}">
                                 {{ $imageUrl }}
                             </flux:link>
-
                             <flux:tooltip :content="__('Copy image tracker URL')">
                                 <flux:button
                                     variant="ghost"
@@ -311,48 +306,66 @@ new #[Title('Banner Trackers')] class extends Component
                                     :aria-label="__('Copy image tracker URL')" />
                             </flux:tooltip>
                         </div>
-
-                        <div class="flex min-w-0 max-w-full items-center gap-2">
-                            <flux:link href="{{ $clickUrl }}" target="_blank" rel="noreferrer" class="min-w-0 truncate">
+                        <div class="flex min-w-0 gap-2">
+                            <span class="shrink-0 font-medium">{{ __('Target') }}:</span>
+                            <flux:link href="{{ $clickUrl }}" target="_blank" rel="noreferrer" class="min-w-0 truncate" title="{{ $clickUrl }}">
                                 {{ $clickUrl }}
                             </flux:link>
-
-                            <flux:tooltip :content="__('Copy click tracker URL')">
+                            <flux:tooltip :content="__('Copy target tracker URL')">
                                 <flux:button
                                     variant="ghost"
                                     size="xs"
                                     icon="clipboard-document"
                                     type="button"
                                     class="shrink-0"
-                                    x-on:click="navigator.clipboard.writeText(@js($clickUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Click tracker URL copied.')) }))"
-                                    :aria-label="__('Copy click tracker URL')" />
+                                    x-on:click="navigator.clipboard.writeText(@js($clickUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Target tracker URL copied.')) }))"
+                                    :aria-label="__('Copy target tracker URL')" />
                             </flux:tooltip>
                         </div>
                     </div>
                 </flux:table.cell>
-                <flux:table.cell>{{ number_format($banner->impressions_count) }}</flux:table.cell>
-                <flux:table.cell>{{ number_format($banner->clicks_count) }}</flux:table.cell>
-                <flux:table.cell>{{ number_format($ctr, 2) }}%</flux:table.cell>
-                <flux:table.cell align=" end">
-                    <div class="flex justify-end gap-3">
-                        <flux:link
-                            :href="route('bannertrackers.stats', $banner->banner_slug)"
-                            wire:navigate>
-                            {{ __('Stats') }}
-                        </flux:link>
-
-                        <flux:link wire:click.prevent="editBanner({{ $banner->id }})" class="cursor-pointer">
-                            {{ __('Edit') }}
-                        </flux:link>
-                        <flux:link wire:click.prevent="confirmDeleteBanner({{ $banner->id }})" class="cursor-pointer text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                            {{ __('Delete') }}
-                        </flux:link>
+                <flux:table.cell>
+                    <div class="space-y-1 text-sm tabular-nums">
+                        <div><span class="font-medium">{{ number_format($banner->impressions_count) }}</span> <span class="text-zinc-500 dark:text-zinc-400">{{ __('impressions') }}</span></div>
+                        <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ number_format($banner->clicks_count) }} {{ __('clicks') }} · {{ number_format($ctr, 2) }}% CTR</div>
+                    </div>
+                </flux:table.cell>
+                <flux:table.cell align="end">
+                    <div class="flex justify-end gap-1">
+                        <flux:tooltip :content="__('Stats')">
+                            <flux:button
+                                :href="route('bannertrackers.stats', $banner->banner_slug)"
+                                variant="ghost"
+                                size="sm"
+                                icon="chart-bar"
+                                wire:navigate
+                                :aria-label="__('Stats')" />
+                        </flux:tooltip>
+                        <flux:tooltip :content="__('Edit')">
+                            <flux:button
+                                variant="ghost"
+                                size="sm"
+                                icon="pencil-square"
+                                type="button"
+                                wire:click="editBanner({{ $banner->id }})"
+                                :aria-label="__('Edit')" />
+                        </flux:tooltip>
+                        <flux:tooltip :content="__('Delete')">
+                            <flux:button
+                                variant="ghost"
+                                size="sm"
+                                icon="trash"
+                                type="button"
+                                class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                wire:click="confirmDeleteBanner({{ $banner->id }})"
+                                :aria-label="__('Delete')" />
+                        </flux:tooltip>
                     </div>
                 </flux:table.cell>
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="6" align="center">
+                <flux:table.cell colspan="4" align="center">
                     {{ __('No banners created yet.') }}
                 </flux:table.cell>
             </flux:table.row>

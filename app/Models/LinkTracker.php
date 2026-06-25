@@ -12,6 +12,7 @@ class LinkTracker extends Model
         'user_id',
         'target_url',
         'tracker_slug',
+        'tracker_name',
     ];
 
     public function user()

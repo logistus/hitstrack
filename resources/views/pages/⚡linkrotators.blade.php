@@ -237,7 +237,7 @@ new #[Title('Rotators')] class extends Component
             'managedRotator' => $managedRotator,
             'availableTrackers' => LinkTracker::query()
                 ->where('user_id', Auth::id())
-                ->when($attachedTrackerIds->isNotEmpty(), fn ($query) => $query->whereNotIn('id', $attachedTrackerIds))
+                ->when($attachedTrackerIds->isNotEmpty(), fn($query) => $query->whereNotIn('id', $attachedTrackerIds))
                 ->latest()
                 ->get(),
         ];
@@ -466,72 +466,81 @@ new #[Title('Rotators')] class extends Component
 
     <flux:table :paginate="$rotators">
         <flux:table.columns>
-            <flux:table.column>{{ __('Created') }}</flux:table.column>
-            <flux:table.column>{{ __('Link rotator URL') }}</flux:table.column>
-            <flux:table.column>{{ __('Type') }}</flux:table.column>
-            <flux:table.column>{{ __('Total Hits') }}</flux:table.column>
-            <flux:table.column>{{ __('Unique Hits') }}</flux:table.column>
-            <flux:table.column>{{ __('Last Hit') }}</flux:table.column>
+            <flux:table.column>{{ __('Rotator') }}</flux:table.column>
+            <flux:table.column>{{ __('Trackers') }}</flux:table.column>
+            <flux:table.column>{{ __('Performance') }}</flux:table.column>
+            <flux:table.column>{{ __('Activity') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 
         <flux:table.rows>
             @forelse ($rotators as $rotator)
             <flux:table.row :key="$rotator->id">
-                <flux:table.cell>{{ $rotator->created_at?->format('Y-m-d H:i') }}</flux:table.cell>
                 <flux:table.cell>
                     @php($rotatorUrl = route('linkrotators.redirect', $rotator->rotator_slug))
 
-                    <div class="flex max-w-md items-center gap-2">
-                        <flux:link href="{{ $rotatorUrl }}" target="_blank" rel="noreferrer" class="block min-w-0 truncate">
-                            {{ $rotatorUrl }}
-                        </flux:link>
+                    <div class="max-w-md space-y-1">
+                        <div class="flex min-w-0 items-center gap-2">
+                            <flux:link href="{{ $rotatorUrl }}" target="_blank" rel="noreferrer" class="min-w-0 break-all font-medium" title="{{ $rotatorUrl }}">
+                                {{ $rotatorUrl }}
+                            </flux:link>
 
-                        <flux:tooltip :content="__('Copy rotator URL')">
-                            <flux:button
-                                variant="ghost"
-                                size="xs"
-                                icon="clipboard-document"
-                                type="button"
-                                class="shrink-0"
-                                x-on:click="navigator.clipboard.writeText(@js($rotatorUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Link rotator URL copied.')) }))"
-                                :aria-label="__('Copy rotator URL')" />
-                        </flux:tooltip>
+                            <flux:tooltip :content="__('Copy rotator URL')">
+                                <flux:button
+                                    variant="ghost"
+                                    size="xs"
+                                    icon="clipboard-document"
+                                    type="button"
+                                    class="shrink-0"
+                                    x-on:click="navigator.clipboard.writeText(@js($rotatorUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Link rotator URL copied.')) }))"
+                                    :aria-label="__('Copy rotator URL')" />
+                            </flux:tooltip>
+                        </div>
                     </div>
                 </flux:table.cell>
-                <flux:table.cell>{{ str($rotator->rotation_type)->replace('_', ' ')->title() }}</flux:table.cell>
-                <flux:table.cell>{{ number_format($rotator->stats_count) }}</flux:table.cell>
-                <flux:table.cell>{{ number_format($rotator->unique_hits_count) }}</flux:table.cell>
                 <flux:table.cell>
-                    @if ($rotator->stats_max_created_at)
-                    @php($lastHitAt = \Carbon\Carbon::parse($rotator->stats_max_created_at))
-                    <span title="{{ $lastHitAt->format('Y-m-d H:i:s') }}">
-                        {{ $lastHitAt->diffForHumans(short: true) }}
-                    </span>
-                    @else
-                    {{ __('Never') }}
-                    @endif
+                    <div class="flex items-center gap-1 text-sm">
+                        <span>{{ number_format($rotator->trackers_count) }}</span>
+                        <flux:link wire:click.prevent="manageTrackers({{ $rotator->id }})" class="cursor-pointer">
+                            ({{ __('Edit') }})
+                        </flux:link>
+                    </div>
+                </flux:table.cell>
+                <flux:table.cell>
+                    <div class="space-y-1 text-sm tabular-nums">
+                        <div><span class="font-medium">{{ number_format($rotator->stats_count) }}</span> <span class="text-zinc-500 dark:text-zinc-400">{{ __('hits') }}</span></div>
+                        <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ number_format($rotator->unique_hits_count) }} {{ __('unique') }}</div>
+                    </div>
+                </flux:table.cell>
+                <flux:table.cell>
+                    <div class="space-y-1 text-sm">
+                        @if ($rotator->stats_max_created_at)
+                        @php($lastHitAt = \Carbon\Carbon::parse($rotator->stats_max_created_at))
+                        <div title="{{ $lastHitAt->format('Y-m-d H:i:s') }}" class="font-medium">
+                            {{ $lastHitAt->diffForHumans(short: true) }}
+                        </div>
+                        @else
+                        <div class="font-medium">{{ __('Never') }}</div>
+                        @endif
+                    </div>
                 </flux:table.cell>
                 <flux:table.cell align="end">
-                    <div class="flex justify-end gap-3">
-                        <flux:link :href="route('linkrotators.stats', $rotator->rotator_slug)" wire:navigate>
-                            {{ __('Stats') }}
-                        </flux:link>
-                        <flux:link wire:click.prevent="manageTrackers({{ $rotator->id }})" class="cursor-pointer">
-                            {{ __('Trackers') }} ({{ number_format($rotator->trackers_count) }})
-                        </flux:link>
-                        <flux:link wire:click.prevent="editRotator({{ $rotator->id }})" class="cursor-pointer">
-                            {{ __('Edit') }}
-                        </flux:link>
-                        <flux:link wire:click.prevent="confirmDeleteRotator({{ $rotator->id }})" class="cursor-pointer text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                            {{ __('Delete') }}
-                        </flux:link>
+                    <div class="flex justify-end gap-1">
+                        <flux:tooltip :content="__('Stats')">
+                            <flux:button :href="route('linkrotators.stats', $rotator->rotator_slug)" variant="ghost" size="sm" icon="chart-bar" wire:navigate :aria-label="__('Stats')" />
+                        </flux:tooltip>
+                        <flux:tooltip :content="__('Edit')">
+                            <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editRotator({{ $rotator->id }})" :aria-label="__('Edit')" />
+                        </flux:tooltip>
+                        <flux:tooltip :content="__('Delete')">
+                            <flux:button variant="ghost" size="sm" icon="trash" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" wire:click="confirmDeleteRotator({{ $rotator->id }})" :aria-label="__('Delete')" />
+                        </flux:tooltip>
                     </div>
                 </flux:table.cell>
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="7" align="center">
+                <flux:table.cell colspan="5" align="center">
                     {{ __('No rotators created yet.') }}
                 </flux:table.cell>
             </flux:table.row>
