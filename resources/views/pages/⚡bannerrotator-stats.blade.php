@@ -28,14 +28,20 @@ new #[Title('Banner rotator stats')] class extends Component
 
     public string $activeTab = 'overview';
 
+    private ?bool $hasStatsColumn = null;
+
+    private ?bool $hasSizeColumns = null;
+
+    private BannerRotator $rotator;
+
     public function mount(string $slug): void
     {
         $this->slug = $slug;
-        $this->rotatorId = BannerRotator::query()
+        $this->rotator = BannerRotator::query()
             ->where('user_id', Auth::id())
             ->where('rotator_slug', $slug)
-            ->firstOrFail()
-            ->id;
+            ->firstOrFail();
+        $this->rotatorId = $this->rotator->id;
     }
 
     public function updatedReferrerSearch(): void
@@ -344,12 +350,12 @@ new #[Title('Banner rotator stats')] class extends Component
 
     private function hasRotatorStatsColumn(): bool
     {
-        return Schema::hasColumn('banner_stats', 'banner_rotator_id');
+        return $this->hasStatsColumn ??= Schema::hasColumn('banner_stats', 'banner_rotator_id');
     }
 
     private function hasBannerSizeColumns(): bool
     {
-        return Schema::hasColumn('banners', 'width')
+        return $this->hasSizeColumns ??= Schema::hasColumn('banners', 'width')
             && Schema::hasColumn('banners', 'height');
     }
 
