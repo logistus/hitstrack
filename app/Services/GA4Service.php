@@ -31,9 +31,9 @@ class GA4Service
     public function sendTrackerClick(array $clickData): bool
     {
         return $this->send(
-            clientId:  $clickData['client_id'],
+            clientId: $clickData['client_id'],
             eventName: 'tracker_click',
-            params:    $this->buildClickParams($clickData),
+            params: $this->buildClickParams($clickData),
         );
     }
 
@@ -43,9 +43,9 @@ class GA4Service
     public function sendRotatorClick(array $clickData): bool
     {
         return $this->send(
-            clientId:  $clickData['client_id'],
+            clientId: $clickData['client_id'],
             eventName: 'rotator_click',
-            params:    $this->buildClickParams($clickData),
+            params: $this->buildClickParams($clickData),
         );
     }
 
@@ -84,7 +84,6 @@ class GA4Service
             }
 
             return $response->successful();
-
         } catch (\Throwable $e) {
             // GA4 hatası redirect'i patlatmasın, sadece logla
             Log::warning('GA4 event gönderilemedi', [
@@ -103,27 +102,21 @@ class GA4Service
     private function buildClickParams(array $data): array
     {
         return array_filter([
-            // HitsTrack özgün alanlar
-            'tracker_id'      => $data['tracker_id']   ?? null,
-            'rotator_id'      => $data['rotator_id']   ?? null,
+            'tracker_id'      => (string) ($data['tracker_id']   ?? null),  // int değil string olmalı
+            'rotator_id'      => (string) ($data['rotator_id']   ?? null),
             'destination_url' => $data['destination']  ?? null,
-
-            // Kullanıcı / cihaz
-            'user_country'    => $data['country']      ?? null,  // GeoIP'ten
-            'user_city'       => $data['city']         ?? null,
-            'device_type'     => $data['device_type']  ?? null,  // mobile/desktop/tablet
+            'country'         => $data['country']      ?? null,
+            'device_type'     => $data['device_type']  ?? null,
             'browser'         => $data['browser']      ?? null,
             'os'              => $data['os']            ?? null,
-
-            // Trafik kaynağı
-            'referrer'        => $data['referrer']     ?? null,
-            'utm_source'      => $data['utm_source']   ?? null,
-            'utm_medium'      => $data['utm_medium']   ?? null,
-            'utm_campaign'    => $data['utm_campaign'] ?? null,
-
-            // Teknik
-            'is_unique'       => $data['is_unique']    ?? null,  // ilk tıklama mı?
-            'click_id'        => $data['click_id']     ?? null,  // idempotency için
+            'referrer'        => $data['referrer']      ?? null,
+            'utm_source'      => $data['utm_source']    ?? null,
+            'utm_medium'      => $data['utm_medium']    ?? null,
+            'utm_campaign'    => $data['utm_campaign']  ?? null,
+            'is_unique'       => $data['is_unique'] ? '1' : '0',  // bool değil string
+            'click_id'        => (string) ($data['click_id']     ?? null),  // int değil string
+            'session_id'      => $data['session_id']    ?? null,
+            'engagement_time_msec' => 1,
         ]);
     }
 
