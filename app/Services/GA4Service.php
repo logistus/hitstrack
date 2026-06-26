@@ -17,8 +17,8 @@ class GA4Service
 
     public function __construct()
     {
-        $this->measurementId = config('services.ga4.measurement_id');
-        $this->apiSecret     = config('services.ga4.api_secret');
+        $this->measurementId = (string) config('services.ga4.measurement_id');
+        $this->apiSecret     = (string) config('services.ga4.api_secret');
         $this->enabled       = config('services.ga4.enabled', true);
         $this->debug         = config('services.ga4.debug', false);
     }
@@ -74,7 +74,7 @@ class GA4Service
         try {
             $response = Http::timeout(5)
                 ->asJson()
-                ->post($this->endpoint(), $payload);
+                ->post($this->endpointUrl(), $payload);
 
             if ($this->debug) {
                 Log::debug('GA4 debug response', [
@@ -134,8 +134,11 @@ class GA4Service
         return substr(md5($clientId . date('YmdH')), 0, 16);
     }
 
-    private function endpoint(): string
+    private function endpointUrl(): string
     {
-        return $this->debug ? self::DEBUG_ENDPOINT : self::ENDPOINT;
+        return ($this->debug ? self::DEBUG_ENDPOINT : self::ENDPOINT) . '?' . http_build_query([
+            'measurement_id' => $this->measurementId,
+            'api_secret'     => $this->apiSecret,
+        ]);
     }
 }
