@@ -114,7 +114,7 @@ class GA4Service
             'utm_source'      => $data['utm_source']    ?? null,
             'utm_medium'      => $data['utm_medium']    ?? null,
             'utm_campaign'    => $data['utm_campaign']  ?? null,
-            'is_unique'       => $data['is_unique'] ? '1' : '0',  // bool değil string
+            'is_unique' => isset($data['is_unique']) ? ($data['is_unique'] ? '1' : '0') : null,  // bool değil string
             'click_id'        => (string) ($data['click_id']     ?? null),  // int değil string
             'session_id'      => $data['session_id']    ?? null,
             'engagement_time_msec' => 1,
