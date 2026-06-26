@@ -73,7 +73,7 @@ class GA4Service
 
         try {
             $response = Http::timeout(5)
-                ->withHeaders(['Content-Type' => 'application/json'])
+                ->asJson()
                 ->post($this->endpoint(), $payload);
 
             if ($this->debug) {
