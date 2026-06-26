@@ -34,5 +34,11 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'ga4' => [
+        'measurement_id' => env('GA4_MEASUREMENT_ID'),
+        'api_secret'     => env('GA4_API_SECRET'),
+        'enabled'        => env('GA4_ENABLED', true),
+        'debug'          => env('GA4_DEBUG', false),
+    ],
 
 ];
