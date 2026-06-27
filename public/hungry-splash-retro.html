@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HUNGRY FOR HITS - FREE TRAFFIC!!!</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #000080;
+      background-image:
+        repeating-linear-gradient(45deg,
+          rgba(255, 255, 0, 0.04) 0px,
+          rgba(255, 255, 0, 0.04) 2px,
+          transparent 2px,
+          transparent 12px);
+      font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+      color: #ffffff;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Ctext y='28' font-size='28'%3E🔥%3C/text%3E%3C/svg%3E") 4 4, auto;
+    }
+
+    /* ── MARQUEE STRIP TOP ── */
+    .marquee-top {
+      width: 100%;
+      background: #ff0000;
+      color: #ffff00;
+      font-size: 1rem;
+      font-weight: bold;
+      padding: 4px 0;
+      overflow: hidden;
+      white-space: nowrap;
+      margin-bottom: 10px;
+      border: 3px solid #ffff00;
+    }
+
+    .marquee-inner {
+      display: inline-block;
+      animation: marquee 12s linear infinite;
+    }
+
+    @keyframes marquee {
+      from {
+        transform: translateX(100vw);
+      }
+
+      to {
+        transform: translateX(-100%);
+      }
+    }
+
+    /* ── CONSTRUCTION GIF ROW ── */
+    .under-construction {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: #ffff00;
+      margin-bottom: 8px;
+      animation: blink 0.6s step-end infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
+    .hardhat {
+      font-size: 1.2rem;
+      animation: wobble 0.4s ease-in-out infinite alternate;
+    }
+
+    @keyframes wobble {
+      from {
+        transform: rotate(-15deg);
+      }
+
+      to {
+        transform: rotate(15deg);
+      }
+    }
+
+    /* ── RAINBOW TITLE ── */
+    .rainbow-title {
+      font-family: 'Fredoka One', 'Comic Sans MS', cursive;
+      font-size: clamp(2.4rem, 8vw, 5rem);
+      text-align: center;
+      line-height: 1.05;
+      margin-bottom: 6px;
+      filter: drop-shadow(3px 3px 0 #000) drop-shadow(-1px -1px 0 #000);
+      animation: rainbowShift 2s linear infinite;
+    }
+
+    @keyframes rainbowShift {
+      0% {
+        color: #ff0000;
+      }
+
+      16% {
+        color: #ff8800;
+      }
+
+      33% {
+        color: #ffff00;
+      }
+
+      50% {
+        color: #00ff00;
+      }
+
+      66% {
+        color: #0088ff;
+      }
+
+      83% {
+        color: #ff00ff;
+      }
+
+      100% {
+        color: #ff0000;
+      }
+    }
+
+    /* ── WORDART SUBTITLE ── */
+    .wordart {
+      font-family: 'Impact', 'Arial Black', sans-serif;
+      font-size: clamp(1.2rem, 4vw, 2.2rem);
+      text-align: center;
+      background: linear-gradient(180deg, #ffff00, #ff8800);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.8));
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      transform: skewX(-6deg);
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      width: 100%;
+      max-width: 600px;
+      text-align: center;
+      font-size: 1.2rem;
+      color: #ff0000;
+      margin: 8px 0;
+      letter-spacing: 0.1em;
+      animation: colorCycle 1s linear infinite;
+    }
+
+    @keyframes colorCycle {
+      0% {
+        color: #ff0000;
+      }
+
+      25% {
+        color: #ffff00;
+      }
+
+      50% {
+        color: #00ff00;
+      }
+
+      75% {
+        color: #00ffff;
+      }
+
+      100% {
+        color: #ff0000;
+      }
+    }
+
+    /* ── INFO BOX ── */
+    .info-box {
+      background: #008000;
+      border: 4px ridge #00ff00;
+      max-width: 580px;
+      width: 100%;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .info-box-title {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #ffff00;
+      text-decoration: underline;
+      text-align: center;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .bullet-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .bullet-list li {
+      font-size: 0.88rem;
+      color: #ffffff;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.4;
+    }
+
+    .bullet-list li::before {
+      content: '⭐';
+      flex-shrink: 0;
+      font-size: 0.9rem;
+    }
+
+    /* ── STATS TABLE ── */
+    .stats-table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 580px;
+      margin-bottom: 12px;
+      border: 3px solid #ffff00;
+      background: #000080;
+      font-size: 0.82rem;
+    }
+
+    .stats-table th {
+      background: #ff0000;
+      color: #ffff00;
+      padding: 6px 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 0.75rem;
+      border: 1px solid #ffff00;
+    }
+
+    .stats-table td {
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 0, 0.3);
+      color: #fff;
+      text-align: center;
+    }
+
+    .stats-table tr:nth-child(even) td {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .stat-highlight {
+      color: #00ff00;
+      font-weight: bold;
+      font-size: 1rem;
+      animation: blink 1s step-end infinite;
+    }
+
+    /* ── CLICK HERE BUTTON ── */
+    .click-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .arrow-row {
+      font-size: 1.8rem;
+      animation: bounce 0.5s ease-in-out infinite alternate;
+      color: #ffff00;
+    }
+
+    @keyframes bounce {
+      from {
+        transform: translateY(0);
+      }
+
+      to {
+        transform: translateY(-8px);
+      }
+    }
+
+    .click-btn {
+      font-family: 'Comic Sans MS', cursive;
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #000000;
+      background: linear-gradient(180deg, #ffff00 0%, #ff8800 50%, #ff4400 100%);
+      border: 4px outset #ffcc00;
+      padding: 12px 32px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      box-shadow: 4px 4px 0 #000, -2px -2px 0 rgba(255, 255, 255, 0.4) inset;
+      animation: btnPulse 0.8s ease-in-out infinite alternate;
+      position: relative;
+    }
+
+    @keyframes btnPulse {
+      from {
+        transform: scale(1);
+        box-shadow: 4px 4px 0 #000, 0 0 0 rgba(255, 200, 0, 0);
+      }
+
+      to {
+        transform: scale(1.06);
+        box-shadow: 4px 4px 0 #000, 0 0 25px rgba(255, 200, 0, 0.8);
+      }
+    }
+
+    .click-btn:active {
+      border-style: inset;
+      transform: scale(0.97) translate(3px, 3px);
+    }
+
+    .click-btn-sub {
+      font-size: 0.72rem;
+      color: #aaffaa;
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── SECONDARY LINK ── */
+    .more-info {
+      font-size: 0.8rem;
+      color: #88ccff;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .more-info:hover {
+      color: #ffffff;
+    }
+
+    /* ── VISITOR COUNTER ── */
+    .counter-box {
+      background: #000000;
+      border: 2px solid #00ff00;
+      padding: 6px 18px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      color: #00ff00;
+      letter-spacing: 0.15em;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .counter-label {
+      font-size: 0.6rem;
+      color: #aaaaaa;
+      text-align: center;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    /* ── BEST VIEWED ── */
+    .best-viewed {
+      font-size: 0.62rem;
+      color: #aaaaaa;
+      text-align: center;
+      margin-bottom: 6px;
+      letter-spacing: 0.1em;
+    }
+
+    /* ── INVITE BOX ── */
+    .invite-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #000080;
+      border: 2px solid #ffff00;
+      padding: 6px 12px 6px 6px;
+      margin-bottom: 10px;
+      font-size: 0.82rem;
+      color: #ffff00;
+    }
+
+    .invite-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2px solid #ff8800;
+      object-fit: cover;
+    }
+
+    .invite-text strong {
+      color: #ff8800;
+    }
+
+    /* ── FLOATING STARS ── */
+    .stars-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .star {
+      position: absolute;
+      font-size: 1rem;
+      animation: starFloat var(--d) var(--dl) ease-in-out infinite alternate;
+      opacity: 0.25;
+    }
+
+    @keyframes starFloat {
+      from {
+        transform: translateY(0) rotate(0deg);
+      }
+
+      to {
+        transform: translateY(-20px) rotate(180deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- floating background stars -->
+  <div class="stars-bg" id="starsBg"></div>
+
+  <!-- TOP MARQUEE -->
+  <div class="marquee-top">
+    <span class="marquee-inner">
+      🔥 FREE TRAFFIC!!! &nbsp;&nbsp;&nbsp; 🌐 35,000+ MEMBERS!!! &nbsp;&nbsp;&nbsp; ⭐ RANKED #2 IN THE WORLD!!!
+      &nbsp;&nbsp;&nbsp; 💥 GET FREE HITS NOW!!! &nbsp;&nbsp;&nbsp; 🔥 FREE TRAFFIC!!!
+    </span>
+  </div>
+
+  <!-- UNDER CONSTRUCTION ROW -->
+  <div class="under-construction">
+    <span class="hardhat">🚧</span>
+    THIS PAGE IS ALWAYS BEING IMPROVED!!!
+    <span class="hardhat">🚧</span>
+  </div>
+
+  <!-- MAIN TITLE -->
+  <div class="rainbow-title">
+    🍔 HUNGRY FOR HITS 🍔
+  </div>
+  <div class="wordart">THE #1 FREE TRAFFIC EXCHANGE</div>
+
+  <div class="divider">★ ★ ★ ★ ★ ★ ★ ★ ★ ★ ★ ★ ★ ★ ★ ★ ★</div>
+
+  <!-- INFO BOX -->
+  <div class="info-box">
+    <div class="info-box-title">⚡ WHY YOU NEED THIS RIGHT NOW ⚡</div>
+    <ul class="bullet-list">
+      <li>Get REAL visitors to your website ABSOLUTELY FREE!!!</li>
+      <li>RANKED #2 worldwide — over 35,000 members can't be wrong!!!</li>
+      <li>Tracking tools, affiliate program, social network AND your own blog!!!</li>
+      <li>100% FREE membership — no credit card needed — EVER!!!</li>
+      <li>Join in under 60 seconds and start getting hits TODAY!!!</li>
+    </ul>
+  </div>
+
+  <!-- STATS TABLE -->
+  <table class="stats-table">
+    <thead>
+      <tr>
+        <th>STAT</th>
+        <th>VALUE</th>
+        <th>IS IT GOOD?</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Members</td>
+        <td class="stat-highlight">35,000+</td>
+        <td>YES!!!</td>
+      </tr>
+      <tr>
+        <td>World Rank</td>
+        <td class="stat-highlight">#2</td>
+        <td>VERY YES!!!</td>
+      </tr>
+      <tr>
+        <td>Cost</td>
+        <td class="stat-highlight">$0.00</td>
+        <td>OMG YES!!!</td>
+      </tr>
+      <tr>
+        <td>Traffic</td>
+        <td class="stat-highlight">UNLIMITED</td>
+        <td>ABSOLUTELY!!!</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- CTA -->
+  <div class="click-wrap">
+    <div class="arrow-row">👇 👇 👇</div>
+    <a href="https://hungryforhits.com/signup.php?rid=17" target="_blank" class="click-btn">
+      🔥 CLICK HERE NOW!!! 🔥
+    </a>
+    <div class="click-btn-sub">* no credit card * no spam * just free traffic *</div>
+  </div>
+
+  <a href="https://hungryforhits.com/?rid=17" target="_blank" class="more-info">
+    &gt;&gt; click here to learn more about this amazing opportunity &lt;&lt;
+  </a>
+
+  <!-- VISITOR COUNTER -->
+  <div class="counter-label">YOU ARE VISITOR NUMBER:</div>
+  <div class="counter-box" id="counter">0000000</div>
+
+  <!-- INVITE BOX -->
+  <div class="invite-box">
+    <img class="invite-avatar" src="https://www.gravatar.com/avatar/0101c72c97a4bef379faf316240a89dd?s=96&d=identicon"
+      alt="Sinan">
+    <span class="invite-text">this page made by <strong>Sinan</strong> 😎 invite link inside!!!</span>
+  </div>
+
+  <div class="best-viewed">
+    ✦ Best viewed in Internet Explorer 6.0 at 800×600 resolution ✦<br>
+    ✦ Netscape Navigator also supported ✦
+  </div>
+
+  <script>
+    // floating ★ background
+    const bg = document.getElementById('starsBg');
+    const syms = ['★', '✦', '☆', '✧', '⚡', '🔥'];
+    for (let i = 0; i < 28; i++) {
+      const s = document.createElement('div');
+      s.className = 'star';
+      s.textContent = syms[Math.floor(Math.random() * syms.length)];
+      s.style.cssText = `
+    left:${Math.random() * 100}%;
+    top:${Math.random() * 100}%;
+    --d:${2 + Math.random() * 4}s;
+    --dl:${Math.random() * 3}s;
+    font-size:${0.7 + Math.random() * 1.2}rem;
+  `;
+      bg.appendChild(s);
+    }
+
+    // fake visitor counter
+    const counterEl = document.getElementById('counter');
+    let count = 247813 + Math.floor(Math.random() * 500);
+    counterEl.textContent = String(count).padStart(7, '0');
+    setInterval(() => {
+      count += Math.floor(Math.random() * 3);
+      counterEl.textContent = String(count).padStart(7, '0');
+    }, 1800);
+  </script>
+</body>
+
+</html>
