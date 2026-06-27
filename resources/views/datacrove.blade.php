@@ -6,8 +6,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="min-h-screen bg-zinc-950 text-zinc-100 antialiased">
-    <div class="border-b border-white/10 bg-zinc-900/80">
+<body class="min-h-screen bg-[#080b12] text-zinc-100 antialiased">
+    <div class="border-b border-white/10 bg-[#141b26]/95">
         <header class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-6 lg:px-8">
             <div>
                 <a href="{{ route('home') }}" class="inline-flex items-center gap-3">
@@ -45,11 +45,11 @@
                 </div>
                 <a href="{{ $pixelUrlExample }}" target="_blank" rel="noreferrer" class="text-sm text-blue-300 hover:text-blue-200">{{ $pixelUrlExample }}</a>
             </div>
-            <pre class="mt-4 overflow-x-auto rounded-md border border-white/10 bg-zinc-950 p-4 text-xs leading-5 text-zinc-300"><code>{{ $pixelSnippet }}</code></pre>
+            <pre class="mt-4 overflow-x-auto rounded-md border border-white/10 bg-[#080b12] p-4 text-xs leading-5 text-zinc-300"><code>{{ $pixelSnippet }}</code></pre>
         </section>
 
         <div class="space-y-6">
-            <div class="inline-flex rounded-lg border border-white/10 bg-zinc-900 p-1">
+            <div class="inline-flex rounded-lg border border-white/10 bg-[#141b26] p-1">
                 <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'overview' ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-white'" @click="activeTab = 'overview'; $nextTick(() => window.dispatchEvent(new CustomEvent('datacrove-chart-resize')))">Overview</button>
                 <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'all-hits' ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-white'" @click="activeTab = 'all-hits'">All hits</button>
                 <button type="button" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'hits' ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:text-white'" @click="activeTab = 'hits'">Daily hits</button>
@@ -82,7 +82,7 @@
                                     <span class="truncate text-zinc-300">{{ $stat->label }}</span>
                                     <span class="font-medium">{{ number_format($stat->total) }}</span>
                                 </div>
-                                <div class="mt-1 h-1.5 rounded-full bg-zinc-800">
+                                <div class="mt-1 h-1.5 rounded-full bg-[#202936]">
                                     <div class="h-1.5 rounded-full bg-emerald-400" style="width: {{ $percent }}%"></div>
                                 </div>
                             </div>

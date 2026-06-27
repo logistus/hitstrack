@@ -5,12 +5,12 @@
     @include('partials.head', ['title' => 'HitsTrack'])
 </head>
 
-<body class="min-h-screen bg-zinc-950 text-white antialiased">
+<body class="min-h-screen bg-[#080b12] text-white antialiased">
     <div class="relative isolate min-h-screen overflow-hidden">
         <div
-            class="pointer-events-none absolute inset-0 opacity-60 [background-image:linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:72px_72px]">
+            class="pointer-events-none absolute inset-0 opacity-55 [background-image:linear-gradient(rgba(152,164,179,.13)_1px,transparent_1px),linear-gradient(90deg,rgba(152,164,179,.13)_1px,transparent_1px)] [background-size:72px_72px]">
         </div>
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-32 border-b border-white/10 bg-zinc-950/80"></div>
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-32 border-b border-white/10 bg-[#080b12]/85"></div>
 
         <header class="relative z-20 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
             <a href="{{ route('home') }}" class="flex items-center gap-3">
@@ -88,7 +88,7 @@
                 </div>
 
                 <div class="relative min-h-[520px]" aria-hidden="true">
-                    <div class="absolute inset-0 rounded-lg border border-white/10 bg-zinc-900/70 shadow-2xl shadow-black/40">
+                    <div class="absolute inset-0 rounded-lg border border-white/10 bg-[#141b26]/90 shadow-2xl shadow-black/40">
                         <div class="flex items-center gap-2 border-b border-white/10 px-5 py-4">
                             <span class="size-2.5 rounded-full bg-red-400"></span>
                             <span class="size-2.5 rounded-full bg-amber-300"></span>
@@ -102,7 +102,7 @@
                                     <span class="font-medium text-sky-100">/t/A7kP2q</span>
                                     <span class="rounded bg-sky-400/20 px-2 py-1 text-xs text-sky-100">LinkTracker</span>
                                 </div>
-                                <div class="mt-4 h-2 rounded-full bg-zinc-800">
+                                <div class="mt-4 h-2 rounded-full bg-[#202936]">
                                     <div class="h-2 w-4/5 rounded-full bg-sky-400"></div>
                                 </div>
                             </div>
@@ -122,7 +122,7 @@
                                 </div>
                             </div>
 
-                            <div class="rounded-md border border-white/10 bg-zinc-950/60 p-5">
+                            <div class="rounded-md border border-white/10 bg-[#080b12]/70 p-5">
                                 <div class="flex h-44 items-end gap-2">
                                     @foreach (['h-[36px]', 'h-[52px]', 'h-[46px]', 'h-[72px]', 'h-[65px]', 'h-[88px]', 'h-[76px]', 'h-[96px]', 'h-[84px]', 'h-[112px]', 'h-[104px]', 'h-[124px]'] as $heightClass)
                                     <div class="flex flex-1 items-end">
@@ -199,7 +199,7 @@
                 </div>
             </section>
 
-            <section id="rotators" class="border-y border-white/10 bg-zinc-900/70">
+            <section id="rotators" class="border-y border-white/10 bg-[#101722]/90">
                 <div class="mx-auto grid max-w-7xl gap-10 px-6 py-20 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
                     <div>
                         <p class="text-sm font-semibold uppercase tracking-wide text-sky-300">Rotators</p>
@@ -211,15 +211,15 @@
                     </div>
 
                     <div class="grid gap-4 sm:grid-cols-3">
-                        <div class="rounded-md border border-white/10 bg-zinc-950/60 p-5">
+                        <div class="rounded-md border border-white/10 bg-[#080b12]/70 p-5">
                             <p class="text-sm font-medium text-white">Random</p>
                             <p class="mt-3 text-sm leading-6 text-zinc-400">Every attached tracker has a chance to receive the next visit.</p>
                         </div>
-                        <div class="rounded-md border border-white/10 bg-zinc-950/60 p-5">
+                        <div class="rounded-md border border-white/10 bg-[#080b12]/70 p-5">
                             <p class="text-sm font-medium text-white">Weighted</p>
                             <p class="mt-3 text-sm leading-6 text-zinc-400">Higher weight means more traffic over time.</p>
                         </div>
-                        <div class="rounded-md border border-white/10 bg-zinc-950/60 p-5">
+                        <div class="rounded-md border border-white/10 bg-[#080b12]/70 p-5">
                             <p class="text-sm font-medium text-white">Round robin</p>
                             <p class="mt-3 text-sm leading-6 text-zinc-400">Visits move through trackers in a predictable sequence.</p>
                         </div>

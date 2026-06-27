@@ -30,6 +30,18 @@
 
 @layer theme {
     .dark {
+        --color-zinc-50: #f8fafc;
+        --color-zinc-100: #eef2f6;
+        --color-zinc-200: #d7dee8;
+        --color-zinc-300: #bdc7d4;
+        --color-zinc-400: #98a4b3;
+        --color-zinc-500: #718096;
+        --color-zinc-600: #556579;
+        --color-zinc-700: #354255;
+        --color-zinc-800: #202936;
+        --color-zinc-900: #141b26;
+        --color-zinc-950: #080b12;
+
         --color-accent: var(--color-white);
         --color-accent-content: var(--color-white);
         --color-accent-foreground: var(--color-neutral-800);
@@ -62,6 +74,16 @@ select:focus[data-flux-control] {
 }
 
 @layer components {
+    .dark body {
+        background:
+            radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 30rem),
+            var(--color-zinc-950);
+    }
+
+    .dark [data-flux-main] {
+        background: transparent;
+    }
+
     table tbody>tr>* {
         @apply transition-colors duration-150;
     }
