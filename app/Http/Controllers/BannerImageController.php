@@ -23,6 +23,6 @@ class BannerImageController extends Controller
             ...ClientInfo::fromRequest($request),
         ]);
 
-        return $imageProxy->responseFor($banner->image_url);
+        return $imageProxy->cachedResponseFor($banner->image_url);
     }
 }

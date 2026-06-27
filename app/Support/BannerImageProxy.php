@@ -5,14 +5,48 @@ namespace App\Support;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 class BannerImageProxy
 {
+    private const TRACKER_CACHE_TTL_DAYS = 7;
+
     public function responseFor(string $imageUrl): Response
     {
-        if (! $this->isAllowedUrl($imageUrl)) {
+        $image = $this->fetchImage($imageUrl);
+
+        if ($image === null) {
             return $this->badGateway();
+        }
+
+        return $this->imageResponse($image['body'], $image['content_type'], 'BYPASS');
+    }
+
+    public function cachedResponseFor(string $imageUrl): Response
+    {
+        $cacheKey = 'banner-image:v1:'.hash('sha256', $imageUrl);
+        $cachedImage = Cache::get($cacheKey);
+
+        if ($this->isCachedImage($cachedImage)) {
+            return $this->imageResponse($cachedImage['body'], $cachedImage['content_type'], 'HIT');
+        }
+
+        $image = $this->fetchImage($imageUrl);
+
+        if ($image === null) {
+            return $this->badGateway();
+        }
+
+        Cache::put($cacheKey, $image, now()->addDays(self::TRACKER_CACHE_TTL_DAYS));
+
+        return $this->imageResponse($image['body'], $image['content_type'], 'MISS');
+    }
+
+    private function fetchImage(string $imageUrl): ?array
+    {
+        if (! $this->isAllowedUrl($imageUrl)) {
+            return null;
         }
 
         try {
@@ -26,21 +60,38 @@ class BannerImageProxy
                 ->get($imageUrl)
                 ->throw();
         } catch (ConnectionException|RequestException) {
-            return $this->badGateway();
+            return null;
         }
 
         $contentType = $remoteResponse->header('Content-Type', 'application/octet-stream');
 
         if (! str_starts_with(strtolower($contentType), 'image/')) {
-            return $this->badGateway();
+            return null;
         }
 
-        return response($remoteResponse->body(), 200, [
+        return [
+            'body' => $remoteResponse->body(),
+            'content_type' => $contentType,
+        ];
+    }
+
+    private function imageResponse(string $body, string $contentType, string $cacheStatus): Response
+    {
+        return response($body, 200, [
             'Content-Type' => $contentType,
             'Cache-Control' => 'no-store, no-cache, must-revalidate',
             'Pragma' => 'no-cache',
+            'X-Banner-Image-Cache' => $cacheStatus,
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    private function isCachedImage(mixed $image): bool
+    {
+        return is_array($image)
+            && is_string($image['body'] ?? null)
+            && is_string($image['content_type'] ?? null)
+            && str_starts_with(strtolower($image['content_type']), 'image/');
     }
 
     private function isAllowedUrl(string $imageUrl): bool
