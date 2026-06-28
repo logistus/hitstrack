@@ -25,7 +25,7 @@ new #[Title('All Referrers')] class extends Component
 
     public function sortBy(string $field): void
     {
-        if (! in_array($field, ['ref_url', 'total_hits', 'unique_hits', 'unique_rate'], true)) {
+        if (! in_array($field, ['ref_url', 'total_hits', 'unique_hits', 'unique_rate', 'last_hit_at'], true)) {
             return;
         }
 
@@ -90,6 +90,7 @@ new #[Title('All Referrers')] class extends Component
             ->select([
                 'tracker_stats.ref_url',
                 'tracker_stats.ip_address',
+                'tracker_stats.created_at as hit_at',
             ]);
 
         $rotatorHits = DB::table('rotator_stats')
@@ -98,6 +99,7 @@ new #[Title('All Referrers')] class extends Component
             ->select([
                 'rotator_stats.ref_url',
                 'rotator_stats.ip_address',
+                'rotator_stats.created_at as hit_at',
             ]);
 
         return $directTrackerHits->unionAll($rotatorHits);
@@ -111,6 +113,7 @@ new #[Title('All Referrers')] class extends Component
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->selectRaw('ROUND((COUNT(DISTINCT ip_address) * 100.0) / COUNT(*), 2) as unique_rate')
+            ->selectRaw('MAX(hit_at) as last_hit_at')
             ->groupByRaw("COALESCE(ref_url, '')");
     }
 };
@@ -186,6 +189,14 @@ new #[Title('All Referrers')] class extends Component
                     class="cursor-pointer text-right">
                     {{ __('Unique Rate') }}
                 </flux:table.column>
+                <flux:table.column
+                    sortable
+                    :sorted="$sortField === 'last_hit_at'"
+                    :direction="$sortDirection"
+                    wire:click="sortBy('last_hit_at')"
+                    class="cursor-pointer text-right">
+                    {{ __('Last Hit') }}
+                </flux:table.column>
             </flux:table.columns>
 
             <flux:table.rows>
@@ -203,10 +214,20 @@ new #[Title('All Referrers')] class extends Component
                     <flux:table.cell>{{ number_format($referrer->total_hits) }}</flux:table.cell>
                     <flux:table.cell>{{ number_format($referrer->unique_hits) }}</flux:table.cell>
                     <flux:table.cell>{{ number_format($referrer->unique_rate, 2) }}%</flux:table.cell>
+                    <flux:table.cell>
+                        @if ($referrer->last_hit_at)
+                        @php($lastHitAt = \Carbon\Carbon::parse($referrer->last_hit_at))
+                        <span title="{{ $lastHitAt->format('Y-m-d H:i:s') }}">
+                            {{ $lastHitAt->diffForHumans(short: true) }}
+                        </span>
+                        @else
+                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('Never') }}</span>
+                        @endif
+                    </flux:table.cell>
                 </flux:table.row>
                 @empty
                 <flux:table.row>
-                    <flux:table.cell colspan="4">
+                    <flux:table.cell colspan="5">
                         <div class="py-6 text-center text-zinc-500 dark:text-zinc-400">
                             {{ __('No referrer data yet.') }}
                         </div>
