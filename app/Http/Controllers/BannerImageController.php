@@ -4,12 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Banner;
 use App\Support\ClientInfo;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class BannerImageController extends Controller
 {
-    public function __invoke(Request $request, string $slug): RedirectResponse
+    public function __invoke(Request $request, string $slug): Response
     {
         $banner = Banner::query()
             ->where('banner_slug', $slug)
@@ -22,6 +22,10 @@ class BannerImageController extends Controller
             ...ClientInfo::fromRequest($request),
         ]);
 
-        return redirect()->away($banner->image_url);
+        return new Response('', 302, [
+            'Location' => $banner->image_url,
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'Cache-Control' => 'public, max-age=300',
+        ]);
     }
 }
