@@ -10,7 +10,7 @@ use App\Http\Controllers\LinkTrackerRedirectController;
 use App\Http\Controllers\PixelTrackingController;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -22,7 +22,7 @@ $statelessImageMiddleware = [
     AddQueuedCookiesToResponse::class,
     StartSession::class,
     ShareErrorsFromSession::class,
-    ValidateCsrfToken::class,
+    PreventRequestForgery::class,
 ];
 
 Route::get('t/{slug}', LinkTrackerRedirectController::class)->name('linktrackers.redirect');
