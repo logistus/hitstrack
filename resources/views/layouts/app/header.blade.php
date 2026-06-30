@@ -49,6 +49,9 @@
                 <flux:sidebar.item :href="route('bannerrotators')" icon="rectangle-stack" :current="request()->routeIs('bannerrotators*')" wire:navigate>
                     {{ __('Banner Rotators')  }}
                 </flux:sidebar.item>
+                <flux:sidebar.item :href="route('banner-referrers')" icon="globe-alt" :current="request()->routeIs('banner-referrers')" wire:navigate>
+                    {{ __('All Referrers') }}
+                </flux:sidebar.item>
             </flux:sidebar.group>
         </flux:sidebar.nav>
 

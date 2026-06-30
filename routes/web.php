@@ -30,6 +30,7 @@ Route::get('datacrove', DataCroveController::class)->name('datacrove');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('referrers', 'pages::all-referrers')->name('referrers');
+    Route::livewire('banner-referrers', 'pages::all-banner-referrers')->name('banner-referrers');
     Route::livewire('linktrackers', 'pages::linktrackers')->name('linktrackers');
     Route::livewire('linktrackers/{slug}/stats', 'pages::linktracker-stats')->name('linktrackers.stats');
     Route::livewire('linkrotators', 'pages::linkrotators')->name('linkrotators');
