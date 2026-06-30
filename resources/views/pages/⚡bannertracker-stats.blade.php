@@ -5,6 +5,7 @@ use App\Models\BannerStat;
 use App\Support\AnalyticsCache;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Flux\Flux;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Title;
@@ -26,6 +27,10 @@ new #[Title('Banner tracker stats')] class extends Component
     public string $referrerSearch = '';
 
     public string $activeTab = 'overview';
+
+    public string $selectedDeviceType = '';
+
+    public array $deviceReferrers = [];
 
     public function mount(string $slug): void
     {
@@ -114,6 +119,14 @@ new #[Title('Banner tracker stats')] class extends Component
         }
 
         return 'https://'.$refUrl;
+    }
+
+    public function showDeviceReferrers(string $deviceType): void
+    {
+        $this->selectedDeviceType = $deviceType;
+        $this->deviceReferrers = $this->topDeviceReferrers($this->banner(), $deviceType);
+
+        Flux::modal('device-referrers')->show();
     }
 
     private function banner(): Banner
@@ -235,6 +248,24 @@ new #[Title('Banner tracker stats')] class extends Component
             ->simplePaginate(25, pageName: 'referrerPage');
     }
 
+    private function topDeviceReferrers(Banner $banner, string $deviceType): array
+    {
+        return BannerStat::query()
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('COUNT(*) as total_events')
+            ->where('banner_id', $banner->id)
+            ->where('device_type', $deviceType)
+            ->groupByRaw("COALESCE(ref_url, '')")
+            ->orderByDesc('total_events')
+            ->limit(5)
+            ->get()
+            ->map(fn (BannerStat $stat): array => [
+                'ref_url' => $stat->ref_url,
+                'total' => (int) $stat->total_events,
+            ])
+            ->all();
+    }
+
     private function dailyEventRecords(Banner $banner)
     {
         return BannerStat::query()
@@ -317,7 +348,16 @@ new #[Title('Banner tracker stats')] class extends Component
                             @endphp
                             <div class="space-y-1.5">
                                 <div class="flex items-center justify-between gap-4 text-sm">
-                                    <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $label === __('Device Type') ? str($stat['label'])->title() : $stat['label'] }}</span>
+                                    @if ($label === __('Device Type'))
+                                        <button
+                                            type="button"
+                                            class="min-w-0 truncate text-left text-zinc-600 underline-offset-2 hover:text-zinc-950 hover:underline dark:text-zinc-400 dark:hover:text-white"
+                                            wire:click="showDeviceReferrers('{{ addslashes($stat['label']) }}')">
+                                            {{ str($stat['label'])->title() }}
+                                        </button>
+                                    @else
+                                        <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $stat['label'] }}</span>
+                                    @endif
                                     <span class="font-medium">{{ number_format($stat['total']) }}</span>
                                 </div>
                                 <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"><div class="h-full rounded-full bg-blue-600" @style(["width: {$percent}%"])></div></div>
@@ -330,6 +370,34 @@ new #[Title('Banner tracker stats')] class extends Component
                 </flux:card>
                 @endforeach
             </section>
+
+            <flux:modal name="device-referrers" class="max-w-xl md:min-w-xl">
+                <div class="space-y-6">
+                    <div>
+                        <flux:heading size="lg">{{ __('Top Referrers') }}</flux:heading>
+                        <flux:text>{{ __('Device type: :device', ['device' => str($selectedDeviceType)->title()]) }}</flux:text>
+                    </div>
+
+                    <div class="space-y-3">
+                        @forelse ($deviceReferrers as $referrer)
+                            <div class="flex items-center justify-between gap-4 rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-700">
+                                <div class="min-w-0">
+                                    @if ($href = $this->referrerHref($referrer['ref_url']))
+                                        <flux:link href="{{ $href }}" target="_blank" rel="noreferrer" class="block truncate">
+                                            {{ $referrer['ref_url'] }}
+                                        </flux:link>
+                                    @else
+                                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('Direct / unknown') }}</span>
+                                    @endif
+                                </div>
+                                <span class="shrink-0 font-medium">{{ number_format($referrer['total']) }}</span>
+                            </div>
+                        @empty
+                            <flux:text>{{ __('No referrer data yet.') }}</flux:text>
+                        @endforelse
+                    </div>
+                </div>
+            </flux:modal>
 
         </section>
 
