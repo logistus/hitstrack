@@ -8,21 +8,40 @@ use App\Http\Controllers\DataCroveController;
 use App\Http\Controllers\LinkRotatorRedirectController;
 use App\Http\Controllers\LinkTrackerRedirectController;
 use App\Http\Controllers\PixelTrackingController;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 Route::view('/', 'welcome')->name('home');
+
+$statelessImageMiddleware = [
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    ValidateCsrfToken::class,
+];
 
 Route::get('t/{slug}', LinkTrackerRedirectController::class)->name('linktrackers.redirect');
 Route::get('r/{slug}', LinkRotatorRedirectController::class)->name('linkrotators.redirect');
 Route::get('b/{slug}', BannerClickRedirectController::class)->name('bannertrackers.click');
-Route::get('b/{slug}/image', BannerImageController::class)->name('bannertrackers.image');
+Route::get('b/{slug}/image', BannerImageController::class)
+    ->withoutMiddleware($statelessImageMiddleware)
+    ->name('bannertrackers.image');
 Route::get('b/{slug}/image.{extension}', BannerImageController::class)
     ->whereIn('extension', ['jpg', 'jpeg', 'png', 'gif', 'webp'])
+    ->withoutMiddleware($statelessImageMiddleware)
     ->name('bannertrackers.image.extension');
 Route::get('br/{slug}', BannerRotatorClickRedirectController::class)->name('bannerrotators.click');
-Route::get('br/{slug}/image', BannerRotatorImageController::class)->name('bannerrotators.image');
+Route::get('br/{slug}/image', BannerRotatorImageController::class)
+    ->withoutMiddleware($statelessImageMiddleware)
+    ->name('bannerrotators.image');
 Route::get('br/{slug}/image.{extension}', BannerRotatorImageController::class)
     ->whereIn('extension', ['jpg', 'jpeg', 'png', 'gif', 'webp'])
+    ->withoutMiddleware($statelessImageMiddleware)
     ->name('bannerrotators.image.extension');
 
 Route::get('pixel', PixelTrackingController::class)->name('pixels.track');
