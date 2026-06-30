@@ -14,7 +14,7 @@ new #[Title('Banner Referrers')] class extends Component
 
     public string $search = '';
 
-    public string $sortField = 'total_events';
+    public string $sortField = 'impressions';
 
     public string $sortDirection = 'desc';
 
@@ -25,7 +25,7 @@ new #[Title('Banner Referrers')] class extends Component
 
     public function sortBy(string $field): void
     {
-        if (! in_array($field, ['ref_url', 'impressions', 'clicks', 'total_events', 'unique_events', 'ctr', 'last_event_at'], true)) {
+        if (! in_array($field, ['ref_url', 'impressions', 'clicks', 'unique_events', 'ctr', 'last_event_at'], true)) {
             return;
         }
 
@@ -61,7 +61,6 @@ new #[Title('Banner Referrers')] class extends Component
                     return [
                         'impressions' => (clone $allEvents)->where('event_type', 'impression')->count(),
                         'clicks' => (clone $allEvents)->where('event_type', 'click')->count(),
-                        'total_events' => (clone $allEvents)->count(),
                         'referrers' => DB::query()->fromSub($this->referrerPerformanceQuery(), 'referrers')->count(),
                     ];
                 },
@@ -100,7 +99,6 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->selectRaw('COUNT(*) as total_events')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_events')
             ->selectRaw("ROUND((SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) * 100.0) / NULLIF(SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END), 0), 2) as ctr")
             ->selectRaw('MAX(event_at) as last_event_at')
@@ -115,7 +113,7 @@ new #[Title('Banner Referrers')] class extends Component
         <flux:subheading>{{ __('Combined referrer performance across all banner trackers and banner rotators.') }}</flux:subheading>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-4">
+    <div class="grid gap-4 sm:grid-cols-3">
         <flux:card>
             <div class="space-y-2">
                 <flux:text>{{ __('Impressions') }}</flux:text>
@@ -126,12 +124,6 @@ new #[Title('Banner Referrers')] class extends Component
             <div class="space-y-2">
                 <flux:text>{{ __('Clicks') }}</flux:text>
                 <flux:heading size="xl">{{ number_format($summaryStats['clicks']) }}</flux:heading>
-            </div>
-        </flux:card>
-        <flux:card>
-            <div class="space-y-2">
-                <flux:text>{{ __('Total Events') }}</flux:text>
-                <flux:heading size="xl">{{ number_format($summaryStats['total_events']) }}</flux:heading>
             </div>
         </flux:card>
         <flux:card>
@@ -162,9 +154,6 @@ new #[Title('Banner Referrers')] class extends Component
                 <flux:table.column sortable :sorted="$sortField === 'clicks'" :direction="$sortDirection" wire:click="sortBy('clicks')" class="cursor-pointer text-right">
                     {{ __('Clicks') }}
                 </flux:table.column>
-                <flux:table.column sortable :sorted="$sortField === 'total_events'" :direction="$sortDirection" wire:click="sortBy('total_events')" class="cursor-pointer text-right">
-                    {{ __('Total Events') }}
-                </flux:table.column>
                 <flux:table.column sortable :sorted="$sortField === 'unique_events'" :direction="$sortDirection" wire:click="sortBy('unique_events')" class="cursor-pointer text-right">
                     {{ __('Unique IPs') }}
                 </flux:table.column>
@@ -190,7 +179,6 @@ new #[Title('Banner Referrers')] class extends Component
                         </flux:table.cell>
                         <flux:table.cell>{{ number_format($referrer->impressions) }}</flux:table.cell>
                         <flux:table.cell>{{ number_format($referrer->clicks) }}</flux:table.cell>
-                        <flux:table.cell>{{ number_format($referrer->total_events) }}</flux:table.cell>
                         <flux:table.cell>{{ number_format($referrer->unique_events) }}</flux:table.cell>
                         <flux:table.cell>{{ number_format((float) ($referrer->ctr ?? 0), 2) }}%</flux:table.cell>
                         <flux:table.cell>
@@ -206,7 +194,7 @@ new #[Title('Banner Referrers')] class extends Component
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="7">
+                        <flux:table.cell colspan="6">
                             <div class="py-6 text-center text-zinc-500 dark:text-zinc-400">
                                 {{ __('No referrer data yet.') }}
                             </div>
