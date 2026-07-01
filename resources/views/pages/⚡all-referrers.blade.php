@@ -91,8 +91,6 @@ new #[Title('All Referrers')] class extends Component
             ->where('trackers.user_id', $userId)
             ->whereNull('tracker_stats.rotator_id')
             ->select([
-                DB::raw("'tracker' as source_type"),
-                'tracker_stats.tracker_id as source_id',
                 'tracker_stats.ref_url',
                 'tracker_stats.ip_address',
                 'tracker_stats.created_at as hit_at',
@@ -102,8 +100,6 @@ new #[Title('All Referrers')] class extends Component
             ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
             ->where('rotators.user_id', $userId)
             ->select([
-                DB::raw("'rotator' as source_type"),
-                'rotator_stats.rotator_id as source_id',
                 'rotator_stats.ref_url',
                 'rotator_stats.ip_address',
                 'rotator_stats.created_at as hit_at',
@@ -132,25 +128,17 @@ new #[Title('All Referrers')] class extends Component
             ->where('stat_date', '<', today())
             ->groupByRaw("COALESCE(ref_url, '')");
 
-        $rawFallback = DB::query()
-            ->fromSub($this->hitEventsQuery(), 'hit_events')
-            ->whereNotExists(function ($query): void {
-                $query
-                    ->selectRaw('1')
-                    ->from('daily_link_referrer_stats')
-                    ->where('daily_link_referrer_stats.user_id', Auth::id())
-                    ->whereColumn('daily_link_referrer_stats.source_type', 'hit_events.source_type')
-                    ->whereColumn('daily_link_referrer_stats.source_id', 'hit_events.source_id')
-                    ->whereRaw('daily_link_referrer_stats.stat_date = DATE(hit_events.hit_at)')
-                    ->whereRaw("daily_link_referrer_stats.ref_url_hash = SHA2(COALESCE(hit_events.ref_url, ''), 256)");
-            })
-            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+        $today = DB::table('tracker_stats')
+            ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
+            ->where('trackers.user_id', Auth::id())
+            ->where('tracker_stats.created_at', '>=', today())
+            ->selectRaw("COALESCE(tracker_stats.ref_url, '') as ref_url")
             ->selectRaw('COUNT(*) as total_hits')
-            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->groupByRaw("COALESCE(ref_url, '')");
+            ->selectRaw('COUNT(DISTINCT tracker_stats.ip_address) as unique_hits')
+            ->groupByRaw("COALESCE(tracker_stats.ref_url, '')");
 
         return DB::query()
-            ->fromSub($aggregate->unionAll($rawFallback), 'referrer_aggregates')
+            ->fromSub($aggregate->unionAll($today), 'referrer_aggregates')
             ->selectRaw('ref_url')
             ->selectRaw('SUM(total_hits) as total_hits')
             ->selectRaw('SUM(unique_hits) as unique_hits')
