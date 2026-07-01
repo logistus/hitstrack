@@ -32,6 +32,12 @@ new #[Title('Banner Trackers')] class extends Component
 
     public function createBanner(): void
     {
+        if ($this->bannerLimitReached()) {
+            Flux::toast(variant: 'warning', text: __('Your banner tracker limit has been reached.'));
+
+            return;
+        }
+
         $this->resetForm();
 
         Flux::modal('banner-form')->show();
@@ -57,6 +63,12 @@ new #[Title('Banner Trackers')] class extends Component
             $this->resetForm();
             Flux::modal('banner-form')->close();
             Flux::toast(variant: 'success', text: __('Banner tracker updated.'));
+
+            return;
+        }
+
+        if ($this->bannerLimitReached()) {
+            Flux::toast(variant: 'warning', text: __('Your banner tracker limit has been reached.'));
 
             return;
         }
@@ -146,6 +158,9 @@ new #[Title('Banner Trackers')] class extends Component
 
     public function with(): array
     {
+        $bannerCount = $this->bannerCount();
+        $bannerLimit = $this->bannerLimit();
+
         $banners = Banner::query()
             ->select('banners.*')
             ->selectRaw(
@@ -192,7 +207,15 @@ new #[Title('Banner Trackers')] class extends Component
             ->latest()
             ->simplePaginate(25);
 
-        return ['banners' => $banners];
+        return [
+            'banners' => $banners,
+            'usage' => [
+                'count' => $bannerCount,
+                'limit' => $bannerLimit,
+                'remaining' => $bannerLimit === null ? null : max(0, $bannerLimit - $bannerCount),
+                'reached' => $bannerLimit !== null && $bannerCount >= $bannerLimit,
+            ],
+        ];
     }
 
     private function resetForm(): void
@@ -214,6 +237,23 @@ new #[Title('Banner Trackers')] class extends Component
 
         return $slug;
     }
+
+    private function bannerLimit(): ?int
+    {
+        return Auth::user()?->userType?->max_banner_trackers;
+    }
+
+    private function bannerCount(): int
+    {
+        return Banner::query()->where('user_id', Auth::id())->count();
+    }
+
+    private function bannerLimitReached(): bool
+    {
+        $limit = $this->bannerLimit();
+
+        return $limit !== null && $this->bannerCount() >= $limit;
+    }
 };
 ?>
 
@@ -225,10 +265,19 @@ new #[Title('Banner Trackers')] class extends Component
             <flux:subheading>{{ __('Create banners with impression and click tracking.') }}</flux:subheading>
         </div>
 
-        <flux:button variant="primary" type="button" wire:click="createBanner">
-            {{ __('New banner') }}
-        </flux:button>
+        @unless ($usage['reached'])
+            <flux:button variant="primary" type="button" wire:click="createBanner">
+                {{ __('New banner') }}
+            </flux:button>
+        @endunless
     </div>
+
+    <flux:callout
+        :variant="$usage['reached'] ? 'warning' : null"
+        :heading="__('Banner tracker usage')"
+        :text="$usage['limit'] === null
+            ? __('You have created :count banner trackers. Your plan has unlimited banner trackers.', ['count' => number_format($usage['count'])])
+            : __('You have created :count of :limit banner trackers. :remaining remaining.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit']), 'remaining' => number_format($usage['remaining'])])" />
 
     <flux:modal name="banner-form" class="max-w-2xl md:min-w-2xl" @close="closeBannerModal">
         <form wire:submit="save" class="space-y-6">

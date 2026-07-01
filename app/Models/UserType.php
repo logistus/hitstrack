@@ -15,6 +15,16 @@ class UserType extends Model
         'max_banner_rotators',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'max_link_trackers' => 'integer',
+            'max_link_rotators' => 'integer',
+            'max_banner_trackers' => 'integer',
+            'max_banner_rotators' => 'integer',
+        ];
+    }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);

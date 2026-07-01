@@ -33,6 +33,12 @@ new #[Title('Rotators')] class extends Component
 
     public function createRotator(): void
     {
+        if ($this->rotatorLimitReached()) {
+            Flux::toast(variant: 'warning', text: __('Your link rotator limit has been reached.'));
+
+            return;
+        }
+
         $this->resetRotatorForm();
 
         Flux::modal('rotator-form')->show();
@@ -53,6 +59,12 @@ new #[Title('Rotators')] class extends Component
             $this->resetRotatorForm();
             Flux::modal('rotator-form')->close();
             Flux::toast(variant: 'success', text: __('Link rotator updated.'));
+
+            return;
+        }
+
+        if ($this->rotatorLimitReached()) {
+            Flux::toast(variant: 'warning', text: __('Your link rotator limit has been reached.'));
 
             return;
         }
@@ -206,6 +218,9 @@ new #[Title('Rotators')] class extends Component
 
     public function with(): array
     {
+        $rotatorCount = $this->rotatorCount();
+        $rotatorLimit = $this->rotatorLimit();
+
         $managedRotator = $this->managingRotatorId
             ? $this->userRotatorsQuery()->with('trackers')->find($this->managingRotatorId)
             : null;
@@ -267,6 +282,12 @@ new #[Title('Rotators')] class extends Component
                 ->when($attachedTrackerIds->isNotEmpty(), fn($query) => $query->whereNotIn('id', $attachedTrackerIds))
                 ->latest()
                 ->get(),
+            'usage' => [
+                'count' => $rotatorCount,
+                'limit' => $rotatorLimit,
+                'remaining' => $rotatorLimit === null ? null : max(0, $rotatorLimit - $rotatorCount),
+                'reached' => $rotatorLimit !== null && $rotatorCount >= $rotatorLimit,
+            ],
         ];
     }
 
@@ -319,6 +340,23 @@ new #[Title('Rotators')] class extends Component
 
         return $slug;
     }
+
+    private function rotatorLimit(): ?int
+    {
+        return Auth::user()?->userType?->max_link_rotators;
+    }
+
+    private function rotatorCount(): int
+    {
+        return $this->userRotatorsQuery()->count();
+    }
+
+    private function rotatorLimitReached(): bool
+    {
+        $limit = $this->rotatorLimit();
+
+        return $limit !== null && $this->rotatorCount() >= $limit;
+    }
 };
 ?>
 
@@ -330,10 +368,19 @@ new #[Title('Rotators')] class extends Component
             <flux:subheading>{{ __('Create rotating links from your trackers.') }}</flux:subheading>
         </div>
 
-        <flux:button variant="primary" type="button" wire:click="createRotator">
-            {{ __('New rotator') }}
-        </flux:button>
+        @unless ($usage['reached'])
+            <flux:button variant="primary" type="button" wire:click="createRotator">
+                {{ __('New rotator') }}
+            </flux:button>
+        @endunless
     </div>
+
+    <flux:callout
+        :variant="$usage['reached'] ? 'warning' : null"
+        :heading="__('Link rotator usage')"
+        :text="$usage['limit'] === null
+            ? __('You have created :count link rotators. Your plan has unlimited link rotators.', ['count' => number_format($usage['count'])])
+            : __('You have created :count of :limit link rotators. :remaining remaining.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit']), 'remaining' => number_format($usage['remaining'])])" />
 
     <flux:modal name="rotator-form" class="max-w-lg md:min-w-lg" @close="closeRotatorModal">
         <form wire:submit="saveRotator" class="space-y-6">

@@ -24,6 +24,12 @@ new #[Title('Trackers')] class extends Component
 
     public function createTracker(): void
     {
+        if ($this->trackerLimitReached()) {
+            Flux::toast(variant: 'warning', text: __('Your link tracker limit has been reached.'));
+
+            return;
+        }
+
         $this->resetForm();
 
         Flux::modal('tracker-form')->show();
@@ -50,6 +56,12 @@ new #[Title('Trackers')] class extends Component
             Flux::modal('tracker-form')->close();
 
             Flux::toast(variant: 'success', text: __('Link tracker updated.'));
+
+            return;
+        }
+
+        if ($this->trackerLimitReached()) {
+            Flux::toast(variant: 'warning', text: __('Your link tracker limit has been reached.'));
 
             return;
         }
@@ -156,8 +168,28 @@ new #[Title('Trackers')] class extends Component
         return $slug;
     }
 
+    private function trackerLimit(): ?int
+    {
+        return Auth::user()?->userType?->max_link_trackers;
+    }
+
+    private function trackerCount(): int
+    {
+        return LinkTracker::query()->where('user_id', Auth::id())->count();
+    }
+
+    private function trackerLimitReached(): bool
+    {
+        $limit = $this->trackerLimit();
+
+        return $limit !== null && $this->trackerCount() >= $limit;
+    }
+
     public function with(): array
     {
+        $trackerCount = $this->trackerCount();
+        $trackerLimit = $this->trackerLimit();
+
         return [
             'trackers' => LinkTracker::query()
                 ->select('trackers.*')
@@ -203,6 +235,12 @@ new #[Title('Trackers')] class extends Component
                 ->withMax('stats', 'created_at')
                 ->latest()
                 ->simplePaginate(25),
+            'usage' => [
+                'count' => $trackerCount,
+                'limit' => $trackerLimit,
+                'remaining' => $trackerLimit === null ? null : max(0, $trackerLimit - $trackerCount),
+                'reached' => $trackerLimit !== null && $trackerCount >= $trackerLimit,
+            ],
         ];
     }
 };
@@ -216,10 +254,19 @@ new #[Title('Trackers')] class extends Component
             <flux:subheading>{{ __('Create and review your tracking links.') }}</flux:subheading>
         </div>
 
-        <flux:button variant="primary" type="button" wire:click="createTracker">
-            {{ __('New tracker') }}
-        </flux:button>
+        @unless ($usage['reached'])
+            <flux:button variant="primary" type="button" wire:click="createTracker">
+                {{ __('New tracker') }}
+            </flux:button>
+        @endunless
     </div>
+
+    <flux:callout
+        :variant="$usage['reached'] ? 'warning' : null"
+        :heading="__('Link tracker usage')"
+        :text="$usage['limit'] === null
+            ? __('You have created :count link trackers. Your plan has unlimited link trackers.', ['count' => number_format($usage['count'])])
+            : __('You have created :count of :limit link trackers. :remaining remaining.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit']), 'remaining' => number_format($usage['remaining'])])" />
 
     <flux:modal name="tracker-form" class="max-w-lg md:min-w-lg" @close="closeTrackerModal">
         <form wire:submit="save" class="space-y-6">
