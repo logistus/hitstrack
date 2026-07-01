@@ -62,6 +62,22 @@ new #[Layout('layouts.admin')]
         $this->resetPage('usersPage');
     }
 
+    public function removeFilters(): void
+    {
+        $this->reset(
+            'emailFilterInput',
+            'nameFilterInput',
+            'verifiedFilterInput',
+            'createdFilterInput',
+            'emailFilter',
+            'nameFilter',
+            'verifiedFilter',
+            'createdFilter',
+        );
+
+        $this->resetPage('usersPage');
+    }
+
     public function createUser(): void
     {
         $this->resetForm();
@@ -217,7 +233,7 @@ new #[Layout('layouts.admin')]
             <div class="space-y-3">
                 <flux:heading size="md">{{ __('Filter by') }}</flux:heading>
 
-                <div class="grid gap-3 md:grid-cols-[1fr_1fr_10rem_10rem_auto]">
+                <div class="grid gap-3 md:grid-cols-[1fr_1fr_10rem_10rem_auto_auto]">
                     <flux:input
                         wire:model.defer="emailFilterInput"
                         :label="__('By Email')"
@@ -248,13 +264,19 @@ new #[Layout('layouts.admin')]
                             {{ __('Filter') }}
                         </flux:button>
                     </div>
+
+                    <div class="flex items-end">
+                        <flux:button variant="filled" icon="x-mark" wire:click="removeFilters" class="w-full">
+                            {{ __('Remove Filters') }}
+                        </flux:button>
+                    </div>
                 </div>
             </div>
 
             <div class="relative">
                 <div
                     wire:loading.flex
-                    wire:target="applyFilters,previousPage,nextPage,gotoPage"
+                    wire:target="applyFilters,removeFilters,previousPage,nextPage,gotoPage"
                     class="absolute inset-0 z-10 items-center justify-center rounded-md bg-white/75 backdrop-blur-sm dark:bg-zinc-950/75">
                     <div class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
                         <flux:icon.arrow-path class="size-4 animate-spin" />
