@@ -25,7 +25,7 @@ new #[Title('Banner Referrers')] class extends Component
 
     public function sortBy(string $field): void
     {
-        if (! in_array($field, ['ref_url', 'impressions', 'clicks', 'unique_events', 'ctr', 'last_event_at'], true)) {
+        if (! in_array($field, ['ref_url', 'impressions', 'clicks', 'unique_impressions', 'ctr', 'last_event_at'], true)) {
             return;
         }
 
@@ -44,7 +44,7 @@ new #[Title('Banner Referrers')] class extends Component
         $search = trim($this->search);
 
         $referrers = $this->referrerPerformanceQuery()
-            ->when($search !== '', fn (Builder $query) => $query->where('ref_url', 'like', "%{$search}%"))
+            ->when($search !== '', fn (Builder $query) => $query->where('referrer_aggregates.ref_url', 'like', "%{$search}%"))
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn (Builder $query) => $query->orderBy('ref_url'))
             ->simplePaginate(7, pageName: 'referrerPage');
@@ -111,7 +111,7 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('SUM(impressions) as impressions')
             ->selectRaw('SUM(clicks) as clicks')
-            ->selectRaw('SUM(daily_unique_impressions + daily_unique_clicks) as unique_events')
+            ->selectRaw('SUM(daily_unique_impressions) as unique_impressions')
             ->groupByRaw("COALESCE(ref_url, '')");
 
         $today = DB::query()
@@ -119,7 +119,7 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->selectRaw('COUNT(DISTINCT ip_address) as unique_events')
+            ->selectRaw("COUNT(DISTINCT CASE WHEN event_type = 'impression' THEN ip_address END) as unique_impressions")
             ->groupByRaw("COALESCE(ref_url, '')");
 
         return DB::query()
@@ -127,7 +127,7 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw('ref_url')
             ->selectRaw('SUM(impressions) as impressions')
             ->selectRaw('SUM(clicks) as clicks')
-            ->selectRaw('SUM(unique_events) as unique_events')
+            ->selectRaw('SUM(unique_impressions) as unique_impressions')
             ->groupBy('ref_url');
     }
 
@@ -139,7 +139,7 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw('referrer_aggregates.ref_url as ref_url')
             ->selectRaw('referrer_aggregates.impressions as impressions')
             ->selectRaw('referrer_aggregates.clicks as clicks')
-            ->selectRaw('referrer_aggregates.unique_events as unique_events')
+            ->selectRaw('referrer_aggregates.unique_impressions as unique_impressions')
             ->selectRaw('ROUND((referrer_aggregates.clicks * 100.0) / NULLIF(referrer_aggregates.impressions, 0), 2) as ctr')
             ->selectRaw('latest_events.last_event_at as last_event_at');
     }
@@ -193,8 +193,8 @@ new #[Title('Banner Referrers')] class extends Component
                 <flux:table.column sortable :sorted="$sortField === 'clicks'" :direction="$sortDirection" wire:click="sortBy('clicks')" class="cursor-pointer text-right">
                     {{ __('Clicks') }}
                 </flux:table.column>
-                <flux:table.column sortable :sorted="$sortField === 'unique_events'" :direction="$sortDirection" wire:click="sortBy('unique_events')" class="cursor-pointer text-right">
-                    {{ __('Unique IPs') }}
+                <flux:table.column sortable :sorted="$sortField === 'unique_impressions'" :direction="$sortDirection" wire:click="sortBy('unique_impressions')" class="cursor-pointer text-right">
+                    {{ __('Unique Impressions') }}
                 </flux:table.column>
                 <flux:table.column sortable :sorted="$sortField === 'ctr'" :direction="$sortDirection" wire:click="sortBy('ctr')" class="cursor-pointer text-right">
                     {{ __('CTR') }}
@@ -218,7 +218,7 @@ new #[Title('Banner Referrers')] class extends Component
                         </flux:table.cell>
                         <flux:table.cell>{{ number_format($referrer->impressions) }}</flux:table.cell>
                         <flux:table.cell>{{ number_format($referrer->clicks) }}</flux:table.cell>
-                        <flux:table.cell>{{ number_format($referrer->unique_events) }}</flux:table.cell>
+                        <flux:table.cell>{{ number_format($referrer->unique_impressions) }}</flux:table.cell>
                         <flux:table.cell>{{ number_format((float) ($referrer->ctr ?? 0), 2) }}%</flux:table.cell>
                         <flux:table.cell>
                             @if ($referrer->last_event_at)
