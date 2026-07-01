@@ -193,25 +193,21 @@ if (! function_exists('rollupLinkRotatorTrackers')) {
 if (! function_exists('upsertAggregateRows')) {
     function upsertAggregateRows($query, string $table, array $uniqueBy, array $updateColumns, string $now): int
     {
-        $count = 0;
+        $rows = $query->get();
 
-        $query
-            ->orderBy('stat_date')
-            ->chunk(1000, function ($rows) use ($table, $uniqueBy, $updateColumns, $now, &$count): void {
-                $payload = $rows
-                    ->map(fn($row) => [
-                        ...((array) $row),
-                        'created_at' => $now,
-                        'updated_at' => $now,
-                    ])
-                    ->all();
+        $payload = $rows
+            ->map(fn($row) => [
+                ...((array) $row),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])
+            ->all();
 
-                DB::table($table)->upsert($payload, $uniqueBy, $updateColumns);
+        if ($payload !== []) {
+            DB::table($table)->upsert($payload, $uniqueBy, $updateColumns);
+        }
 
-                $count += count($payload);
-            });
-
-        return $count;
+        return count($payload);
     }
 }
 
