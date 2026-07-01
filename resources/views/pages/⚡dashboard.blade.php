@@ -199,7 +199,7 @@ new #[Title('Dashboard')] class extends Component
         @endforeach
     </div>
 
-    <div class="grid gap-4 xl:grid-cols-2">
+    <div class="grid gap-4 lg:grid-cols-2">
         <flux:card>
             <div class="space-y-4 overflow-hidden">
                 <flux:heading size="lg">{{ __('Recent Link Traffic') }}</flux:heading>
@@ -217,7 +217,7 @@ new #[Title('Dashboard')] class extends Component
                             @forelse ($latestLinkEvents as $event)
                                 <tr>
                                     <td class="max-w-64 py-3 pr-4">
-                                        <a href="{{ $event->target_url }}" target="_blank" rel="noreferrer" class="block truncate text-zinc-900 hover:underline dark:text-zinc-100">
+                                        <a href="{{ $event->target_url }}" target="_blank" rel="noreferrer" class="block truncate text-white hover:underline">
                                             {{ $event->target_url }}
                                         </a>
                                     </td>
