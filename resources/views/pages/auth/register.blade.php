@@ -30,7 +30,7 @@
 
             @php
             $passwordHelp = app()->isProduction()
-            ? __('Use at least 12 characters with uppercase, lowercase, letters, numbers, symbols, and a password that has not appeared in known data breaches.')
+            ? __('Use at least 8 characters with uppercase, lowercase, letters, numbers, symbols, and a password that has not appeared in known data breaches.')
             : __('Use at least 8 characters.');
             @endphp
 
