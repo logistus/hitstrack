@@ -220,6 +220,7 @@ new #[Title('Rotators')] class extends Component
     {
         $rotatorCount = $this->rotatorCount();
         $rotatorLimit = $this->rotatorLimit();
+        $visibleRotatorIds = $this->visibleRotatorIds($rotatorLimit);
 
         $managedRotator = $this->managingRotatorId
             ? $this->userRotatorsQuery()->with('trackers')->find($this->managingRotatorId)
@@ -271,6 +272,7 @@ new #[Title('Rotators')] class extends Component
             )
             ->withCount('trackers')
             ->withMax('stats', 'created_at')
+            ->when($visibleRotatorIds !== null, fn ($query) => $query->whereIn('id', $visibleRotatorIds))
             ->latest()
             ->simplePaginate(25);
 
@@ -359,6 +361,23 @@ new #[Title('Rotators')] class extends Component
         $limit = $this->rotatorLimit();
 
         return $limit !== null && $this->rotatorCount() >= $limit;
+    }
+
+    private function visibleRotatorIds(?int $limit): ?array
+    {
+        if ($limit === null) {
+            return null;
+        }
+
+        if ($limit <= 0) {
+            return [];
+        }
+
+        return $this->userRotatorsQuery()
+            ->latest()
+            ->limit($limit)
+            ->pluck('id')
+            ->all();
     }
 };
 ?>

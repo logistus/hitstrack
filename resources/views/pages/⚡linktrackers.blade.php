@@ -189,6 +189,7 @@ new #[Title('Trackers')] class extends Component
     {
         $trackerCount = $this->trackerCount();
         $trackerLimit = $this->trackerLimit();
+        $visibleTrackerIds = $this->visibleTrackerIds($trackerLimit);
 
         return [
             'trackers' => LinkTracker::query()
@@ -232,6 +233,7 @@ new #[Title('Trackers')] class extends Component
                     ['tracker', today()->toDateString(), today()],
                 )
                 ->where('user_id', Auth::id())
+                ->when($visibleTrackerIds !== null, fn ($query) => $query->whereIn('id', $visibleTrackerIds))
                 ->withMax('stats', 'created_at')
                 ->latest()
                 ->simplePaginate(25),
@@ -245,6 +247,24 @@ new #[Title('Trackers')] class extends Component
                     && strtolower(trim((string) Auth::user()?->userType?->label)) === 'free',
             ],
         ];
+    }
+
+    private function visibleTrackerIds(?int $limit): ?array
+    {
+        if ($limit === null) {
+            return null;
+        }
+
+        if ($limit <= 0) {
+            return [];
+        }
+
+        return LinkTracker::query()
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->limit($limit)
+            ->pluck('id')
+            ->all();
     }
 };
 ?>
