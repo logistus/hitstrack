@@ -220,7 +220,7 @@ new #[Layout('layouts.admin')]
     {
         $this->reset('editingUserId', 'name', 'email', 'password');
         $this->email_verified = true;
-        $this->user_type_id = (string) UserType::query()->where('name', 'free')->value('id');
+        $this->user_type_id = (string) UserType::query()->where('label', 'Free')->value('id');
         $this->resetValidation();
     }
 };

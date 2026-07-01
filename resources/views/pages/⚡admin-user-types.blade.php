@@ -18,8 +18,6 @@ new #[Layout('layouts.admin')]
 
     public ?int $deletingUserTypeId = null;
 
-    public string $name = '';
-
     public string $label = '';
 
     public string $max_link_trackers = '';
@@ -41,7 +39,7 @@ new #[Layout('layouts.admin')]
 
     public function sortBy(string $field): void
     {
-        if (! in_array($field, ['id', 'name', 'label', 'max_link_trackers', 'max_link_rotators', 'max_banner_trackers', 'max_banner_rotators', 'created_at'], true)) {
+        if (! in_array($field, ['id', 'label', 'max_link_trackers', 'max_link_rotators', 'max_banner_trackers', 'max_banner_rotators', 'created_at'], true)) {
             return;
         }
 
@@ -49,7 +47,7 @@ new #[Layout('layouts.admin')]
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
             $this->sortField = $field;
-            $this->sortDirection = in_array($field, ['name', 'label'], true) ? 'asc' : 'desc';
+            $this->sortDirection = $field === 'label' ? 'asc' : 'desc';
         }
 
         $this->resetPage('userTypesPage');
@@ -67,7 +65,6 @@ new #[Layout('layouts.admin')]
         $userType = UserType::query()->findOrFail($userTypeId);
 
         $this->editingUserTypeId = $userType->id;
-        $this->name = $userType->name;
         $this->label = $userType->label;
         $this->max_link_trackers = $this->limitToInput($userType->max_link_trackers);
         $this->max_link_rotators = $this->limitToInput($userType->max_link_rotators);
@@ -84,14 +81,7 @@ new #[Layout('layouts.admin')]
         $isEditing = $this->editingUserTypeId !== null;
 
         $validated = $this->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:50',
-                'alpha_dash:ascii',
-                Rule::unique(UserType::class)->ignore($this->editingUserTypeId),
-            ],
-            'label' => ['required', 'string', 'max:100'],
+            'label' => ['required', 'string', 'max:100', Rule::unique(UserType::class)->ignore($this->editingUserTypeId)],
             'max_link_trackers' => ['nullable', 'integer', 'min:0'],
             'max_link_rotators' => ['nullable', 'integer', 'min:0'],
             'max_banner_trackers' => ['nullable', 'integer', 'min:0'],
@@ -103,7 +93,6 @@ new #[Layout('layouts.admin')]
             : new UserType();
 
         $userType->forceFill([
-            'name' => str($validated['name'])->lower()->toString(),
             'label' => $validated['label'],
             'max_link_trackers' => $this->emptyToNull($validated['max_link_trackers']),
             'max_link_rotators' => $this->emptyToNull($validated['max_link_rotators']),
@@ -177,7 +166,6 @@ new #[Layout('layouts.admin')]
     {
         $this->reset(
             'editingUserTypeId',
-            'name',
             'label',
             'max_link_trackers',
             'max_link_rotators',
@@ -227,7 +215,6 @@ new #[Layout('layouts.admin')]
             <flux:table :paginate="$userTypes">
                 <flux:table.columns>
                     <flux:table.column sortable :sorted="$sortField === 'id'" :direction="$sortDirection" wire:click="sortBy('id')" class="cursor-pointer">{{ __('ID') }}</flux:table.column>
-                    <flux:table.column sortable :sorted="$sortField === 'name'" :direction="$sortDirection" wire:click="sortBy('name')" class="cursor-pointer">{{ __('Name') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'label'" :direction="$sortDirection" wire:click="sortBy('label')" class="cursor-pointer">{{ __('Label') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'max_link_trackers'" :direction="$sortDirection" wire:click="sortBy('max_link_trackers')" class="cursor-pointer">{{ __('Link Trackers') }}</flux:table.column>
                     <flux:table.column sortable :sorted="$sortField === 'max_link_rotators'" :direction="$sortDirection" wire:click="sortBy('max_link_rotators')" class="cursor-pointer">{{ __('Link Rotators') }}</flux:table.column>
@@ -243,7 +230,6 @@ new #[Layout('layouts.admin')]
                             <flux:table.cell class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
                                 #{{ $userType->id }}
                             </flux:table.cell>
-                            <flux:table.cell class="font-mono text-xs">{{ $userType->name }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="font-medium">{{ $userType->label }}</div>
                             </flux:table.cell>
@@ -261,7 +247,7 @@ new #[Layout('layouts.admin')]
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="9" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
+                            <flux:table.cell colspan="8" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
                                 {{ __('No user types found.') }}
                             </flux:table.cell>
                         </flux:table.row>
@@ -280,10 +266,7 @@ new #[Layout('layouts.admin')]
                 <flux:text>{{ __('Leave a limit blank for unlimited usage.') }}</flux:text>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
-                <flux:input wire:model="name" :label="__('Name')" placeholder="premium" required />
-                <flux:input wire:model="label" :label="__('Label')" placeholder="Premium" required />
-            </div>
+            <flux:input wire:model="label" :label="__('Label')" placeholder="Premium" required />
 
             <div class="grid gap-4 sm:grid-cols-2">
                 <flux:input wire:model="max_link_trackers" :label="__('Max Link Trackers')" type="number" min="0" placeholder="Unlimited" />

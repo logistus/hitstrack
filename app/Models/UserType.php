@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class UserType extends Model
 {
     protected $fillable = [
-        'name',
         'label',
         'max_link_trackers',
         'max_link_rotators',

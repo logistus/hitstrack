@@ -14,8 +14,7 @@ return new class extends Migration
     {
         Schema::create('user_types', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();
-            $table->string('label');
+            $table->string('label')->unique();
             $table->unsignedInteger('max_link_trackers')->nullable();
             $table->unsignedInteger('max_link_rotators')->nullable();
             $table->unsignedInteger('max_banner_trackers')->nullable();
@@ -25,7 +24,6 @@ return new class extends Migration
 
         DB::table('user_types')->insert([
             [
-                'name' => 'free',
                 'label' => 'Free',
                 'max_link_trackers' => 5,
                 'max_link_rotators' => 2,
@@ -35,7 +33,6 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'name' => 'premium',
                 'label' => 'Premium',
                 'max_link_trackers' => 100,
                 'max_link_rotators' => 50,
@@ -45,7 +42,6 @@ return new class extends Migration
                 'updated_at' => now(),
             ],
             [
-                'name' => 'admin',
                 'label' => 'Admin',
                 'max_link_trackers' => null,
                 'max_link_rotators' => null,
@@ -56,7 +52,7 @@ return new class extends Migration
             ],
         ]);
 
-        $freeUserTypeId = DB::table('user_types')->where('name', 'free')->value('id');
+        $freeUserTypeId = DB::table('user_types')->where('label', 'Free')->value('id');
 
         Schema::table('users', function (Blueprint $table) use ($freeUserTypeId) {
             $table->foreignId('user_type_id')

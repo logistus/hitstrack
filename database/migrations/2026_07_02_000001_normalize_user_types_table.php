@@ -15,8 +15,7 @@ return new class extends Migration
         if (! Schema::hasTable('user_types')) {
             Schema::create('user_types', function (Blueprint $table) {
                 $table->id();
-                $table->string('name')->unique();
-                $table->string('label');
+                $table->string('label')->unique();
                 $table->unsignedInteger('max_link_trackers')->nullable();
                 $table->unsignedInteger('max_link_rotators')->nullable();
                 $table->unsignedInteger('max_banner_trackers')->nullable();
@@ -50,30 +49,30 @@ return new class extends Migration
         }
 
         foreach ([
-            'free' => [
+            'Free' => [
                 'label' => 'Free',
                 'max_link_trackers' => 5,
                 'max_link_rotators' => 2,
                 'max_banner_trackers' => 2,
                 'max_banner_rotators' => 1,
             ],
-            'premium' => [
+            'Premium' => [
                 'label' => 'Premium',
                 'max_link_trackers' => 100,
                 'max_link_rotators' => 50,
                 'max_banner_trackers' => 100,
                 'max_banner_rotators' => 50,
             ],
-            'admin' => [
+            'Admin' => [
                 'label' => 'Admin',
                 'max_link_trackers' => null,
                 'max_link_rotators' => null,
                 'max_banner_trackers' => null,
                 'max_banner_rotators' => null,
             ],
-        ] as $name => $attributes) {
+        ] as $label => $attributes) {
             DB::table('user_types')->updateOrInsert(
-                ['name' => $name],
+                ['label' => $label],
                 [
                     ...$attributes,
                     'updated_at' => now(),
@@ -82,7 +81,7 @@ return new class extends Migration
             );
         }
 
-        $freeUserTypeId = DB::table('user_types')->where('name', 'free')->value('id');
+        $freeUserTypeId = DB::table('user_types')->where('label', 'Free')->value('id');
 
         if (! Schema::hasColumn('users', 'user_type_id')) {
             Schema::table('users', function (Blueprint $table) use ($freeUserTypeId) {
@@ -95,16 +94,26 @@ return new class extends Migration
         }
 
         if (Schema::hasColumn('users', 'user_type')) {
-            foreach (['free', 'premium', 'admin'] as $name) {
-                $userTypeId = DB::table('user_types')->where('name', $name)->value('id');
+            foreach ([
+                'free' => 'Free',
+                'premium' => 'Premium',
+                'admin' => 'Admin',
+            ] as $oldValue => $label) {
+                $userTypeId = DB::table('user_types')->where('label', $label)->value('id');
 
                 DB::table('users')
-                    ->where('user_type', $name)
+                    ->where('user_type', $oldValue)
                     ->update(['user_type_id' => $userTypeId]);
             }
 
             Schema::table('users', function (Blueprint $table) {
                 $table->dropColumn('user_type');
+            });
+        }
+
+        if (Schema::hasColumn('user_types', 'name')) {
+            Schema::table('user_types', function (Blueprint $table) {
+                $table->dropColumn('name');
             });
         }
     }
