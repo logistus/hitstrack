@@ -195,12 +195,10 @@ new #[Title('Link tracker stats')] class extends Component
         return [
             'total_hits' => (int) $aggregate->total_hits + LinkTrackerStat::query()
                 ->where('tracker_id', $tracker->id)
-                ->whereNull('rotator_id')
                 ->where('created_at', '>=', today())
                 ->count(),
             'unique_hits' => (int) $aggregate->unique_hits + LinkTrackerStat::query()
                 ->where('tracker_id', $tracker->id)
-                ->whereNull('rotator_id')
                 ->where('created_at', '>=', today())
                 ->distinct('ip_address')
                 ->count('ip_address'),
@@ -237,7 +235,6 @@ new #[Title('Link tracker stats')] class extends Component
             ->select("{$field} as label")
             ->selectRaw('COUNT(*) as total')
             ->where('tracker_id', $tracker->id)
-            ->whereNull('rotator_id')
             ->where('created_at', '>=', today())
             ->groupBy($field);
 
@@ -272,7 +269,6 @@ new #[Title('Link tracker stats')] class extends Component
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('COUNT(*) as total_hits')
             ->where('tracker_id', $tracker->id)
-            ->whereNull('rotator_id')
             ->where('device_type', $deviceType)
             ->where('created_at', '>=', today())
             ->groupByRaw("COALESCE(ref_url, '')")
@@ -309,7 +305,6 @@ new #[Title('Link tracker stats')] class extends Component
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('tracker_id', $tracker->id)
-            ->whereNull('rotator_id')
             ->where('created_at', '>=', today())
             ->groupByRaw('DATE(created_at)');
 
@@ -337,7 +332,6 @@ new #[Title('Link tracker stats')] class extends Component
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('tracker_id', $tracker->id)
-            ->whereNull('rotator_id')
             ->where('created_at', '>=', today())
             ->groupByRaw("COALESCE(ref_url, '')");
 

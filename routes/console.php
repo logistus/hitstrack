@@ -66,7 +66,6 @@ function rollupLinkReferrers(string $sourceType, $from, $to, string $now): int
     $query = match ($sourceType) {
         'tracker' => DB::table('tracker_stats')
             ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
-            ->whereNull('tracker_stats.rotator_id')
             ->whereBetween('tracker_stats.created_at', [$from, $to])
             ->selectRaw('DATE(tracker_stats.created_at) as stat_date')
             ->selectRaw('trackers.user_id as user_id')
@@ -114,7 +113,6 @@ function rollupLinkBreakdowns(string $sourceType, string $breakdownType, $from, 
     $query = match ($sourceType) {
         'tracker' => DB::table('tracker_stats')
             ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
-            ->whereNull('tracker_stats.rotator_id')
             ->whereBetween('tracker_stats.created_at', [$from, $to])
             ->selectRaw('DATE(tracker_stats.created_at) as stat_date')
             ->selectRaw('trackers.user_id as user_id')
