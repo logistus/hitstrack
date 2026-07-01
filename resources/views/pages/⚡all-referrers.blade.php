@@ -116,12 +116,30 @@ new #[Title('All Referrers')] class extends Component
 
     private function referrerAggregateQuery(): Builder
     {
-        return DB::table('daily_link_referrer_stats')
+        $aggregate = DB::table('daily_link_referrer_stats')
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('SUM(total_hits) as total_hits')
             ->selectRaw('SUM(daily_unique_hits) as unique_hits')
             ->where('user_id', Auth::id())
+            ->where('source_type', 'tracker')
+            ->where('stat_date', '<', today())
             ->groupByRaw("COALESCE(ref_url, '')");
+
+        $today = DB::table('tracker_stats')
+            ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
+            ->where('trackers.user_id', Auth::id())
+            ->where('tracker_stats.created_at', '>=', today())
+            ->selectRaw("COALESCE(tracker_stats.ref_url, '') as ref_url")
+            ->selectRaw('COUNT(*) as total_hits')
+            ->selectRaw('COUNT(DISTINCT tracker_stats.ip_address) as unique_hits')
+            ->groupByRaw("COALESCE(tracker_stats.ref_url, '')");
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'referrer_aggregates')
+            ->selectRaw('ref_url')
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(unique_hits) as unique_hits')
+            ->groupBy('ref_url');
     }
 
     private function referrerPerformanceQuery(): Builder

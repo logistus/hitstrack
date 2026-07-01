@@ -56,11 +56,11 @@ new #[Title('Banner Referrers')] class extends Component
                 (int) Auth::id(),
                 'summary',
                 function (): array {
-                    $allEvents = DB::query()->fromSub($this->bannerEventsQuery(), 'banner_events');
+                    $allEvents = DB::query()->fromSub($this->referrerAggregateQuery(), 'banner_events');
 
                     return [
-                        'impressions' => (clone $allEvents)->where('event_type', 'impression')->count(),
-                        'clicks' => (clone $allEvents)->where('event_type', 'click')->count(),
+                        'impressions' => (clone $allEvents)->sum('impressions'),
+                        'clicks' => (clone $allEvents)->sum('clicks'),
                         'referrers' => DB::query()->fromSub($this->referrerPerformanceQuery(), 'referrers')->count(),
                     ];
                 },
@@ -79,11 +79,12 @@ new #[Title('Banner Referrers')] class extends Component
             : 'https://' . $refUrl;
     }
 
-    private function bannerEventsQuery(): Builder
+    private function todayBannerEventsQuery(): Builder
     {
         return DB::table('banner_stats')
             ->join('banners', 'banners.id', '=', 'banner_stats.banner_id')
             ->where('banners.user_id', Auth::id())
+            ->where('banner_stats.created_at', '>=', today())
             ->select([
                 'banner_stats.ref_url',
                 'banner_stats.ip_address',
@@ -92,17 +93,55 @@ new #[Title('Banner Referrers')] class extends Component
             ]);
     }
 
-    private function referrerPerformanceQuery(): Builder
+    private function latestEventQuery(): Builder
     {
         return DB::query()
-            ->fromSub($this->bannerEventsQuery(), 'banner_events')
+            ->fromSub($this->todayBannerEventsQuery(), 'banner_events')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('MAX(event_at) as last_event_at')
+            ->groupByRaw("COALESCE(ref_url, '')");
+    }
+
+    private function referrerAggregateQuery(): Builder
+    {
+        $aggregate = DB::table('daily_banner_referrer_stats')
+            ->where('user_id', Auth::id())
+            ->where('source_type', 'banner')
+            ->where('stat_date', '<', today())
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->selectRaw('SUM(daily_unique_impressions + daily_unique_clicks) as unique_events')
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        $today = DB::query()
+            ->fromSub($this->todayBannerEventsQuery(), 'banner_events')
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_events')
-            ->selectRaw("ROUND((SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) * 100.0) / NULLIF(SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END), 0), 2) as ctr")
-            ->selectRaw('MAX(event_at) as last_event_at')
             ->groupByRaw("COALESCE(ref_url, '')");
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'referrer_aggregates')
+            ->selectRaw('ref_url')
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->selectRaw('SUM(unique_events) as unique_events')
+            ->groupBy('ref_url');
+    }
+
+    private function referrerPerformanceQuery(): Builder
+    {
+        return DB::query()
+            ->fromSub($this->referrerAggregateQuery(), 'referrer_aggregates')
+            ->leftJoinSub($this->latestEventQuery(), 'latest_events', 'latest_events.ref_url', '=', 'referrer_aggregates.ref_url')
+            ->selectRaw('referrer_aggregates.ref_url as ref_url')
+            ->selectRaw('referrer_aggregates.impressions as impressions')
+            ->selectRaw('referrer_aggregates.clicks as clicks')
+            ->selectRaw('referrer_aggregates.unique_events as unique_events')
+            ->selectRaw('ROUND((referrer_aggregates.clicks * 100.0) / NULLIF(referrer_aggregates.impressions, 0), 2) as ctr')
+            ->selectRaw('latest_events.last_event_at as last_event_at');
     }
 };
 ?>

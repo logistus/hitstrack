@@ -2,7 +2,6 @@
 
 use App\Models\Banner;
 use App\Models\BannerRotator;
-use App\Models\BannerStat;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -221,22 +220,51 @@ new #[Title('Banner Rotators')] class extends Component
             : collect();
 
         $rotators = $this->userRotatorsQuery()
-            ->withCount(['stats', 'banners'])
+            ->select('banner_rotators.*')
+            ->selectRaw(
+                "(
+                    COALESCE((
+                        SELECT SUM(impressions)
+                        FROM daily_banner_referrer_stats
+                        WHERE source_type = ?
+                            AND source_id = banner_rotators.id
+                            AND stat_date < ?
+                    ), 0)
+                    +
+                    COALESCE((
+                        SELECT COUNT(*)
+                        FROM banner_stats
+                        WHERE banner_stats.banner_rotator_id = banner_rotators.id
+                            AND banner_stats.event_type = 'impression'
+                            AND banner_stats.created_at >= ?
+                    ), 0)
+                ) as impressions_count",
+                ['rotator', today()->toDateString(), today()],
+            )
+            ->selectRaw(
+                "(
+                    COALESCE((
+                        SELECT SUM(clicks)
+                        FROM daily_banner_referrer_stats
+                        WHERE source_type = ?
+                            AND source_id = banner_rotators.id
+                            AND stat_date < ?
+                    ), 0)
+                    +
+                    COALESCE((
+                        SELECT COUNT(*)
+                        FROM banner_stats
+                        WHERE banner_stats.banner_rotator_id = banner_rotators.id
+                            AND banner_stats.event_type = 'click'
+                            AND banner_stats.created_at >= ?
+                    ), 0)
+                ) as total_clicks_count",
+                ['rotator', today()->toDateString(), today()],
+            )
+            ->withCount('banners')
             ->withMax('stats', 'created_at')
             ->latest()
             ->simplePaginate(25);
-
-        $clickCounts = BannerStat::query()
-            ->select('banner_rotator_id')
-            ->selectRaw('COUNT(*) as total_clicks_count')
-            ->whereIn('banner_rotator_id', $rotators->getCollection()->pluck('id'))
-            ->where('event_type', 'click')
-            ->groupBy('banner_rotator_id')
-            ->pluck('total_clicks_count', 'banner_rotator_id');
-
-        $rotators->getCollection()->each(function (BannerRotator $rotator) use ($clickCounts): void {
-            $rotator->total_clicks_count = (int) ($clickCounts[$rotator->id] ?? 0);
-        });
 
         return [
             'rotators' => $rotators,
@@ -467,7 +495,7 @@ new #[Title('Banner Rotators')] class extends Component
             @php
             $imageUrl = route('bannerrotators.image', $rotator->rotator_slug);
             $clickUrl = route('bannerrotators.click', $rotator->rotator_slug);
-            $impressions = max(0, $rotator->stats_count - $rotator->total_clicks_count);
+            $impressions = (int) $rotator->impressions_count;
             $ctr = $impressions > 0 ? ($rotator->total_clicks_count / $impressions) * 100 : 0;
             @endphp
             <flux:table.row :key="$rotator->id">

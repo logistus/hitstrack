@@ -496,7 +496,7 @@ new #[Title('Rotators')] class extends Component
             <flux:table.column>{{ __('Rotator') }}</flux:table.column>
             <flux:table.column>{{ __('Trackers') }}</flux:table.column>
             <flux:table.column>{{ __('Performance') }}</flux:table.column>
-            <flux:table.column>{{ __('Activity') }}</flux:table.column>
+            <flux:table.column>{{ __('Last Hit') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 

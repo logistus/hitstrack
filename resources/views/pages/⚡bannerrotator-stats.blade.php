@@ -1,12 +1,12 @@
 <?php
 
 use App\Models\BannerRotator;
-use App\Models\BannerStat;
 use App\Support\AnalyticsCache;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -54,6 +54,10 @@ new #[Title('Banner rotator stats')] class extends Component
     {
         if (in_array($tab, ['overview', 'events', 'banners', 'referrers'], true)) {
             $this->activeTab = $tab;
+
+            if ($tab === 'overview') {
+                $this->dispatch('tracker-chart-resize');
+            }
         }
     }
 
@@ -160,13 +164,8 @@ new #[Title('Banner rotator stats')] class extends Component
             ];
         }
 
-        $eventsByDay = BannerStat::query()
-            ->selectRaw('DATE(created_at) as event_date')
-            ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
-            ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->where('banner_rotator_id', $rotator->id)
-            ->whereBetween('created_at', [$start, $end])
-            ->groupByRaw('DATE(created_at)')
+        $eventsByDay = $this->dailyEventsQuery($rotator)
+            ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
             ->get()
             ->keyBy('event_date');
 
@@ -201,49 +200,38 @@ new #[Title('Banner rotator stats')] class extends Component
                 'ctr' => 0,
             ];
         }
-        /*
-        $impressions = BannerStat::query()
+        $aggregate = DB::table('daily_banner_referrer_stats')
+            ->where('source_type', 'rotator')
+            ->where('source_id', $rotator->id)
+            ->where('stat_date', '<', today())
+            ->selectRaw('COALESCE(SUM(impressions), 0) as impressions')
+            ->selectRaw('COALESCE(SUM(clicks), 0) as clicks')
+            ->selectRaw('COALESCE(SUM(daily_unique_impressions), 0) as unique_impressions')
+            ->selectRaw('COALESCE(SUM(daily_unique_clicks), 0) as unique_clicks')
+            ->first();
+
+        $today = DB::table('banner_stats')
             ->where('banner_rotator_id', $rotator->id)
+            ->where('created_at', '>=', today());
+
+        $impressions = (int) $aggregate->impressions + (clone $today)
             ->where('event_type', 'impression')
             ->count();
-
-        $clicks = BannerStat::query()
-            ->where('banner_rotator_id', $rotator->id)
+        $clicks = (int) $aggregate->clicks + (clone $today)
             ->where('event_type', 'click')
             ->count();
 
         return [
-            'impressions' => $impressions,
-            'clicks' => $clicks,
-            'unique_impressions' => BannerStat::query()
-                ->where('banner_rotator_id', $rotator->id)
+            'impressions'        => $impressions,
+            'clicks'             => $clicks,
+            'unique_impressions' => (int) $aggregate->unique_impressions + (clone $today)
                 ->where('event_type', 'impression')
                 ->distinct('ip_address')
                 ->count('ip_address'),
-            'unique_clicks' => BannerStat::query()
-                ->where('banner_rotator_id', $rotator->id)
+            'unique_clicks'      => (int) $aggregate->unique_clicks + (clone $today)
                 ->where('event_type', 'click')
                 ->distinct('ip_address')
                 ->count('ip_address'),
-            'ctr' => $impressions > 0 ? ($clicks / $impressions) * 100 : 0,
-        ];
-        */
-        $row = BannerStat::query()
-            ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
-            ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->selectRaw("COUNT(DISTINCT CASE WHEN event_type = 'impression' THEN ip_address END) as unique_impressions")
-            ->selectRaw("COUNT(DISTINCT CASE WHEN event_type = 'click' THEN ip_address END) as unique_clicks")
-            ->where('banner_rotator_id', $rotator->id)
-            ->first();
-
-        $impressions = (int) $row->impressions;
-        $clicks      = (int) $row->clicks;
-
-        return [
-            'impressions'        => $impressions,
-            'clicks'             => $clicks,
-            'unique_impressions' => (int) $row->unique_impressions,
-            'unique_clicks'      => (int) $row->unique_clicks,
             'ctr'                => $impressions > 0 ? ($clicks / $impressions) * 100 : 0,
         ];
     }
@@ -269,13 +257,30 @@ new #[Title('Banner rotator stats')] class extends Component
             return collect();
         }
 
-        return BannerStat::query()
-            ->selectRaw("COALESCE({$field}, ?) as label, COUNT(*) as total", [__('Unknown')])
+        $aggregate = DB::table('daily_banner_breakdown_stats')
+            ->select('label')
+            ->selectRaw('SUM(impressions + clicks) as total')
+            ->where('source_type', 'rotator')
+            ->where('source_id', $rotator->id)
+            ->where('breakdown_type', $field)
+            ->where('stat_date', '<', today())
+            ->groupBy('label');
+
+        $today = DB::table('banner_stats')
+            ->select("{$field} as label")
+            ->selectRaw('COUNT(*) as total')
             ->where('banner_rotator_id', $rotator->id)
+            ->where('created_at', '>=', today())
+            ->groupBy($field);
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'breakdown_stats')
+            ->selectRaw("COALESCE(label, ?) as label", [__('Unknown')])
+            ->selectRaw('SUM(total) as total')
             ->groupBy('label')
             ->orderByDesc('total')
             ->get()
-            ->map(fn(BannerStat $stat): array => [
+            ->map(fn($stat): array => [
                 'label' => $stat->label,
                 'total' => (int) $stat->total,
             ])
@@ -287,19 +292,11 @@ new #[Title('Banner rotator stats')] class extends Component
         $search = trim($this->referrerSearch);
 
         if (! $this->hasRotatorStatsColumn()) {
-            return BannerStat::query()
-                ->whereRaw('1 = 0')
-                ->simplePaginate(25, pageName: 'referrerPage');
+            return $this->emptyPaginator('referrerPage');
         }
 
-        return BannerStat::query()
-            ->selectRaw("COALESCE(ref_url, '') as ref_url")
-            ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
-            ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->selectRaw('COUNT(*) as total_events')
-            ->where('banner_rotator_id', $rotator->id)
+        return $this->referrerStatsQuery($rotator)
             ->when($search !== '', fn($query) => $query->where('ref_url', 'like', "%{$search}%"))
-            ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn($query) => $query->orderBy('ref_url'))
             ->simplePaginate(25, pageName: 'referrerPage');
@@ -313,17 +310,33 @@ new #[Title('Banner rotator stats')] class extends Component
 
         $hasBannerSizeColumns = $this->hasBannerSizeColumns();
 
-        return BannerStat::query()
-            ->join('banners', 'banners.id', '=', 'banner_stats.banner_id')
+        $aggregate = DB::table('daily_banner_rotator_banner_stats')
+            ->select('banner_id')
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->where('banner_rotator_id', $rotator->id)
+            ->where('stat_date', '<', today())
+            ->groupBy('banner_id');
+
+        $today = DB::table('banner_stats')
+            ->select('banner_id')
+            ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
+            ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
+            ->where('banner_rotator_id', $rotator->id)
+            ->where('created_at', '>=', today())
+            ->groupBy('banner_id');
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'banner_performance')
+            ->join('banners', 'banners.id', '=', 'banner_performance.banner_id')
             ->select('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug')
             ->when(
                 $hasBannerSizeColumns,
                 fn($query) => $query->addSelect('banners.width', 'banners.height'),
                 fn($query) => $query->selectRaw('NULL as width, NULL as height'),
             )
-            ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
-            ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->where('banner_stats.banner_rotator_id', $rotator->id)
+            ->selectRaw('SUM(banner_performance.impressions) as impressions')
+            ->selectRaw('SUM(banner_performance.clicks) as clicks')
             ->groupBy('banners.id', 'banners.name', 'banners.image_url', 'banners.banner_slug')
             ->when($hasBannerSizeColumns, fn($query) => $query->groupBy('banners.width', 'banners.height'))
             ->orderByDesc('impressions')
@@ -333,19 +346,69 @@ new #[Title('Banner rotator stats')] class extends Component
     private function dailyEventRecords(BannerRotator $rotator)
     {
         if (! $this->hasRotatorStatsColumn()) {
-            return BannerStat::query()
-                ->whereRaw('1 = 0')
-                ->simplePaginate(25, pageName: 'dailyEventsPage');
+            return $this->emptyPaginator('dailyEventsPage');
         }
 
-        return BannerStat::query()
+        return $this->dailyEventsQuery($rotator)
+            ->orderByDesc('event_date')
+            ->simplePaginate(25, pageName: 'dailyEventsPage');
+    }
+
+    private function dailyEventsQuery(BannerRotator $rotator)
+    {
+        $aggregate = DB::table('daily_banner_referrer_stats')
+            ->selectRaw('stat_date as event_date')
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->where('source_type', 'rotator')
+            ->where('source_id', $rotator->id)
+            ->where('stat_date', '<', today())
+            ->groupBy('stat_date');
+
+        $today = DB::table('banner_stats')
             ->selectRaw('DATE(created_at) as event_date')
             ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
             ->where('banner_rotator_id', $rotator->id)
-            ->groupByRaw('DATE(created_at)')
-            ->orderByDesc('event_date')
-            ->simplePaginate(25, pageName: 'dailyEventsPage');
+            ->where('created_at', '>=', today())
+            ->groupByRaw('DATE(created_at)');
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'daily_events')
+            ->selectRaw('event_date')
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->groupBy('event_date');
+    }
+
+    private function referrerStatsQuery(BannerRotator $rotator)
+    {
+        $aggregate = DB::table('daily_banner_referrer_stats')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->selectRaw('SUM(impressions + clicks) as total_events')
+            ->where('source_type', 'rotator')
+            ->where('source_id', $rotator->id)
+            ->where('stat_date', '<', today())
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        $today = DB::table('banner_stats')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
+            ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
+            ->selectRaw('COUNT(*) as total_events')
+            ->where('banner_rotator_id', $rotator->id)
+            ->where('created_at', '>=', today())
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'referrer_stats')
+            ->selectRaw('ref_url')
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->selectRaw('SUM(total_events) as total_events')
+            ->groupBy('ref_url');
     }
 
     private function hasRotatorStatsColumn(): bool
@@ -422,10 +485,10 @@ $clickUrl = route('bannerrotators.click', $rotator->rotator_slug);
 
     <div class="space-y-6">
         <div class="inline-flex rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
-            <button type="button" wire:click="showTab('overview')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" x-on:click="$wire.showTab('overview').then(() => { activeTab = 'overview'; $nextTick(() => document.dispatchEvent(new CustomEvent('tracker-chart-resize'))) })">{{ __('Overview') }}</button>
-            <button type="button" wire:click="showTab('events')" x-on:click="$wire.showTab('events').then(() => activeTab = 'events')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'events' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'">{{ __('Daily events') }}</button>
-            <button type="button" wire:click="showTab('banners')" x-on:click="$wire.showTab('banners').then(() => activeTab = 'banners')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'banners' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'">{{ __('Banners') }}</button>
-            <button type="button" wire:click="showTab('referrers')" x-on:click="$wire.showTab('referrers').then(() => activeTab = 'referrers')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'">{{ __('Referrers') }}</button>
+            <button type="button" wire:click="showTab('overview')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'">{{ __('Overview') }}</button>
+            <button type="button" wire:click="showTab('events')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'events' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'">{{ __('Daily events') }}</button>
+            <button type="button" wire:click="showTab('banners')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'banners' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'">{{ __('Banners') }}</button>
+            <button type="button" wire:click="showTab('referrers')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'">{{ __('Referrers') }}</button>
         </div>
 
         <section class="space-y-8" x-show="activeTab === 'overview'">

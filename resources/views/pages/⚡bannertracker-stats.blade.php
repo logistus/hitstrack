@@ -1,13 +1,13 @@
 <?php
 
 use App\Models\Banner;
-use App\Models\BannerStat;
 use App\Support\AnalyticsCache;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Flux\Flux;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -52,6 +52,10 @@ new #[Title('Banner tracker stats')] class extends Component
     {
         if (in_array($tab, ['overview', 'events', 'referrers'], true)) {
             $this->activeTab = $tab;
+
+            if ($tab === 'overview') {
+                $this->dispatch('tracker-chart-resize');
+            }
         }
     }
 
@@ -142,13 +146,8 @@ new #[Title('Banner tracker stats')] class extends Component
         $start = now()->subDays(29)->startOfDay();
         $end = now()->endOfDay();
 
-        $eventsByDay = BannerStat::query()
-            ->selectRaw('DATE(created_at) as event_date')
-            ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
-            ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->where('banner_id', $banner->id)
-            ->whereBetween('created_at', [$start, $end])
-            ->groupByRaw('DATE(created_at)')
+        $eventsByDay = $this->dailyEventsQuery($banner)
+            ->whereBetween('event_date', [$start->toDateString(), $end->toDateString()])
             ->get()
             ->keyBy('event_date');
 
@@ -174,26 +173,36 @@ new #[Title('Banner tracker stats')] class extends Component
 
     private function summaryStats(Banner $banner): array
     {
-        $impressions = BannerStat::query()
+        $aggregate = DB::table('daily_banner_referrer_stats')
+            ->where('source_type', 'banner')
+            ->where('source_id', $banner->id)
+            ->where('stat_date', '<', today())
+            ->selectRaw('COALESCE(SUM(impressions), 0) as impressions')
+            ->selectRaw('COALESCE(SUM(clicks), 0) as clicks')
+            ->selectRaw('COALESCE(SUM(daily_unique_impressions), 0) as unique_impressions')
+            ->selectRaw('COALESCE(SUM(daily_unique_clicks), 0) as unique_clicks')
+            ->first();
+
+        $today = DB::table('banner_stats')
+            ->where('banner_id', $banner->id)
+            ->where('created_at', '>=', today());
+
+        $impressions = (int) $aggregate->impressions + (clone $today)
             ->where('banner_id', $banner->id)
             ->where('event_type', 'impression')
             ->count();
-
-        $clicks = BannerStat::query()
-            ->where('banner_id', $banner->id)
+        $clicks = (int) $aggregate->clicks + (clone $today)
             ->where('event_type', 'click')
             ->count();
 
         return [
             'impressions' => $impressions,
             'clicks' => $clicks,
-            'unique_impressions' => BannerStat::query()
-                ->where('banner_id', $banner->id)
+            'unique_impressions' => (int) $aggregate->unique_impressions + (clone $today)
                 ->where('event_type', 'impression')
                 ->distinct('ip_address')
                 ->count('ip_address'),
-            'unique_clicks' => BannerStat::query()
-                ->where('banner_id', $banner->id)
+            'unique_clicks' => (int) $aggregate->unique_clicks + (clone $today)
                 ->where('event_type', 'click')
                 ->distinct('ip_address')
                 ->count('ip_address'),
@@ -218,13 +227,30 @@ new #[Title('Banner tracker stats')] class extends Component
             default => throw new InvalidArgumentException('Invalid field'),
         };
 
-        return BannerStat::query()
-            ->selectRaw("COALESCE({$field}, ?) as label, COUNT(*) as total", [__('Unknown')])
+        $aggregate = DB::table('daily_banner_breakdown_stats')
+            ->select('label')
+            ->selectRaw('SUM(impressions + clicks) as total')
+            ->where('source_type', 'banner')
+            ->where('source_id', $banner->id)
+            ->where('breakdown_type', $field)
+            ->where('stat_date', '<', today())
+            ->groupBy('label');
+
+        $today = DB::table('banner_stats')
+            ->select("{$field} as label")
+            ->selectRaw('COUNT(*) as total')
             ->where('banner_id', $banner->id)
+            ->where('created_at', '>=', today())
+            ->groupBy($field);
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'breakdown_stats')
+            ->selectRaw("COALESCE(label, ?) as label", [__('Unknown')])
+            ->selectRaw('SUM(total) as total')
             ->groupBy('label')
             ->orderByDesc('total')
             ->get()
-            ->map(fn (BannerStat $stat): array => [
+            ->map(fn ($stat): array => [
                 'label' => $stat->label,
                 'total' => (int) $stat->total,
             ])
@@ -235,14 +261,8 @@ new #[Title('Banner tracker stats')] class extends Component
     {
         $search = trim($this->referrerSearch);
 
-        return BannerStat::query()
-            ->selectRaw("COALESCE(ref_url, '') as ref_url")
-            ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
-            ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->selectRaw('COUNT(*) as total_events')
-            ->where('banner_id', $banner->id)
+        return $this->referrerStatsQuery($banner)
             ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
-            ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
             ->simplePaginate(25, pageName: 'referrerPage');
@@ -250,16 +270,17 @@ new #[Title('Banner tracker stats')] class extends Component
 
     private function topDeviceReferrers(Banner $banner, string $deviceType): array
     {
-        return BannerStat::query()
+        return DB::table('banner_stats')
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('COUNT(*) as total_events')
             ->where('banner_id', $banner->id)
             ->where('device_type', $deviceType)
+            ->where('created_at', '>=', today())
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderByDesc('total_events')
             ->limit(5)
             ->get()
-            ->map(fn (BannerStat $stat): array => [
+            ->map(fn ($stat): array => [
                 'ref_url' => $stat->ref_url,
                 'total' => (int) $stat->total_events,
             ])
@@ -268,14 +289,66 @@ new #[Title('Banner tracker stats')] class extends Component
 
     private function dailyEventRecords(Banner $banner)
     {
-        return BannerStat::query()
+        return $this->dailyEventsQuery($banner)
+            ->orderByDesc('event_date')
+            ->simplePaginate(25, pageName: 'dailyEventsPage');
+    }
+
+    private function dailyEventsQuery(Banner $banner)
+    {
+        $aggregate = DB::table('daily_banner_referrer_stats')
+            ->selectRaw('stat_date as event_date')
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->where('source_type', 'banner')
+            ->where('source_id', $banner->id)
+            ->where('stat_date', '<', today())
+            ->groupBy('stat_date');
+
+        $today = DB::table('banner_stats')
             ->selectRaw('DATE(created_at) as event_date')
             ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
             ->where('banner_id', $banner->id)
-            ->groupByRaw('DATE(created_at)')
-            ->orderByDesc('event_date')
-            ->simplePaginate(25, pageName: 'dailyEventsPage');
+            ->where('created_at', '>=', today())
+            ->groupByRaw('DATE(created_at)');
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'daily_events')
+            ->selectRaw('event_date')
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->groupBy('event_date');
+    }
+
+    private function referrerStatsQuery(Banner $banner)
+    {
+        $aggregate = DB::table('daily_banner_referrer_stats')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->selectRaw('SUM(impressions + clicks) as total_events')
+            ->where('source_type', 'banner')
+            ->where('source_id', $banner->id)
+            ->where('stat_date', '<', today())
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        $today = DB::table('banner_stats')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
+            ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
+            ->selectRaw('COUNT(*) as total_events')
+            ->where('banner_id', $banner->id)
+            ->where('created_at', '>=', today())
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'referrer_stats')
+            ->selectRaw('ref_url')
+            ->selectRaw('SUM(impressions) as impressions')
+            ->selectRaw('SUM(clicks) as clicks')
+            ->selectRaw('SUM(total_events) as total_events')
+            ->groupBy('ref_url');
     }
 
     private function emptyPaginator(string $pageName): Paginator
@@ -317,9 +390,9 @@ new #[Title('Banner tracker stats')] class extends Component
 
     <div class="space-y-6">
         <div class="inline-flex rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900">
-            <button type="button" wire:click="showTab('overview')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'overview'; $nextTick(() => document.dispatchEvent(new CustomEvent('tracker-chart-resize')))">{{ __('Overview') }}</button>
-            <button type="button" wire:click="showTab('events')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'events' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'events'">{{ __('Daily events') }}</button>
-            <button type="button" wire:click="showTab('referrers')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'" @click="activeTab = 'referrers'">{{ __('Referrers') }}</button>
+            <button type="button" wire:click="showTab('overview')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'">{{ __('Overview') }}</button>
+            <button type="button" wire:click="showTab('events')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'events' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'">{{ __('Daily events') }}</button>
+            <button type="button" wire:click="showTab('referrers')" class="rounded-md px-3 py-1.5 text-sm font-medium transition" :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'">{{ __('Referrers') }}</button>
         </div>
 
         <section class="space-y-8" x-show="activeTab === 'overview'">

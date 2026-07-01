@@ -283,7 +283,7 @@ new #[Title('Trackers')] class extends Component
             <flux:table.column>{{ __('Tracker') }}</flux:table.column>
             <flux:table.column>{{ __('Link') }}</flux:table.column>
             <flux:table.column>{{ __('Performance') }}</flux:table.column>
-            <flux:table.column>{{ __('Activity') }}</flux:table.column>
+            <flux:table.column>{{ __('Last Hit') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 
@@ -339,14 +339,14 @@ new #[Title('Trackers')] class extends Component
 
                 <flux:table.cell>
                     <div class="space-y-1 text-sm">
-                    @if ($tracker->stats_max_created_at)
-                    @php($lastHitAt = \Carbon\Carbon::parse($tracker->stats_max_created_at))
-                    <div title="{{ $lastHitAt->format('Y-m-d H:i:s') }}" class="font-medium">
-                        {{ $lastHitAt->diffForHumans(short: true) }}
-                    </div>
-                    @else
-                    <div class="font-medium">{{ __('Never') }}</div>
-                    @endif
+                        @if ($tracker->stats_max_created_at)
+                        @php($lastHitAt = \Carbon\Carbon::parse($tracker->stats_max_created_at))
+                        <div title="{{ $lastHitAt->format('Y-m-d H:i:s') }}" class="font-medium">
+                            {{ $lastHitAt->diffForHumans(short: true) }}
+                        </div>
+                        @else
+                        <div class="font-medium">{{ __('Never') }}</div>
+                        @endif
                     </div>
                 </flux:table.cell>
 

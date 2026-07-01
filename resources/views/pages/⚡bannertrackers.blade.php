@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Banner;
-use App\Models\BannerStat;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -148,23 +147,50 @@ new #[Title('Banner Trackers')] class extends Component
     public function with(): array
     {
         $banners = Banner::query()
+            ->select('banners.*')
+            ->selectRaw(
+                "(
+                    COALESCE((
+                        SELECT SUM(impressions)
+                        FROM daily_banner_referrer_stats
+                        WHERE source_type = ?
+                            AND source_id = banners.id
+                            AND stat_date < ?
+                    ), 0)
+                    +
+                    COALESCE((
+                        SELECT COUNT(*)
+                        FROM banner_stats
+                        WHERE banner_stats.banner_id = banners.id
+                            AND banner_stats.event_type = 'impression'
+                            AND banner_stats.created_at >= ?
+                    ), 0)
+                ) as impressions_count",
+                ['banner', today()->toDateString(), today()],
+            )
+            ->selectRaw(
+                "(
+                    COALESCE((
+                        SELECT SUM(clicks)
+                        FROM daily_banner_referrer_stats
+                        WHERE source_type = ?
+                            AND source_id = banners.id
+                            AND stat_date < ?
+                    ), 0)
+                    +
+                    COALESCE((
+                        SELECT COUNT(*)
+                        FROM banner_stats
+                        WHERE banner_stats.banner_id = banners.id
+                            AND banner_stats.event_type = 'click'
+                            AND banner_stats.created_at >= ?
+                    ), 0)
+                ) as clicks_count",
+                ['banner', today()->toDateString(), today()],
+            )
             ->where('user_id', Auth::id())
             ->latest()
             ->simplePaginate(25);
-
-        $eventCounts = BannerStat::query()
-            ->select('banner_id', 'event_type')
-            ->selectRaw('COUNT(*) as total')
-            ->whereIn('banner_id', $banners->getCollection()->pluck('id'))
-            ->groupBy('banner_id', 'event_type')
-            ->get()
-            ->groupBy('banner_id');
-
-        $banners->getCollection()->each(function (Banner $banner) use ($eventCounts): void {
-            $counts = $eventCounts[$banner->id] ?? collect();
-            $banner->impressions_count = (int) ($counts->firstWhere('event_type', 'impression')?->total ?? 0);
-            $banner->clicks_count = (int) ($counts->firstWhere('event_type', 'click')?->total ?? 0);
-        });
 
         return ['banners' => $banners];
     }
