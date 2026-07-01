@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -144,13 +145,8 @@ new #[Title('Link rotator stats')] class extends Component
         $start = now()->subDays(29)->startOfDay();
         $end = now()->endOfDay();
 
-        $hitsByDay = LinkRotatorStat::query()
-            ->selectRaw('DATE(created_at) as hit_date')
-            ->selectRaw('COUNT(*) as total_hits')
-            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->where('rotator_id', $rotator->id)
-            ->whereBetween('created_at', [$start, $end])
-            ->groupByRaw('DATE(created_at)')
+        $hitsByDay = $this->dailyHitsQuery($rotator)
+            ->whereBetween('hit_date', [$start->toDateString(), $end->toDateString()])
             ->get()
             ->keyBy('hit_date');
 
@@ -176,12 +172,22 @@ new #[Title('Link rotator stats')] class extends Component
 
     private function summaryStats(LinkRotator $rotator): array
     {
+        $aggregate = DB::table('daily_link_referrer_stats')
+            ->where('source_type', 'rotator')
+            ->where('source_id', $rotator->id)
+            ->where('stat_date', '<', today())
+            ->selectRaw('COALESCE(SUM(total_hits), 0) as total_hits')
+            ->selectRaw('COALESCE(SUM(daily_unique_hits), 0) as unique_hits')
+            ->first();
+
         return [
-            'total_hits' => LinkRotatorStat::query()
+            'total_hits' => (int) $aggregate->total_hits + LinkRotatorStat::query()
                 ->where('rotator_id', $rotator->id)
+                ->where('created_at', '>=', today())
                 ->count(),
-            'unique_hits' => LinkRotatorStat::query()
+            'unique_hits' => (int) $aggregate->unique_hits + LinkRotatorStat::query()
                 ->where('rotator_id', $rotator->id)
+                ->where('created_at', '>=', today())
                 ->distinct('ip_address')
                 ->count('ip_address'),
         ];
@@ -191,13 +197,8 @@ new #[Title('Link rotator stats')] class extends Component
     {
         $search = trim($this->referrerSearch);
 
-        return LinkRotatorStat::query()
-            ->selectRaw("COALESCE(ref_url, '') as ref_url")
-            ->selectRaw('COUNT(*) as total_hits')
-            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->where('rotator_id', $rotator->id)
+        return $this->referrerStatsQuery($rotator)
             ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
-            ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
             ->simplePaginate(25, pageName: 'referrerPage');
@@ -219,13 +220,30 @@ new #[Title('Link rotator stats')] class extends Component
             default => throw new InvalidArgumentException('Invalid field'),
         };
 
-        return LinkRotatorStat::query()
-            ->selectRaw("COALESCE({$field}, ?) as label, COUNT(*) as total", [__('Unknown')])
+        $aggregate = DB::table('daily_link_breakdown_stats')
+            ->select('label')
+            ->selectRaw('SUM(total_hits) as total')
+            ->where('source_type', 'rotator')
+            ->where('source_id', $rotator->id)
+            ->where('breakdown_type', $field)
+            ->where('stat_date', '<', today())
+            ->groupBy('label');
+
+        $today = DB::table('rotator_stats')
+            ->select("{$field} as label")
+            ->selectRaw('COUNT(*) as total')
             ->where('rotator_id', $rotator->id)
+            ->where('created_at', '>=', today())
+            ->groupBy($field);
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'breakdown_stats')
+            ->selectRaw("COALESCE(label, ?) as label", [__('Unknown')])
+            ->selectRaw('SUM(total) as total')
             ->groupBy('label')
             ->orderByDesc('total')
             ->get()
-            ->map(fn (LinkRotatorStat $stat): array => [
+            ->map(fn ($stat): array => [
                 'label' => $stat->label,
                 'total' => (int) $stat->total,
             ])
@@ -247,14 +265,63 @@ new #[Title('Link rotator stats')] class extends Component
 
     private function dailyHitRecords(LinkRotator $rotator)
     {
-        return LinkRotatorStat::query()
+        return $this->dailyHitsQuery($rotator)
+            ->orderByDesc('hit_date')
+            ->simplePaginate(25, pageName: 'dailyHitsPage');
+    }
+
+    private function dailyHitsQuery(LinkRotator $rotator)
+    {
+        $aggregate = DB::table('daily_link_referrer_stats')
+            ->selectRaw('stat_date as hit_date')
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(daily_unique_hits) as unique_hits')
+            ->where('source_type', 'rotator')
+            ->where('source_id', $rotator->id)
+            ->where('stat_date', '<', today())
+            ->groupBy('stat_date');
+
+        $today = DB::table('rotator_stats')
             ->selectRaw('DATE(created_at) as hit_date')
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('rotator_id', $rotator->id)
-            ->groupByRaw('DATE(created_at)')
-            ->orderByDesc('hit_date')
-            ->simplePaginate(25, pageName: 'dailyHitsPage');
+            ->where('created_at', '>=', today())
+            ->groupByRaw('DATE(created_at)');
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'daily_hits')
+            ->selectRaw('hit_date')
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(unique_hits) as unique_hits')
+            ->groupBy('hit_date');
+    }
+
+    private function referrerStatsQuery(LinkRotator $rotator)
+    {
+        $aggregate = DB::table('daily_link_referrer_stats')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(daily_unique_hits) as unique_hits')
+            ->where('source_type', 'rotator')
+            ->where('source_id', $rotator->id)
+            ->where('stat_date', '<', today())
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        $today = DB::table('rotator_stats')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('COUNT(*) as total_hits')
+            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
+            ->where('rotator_id', $rotator->id)
+            ->where('created_at', '>=', today())
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'referrer_stats')
+            ->selectRaw('ref_url')
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(unique_hits) as unique_hits')
+            ->groupBy('ref_url');
     }
 
     private function emptyPaginator(string $pageName): Paginator

@@ -8,6 +8,7 @@ use Carbon\CarbonPeriod;
 use Flux\Flux;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -156,13 +157,8 @@ new #[Title('Link tracker stats')] class extends Component
         $start = now()->subDays(29)->startOfDay();
         $end = now()->endOfDay();
 
-        $hitsByDay = LinkTrackerStat::query()
-            ->selectRaw('DATE(created_at) as hit_date')
-            ->selectRaw('COUNT(*) as total_hits')
-            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->where('tracker_id', $tracker->id)
-            ->whereBetween('created_at', [$start, $end])
-            ->groupByRaw('DATE(created_at)')
+        $hitsByDay = $this->dailyHitsQuery($tracker)
+            ->whereBetween('hit_date', [$start->toDateString(), $end->toDateString()])
             ->get()
             ->keyBy('hit_date');
 
@@ -188,12 +184,24 @@ new #[Title('Link tracker stats')] class extends Component
 
     private function summaryStats(LinkTracker $tracker): array
     {
+        $aggregate = DB::table('daily_link_referrer_stats')
+            ->where('source_type', 'tracker')
+            ->where('source_id', $tracker->id)
+            ->where('stat_date', '<', today())
+            ->selectRaw('COALESCE(SUM(total_hits), 0) as total_hits')
+            ->selectRaw('COALESCE(SUM(daily_unique_hits), 0) as unique_hits')
+            ->first();
+
         return [
-            'total_hits' => LinkTrackerStat::query()
+            'total_hits' => (int) $aggregate->total_hits + LinkTrackerStat::query()
                 ->where('tracker_id', $tracker->id)
+                ->whereNull('rotator_id')
+                ->where('created_at', '>=', today())
                 ->count(),
-            'unique_hits' => LinkTrackerStat::query()
+            'unique_hits' => (int) $aggregate->unique_hits + LinkTrackerStat::query()
                 ->where('tracker_id', $tracker->id)
+                ->whereNull('rotator_id')
+                ->where('created_at', '>=', today())
                 ->distinct('ip_address')
                 ->count('ip_address'),
         ];
@@ -216,13 +224,31 @@ new #[Title('Link tracker stats')] class extends Component
             default => throw new InvalidArgumentException('Invalid field'),
         };
 
-        return LinkTrackerStat::query()
-            ->selectRaw("COALESCE({$field}, ?) as label, COUNT(*) as total", [__('Unknown')])
+        $aggregate = DB::table('daily_link_breakdown_stats')
+            ->select('label')
+            ->selectRaw('SUM(total_hits) as total')
+            ->where('source_type', 'tracker')
+            ->where('source_id', $tracker->id)
+            ->where('breakdown_type', $field)
+            ->where('stat_date', '<', today())
+            ->groupBy('label');
+
+        $today = DB::table('tracker_stats')
+            ->select("{$field} as label")
+            ->selectRaw('COUNT(*) as total')
             ->where('tracker_id', $tracker->id)
+            ->whereNull('rotator_id')
+            ->where('created_at', '>=', today())
+            ->groupBy($field);
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'breakdown_stats')
+            ->selectRaw("COALESCE(label, ?) as label", [__('Unknown')])
+            ->selectRaw('SUM(total) as total')
             ->groupBy('label')
             ->orderByDesc('total')
             ->get()
-            ->map(fn (LinkTrackerStat $stat): array => [
+            ->map(fn ($stat): array => [
                 'label' => $stat->label,
                 'total' => (int) $stat->total,
             ])
@@ -233,13 +259,8 @@ new #[Title('Link tracker stats')] class extends Component
     {
         $search = trim($this->referrerSearch);
 
-        return LinkTrackerStat::query()
-            ->selectRaw("COALESCE(ref_url, '') as ref_url")
-            ->selectRaw('COUNT(*) as total_hits')
-            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->where('tracker_id', $tracker->id)
+        return $this->referrerStatsQuery($tracker)
             ->when($search !== '', fn ($query) => $query->where('ref_url', 'like', "%{$search}%"))
-            ->groupByRaw("COALESCE(ref_url, '')")
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
             ->simplePaginate(25, pageName: 'referrerPage');
@@ -247,16 +268,18 @@ new #[Title('Link tracker stats')] class extends Component
 
     private function topDeviceReferrers(LinkTracker $tracker, string $deviceType): array
     {
-        return LinkTrackerStat::query()
+        return DB::table('tracker_stats')
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('COUNT(*) as total_hits')
             ->where('tracker_id', $tracker->id)
+            ->whereNull('rotator_id')
             ->where('device_type', $deviceType)
+            ->where('created_at', '>=', today())
             ->groupByRaw("COALESCE(ref_url, '')")
             ->orderByDesc('total_hits')
             ->limit(5)
             ->get()
-            ->map(fn (LinkTrackerStat $stat): array => [
+            ->map(fn ($stat): array => [
                 'ref_url' => $stat->ref_url,
                 'total' => (int) $stat->total_hits,
             ])
@@ -265,14 +288,65 @@ new #[Title('Link tracker stats')] class extends Component
 
     private function dailyHitRecords(LinkTracker $tracker)
     {
-        return LinkTrackerStat::query()
+        return $this->dailyHitsQuery($tracker)
+            ->orderByDesc('hit_date')
+            ->simplePaginate(25, pageName: 'dailyHitsPage');
+    }
+
+    private function dailyHitsQuery(LinkTracker $tracker)
+    {
+        $aggregate = DB::table('daily_link_referrer_stats')
+            ->selectRaw('stat_date as hit_date')
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(daily_unique_hits) as unique_hits')
+            ->where('source_type', 'tracker')
+            ->where('source_id', $tracker->id)
+            ->where('stat_date', '<', today())
+            ->groupBy('stat_date');
+
+        $today = DB::table('tracker_stats')
             ->selectRaw('DATE(created_at) as hit_date')
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('tracker_id', $tracker->id)
-            ->groupByRaw('DATE(created_at)')
-            ->orderByDesc('hit_date')
-            ->simplePaginate(25, pageName: 'dailyHitsPage');
+            ->whereNull('rotator_id')
+            ->where('created_at', '>=', today())
+            ->groupByRaw('DATE(created_at)');
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'daily_hits')
+            ->selectRaw('hit_date')
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(unique_hits) as unique_hits')
+            ->groupBy('hit_date');
+    }
+
+    private function referrerStatsQuery(LinkTracker $tracker)
+    {
+        $aggregate = DB::table('daily_link_referrer_stats')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(daily_unique_hits) as unique_hits')
+            ->where('source_type', 'tracker')
+            ->where('source_id', $tracker->id)
+            ->where('stat_date', '<', today())
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        $today = DB::table('tracker_stats')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('COUNT(*) as total_hits')
+            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
+            ->where('tracker_id', $tracker->id)
+            ->whereNull('rotator_id')
+            ->where('created_at', '>=', today())
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'referrer_stats')
+            ->selectRaw('ref_url')
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(unique_hits) as unique_hits')
+            ->groupBy('ref_url');
     }
 
     private function emptyPaginator(string $pageName): Paginator

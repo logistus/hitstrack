@@ -56,11 +56,11 @@ new #[Title('All Referrers')] class extends Component
                 (int) Auth::id(),
                 'summary',
                 function (): array {
-                    $allEvents = DB::query()->fromSub($this->hitEventsQuery(), 'hit_events');
+                    $allEvents = DB::query()->fromSub($this->referrerAggregateQuery(), 'referrer_aggregates');
 
                     return [
-                        'total_hits' => (clone $allEvents)->count(),
-                        'unique_hits' => (clone $allEvents)->distinct()->count('ip_address'),
+                        'total_hits' => (clone $allEvents)->sum('total_hits'),
+                        'unique_hits' => (clone $allEvents)->sum('unique_hits'),
                         'referrers' => DB::query()->fromSub($this->referrerPerformanceQuery(), 'referrers')->count(),
                     ];
                 },
@@ -105,16 +105,37 @@ new #[Title('All Referrers')] class extends Component
         return $directTrackerHits->unionAll($rotatorHits);
     }
 
-    private function referrerPerformanceQuery(): Builder
+    private function latestHitQuery(): Builder
     {
         return DB::query()
             ->fromSub($this->hitEventsQuery(), 'hit_events')
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
-            ->selectRaw('COUNT(*) as total_hits')
-            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
-            ->selectRaw('ROUND((COUNT(DISTINCT ip_address) * 100.0) / COUNT(*), 2) as unique_rate')
             ->selectRaw('MAX(hit_at) as last_hit_at')
             ->groupByRaw("COALESCE(ref_url, '')");
+    }
+
+    private function referrerAggregateQuery(): Builder
+    {
+        return DB::table('daily_link_referrer_stats')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(daily_unique_hits) as unique_hits')
+            ->where('user_id', Auth::id())
+            ->groupByRaw("COALESCE(ref_url, '')");
+    }
+
+    private function referrerPerformanceQuery(): Builder
+    {
+        return DB::query()
+            ->fromSub($this->referrerAggregateQuery(), 'referrer_aggregates')
+            ->leftJoinSub($this->latestHitQuery(), 'latest_hits', function ($join) {
+                $join->on('latest_hits.ref_url', '=', 'referrer_aggregates.ref_url');
+            })
+            ->selectRaw('referrer_aggregates.ref_url as ref_url')
+            ->selectRaw('referrer_aggregates.total_hits as total_hits')
+            ->selectRaw('referrer_aggregates.unique_hits as unique_hits')
+            ->selectRaw('ROUND((referrer_aggregates.unique_hits * 100.0) / NULLIF(referrer_aggregates.total_hits, 0), 2) as unique_rate')
+            ->selectRaw('latest_hits.last_hit_at as last_hit_at');
     }
 };
 ?>
