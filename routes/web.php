@@ -48,6 +48,7 @@ Route::get('pixel', PixelTrackingController::class)->name('pixels.track');
 Route::get('datacrove', DataCroveController::class)->name('datacrove');
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
     Route::livewire('referrers', 'pages::all-referrers')->name('referrers');
     Route::livewire('banner-referrers', 'pages::all-banner-referrers')->name('banner-referrers');
     Route::livewire('linktrackers', 'pages::linktrackers')->name('linktrackers');

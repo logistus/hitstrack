@@ -19,14 +19,14 @@
     class="min-h-screen bg-white dark:bg-zinc-950">
     <flux:sidebar collapsible="mobile" sticky class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/95">
         <flux:sidebar.header>
-            <x-app-logo :sidebar="true" href="{{ route('linktrackers') }}" wire:navigate />
+            <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
             <flux:sidebar.collapse class="lg:hidden" />
         </flux:sidebar.header>
 
         <flux:sidebar.nav>
             <flux:sidebar.group>
-                <flux:sidebar.item :href="route('home')" icon="home" :current="request()->routeIs('home')" wire:navigate>
-                    {{ __('Home')  }}
+                <flux:sidebar.item :href="route('dashboard')" icon="home" :current="request()->routeIs('dashboard')" wire:navigate>
+                    {{ __('Dashboard')  }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
@@ -103,7 +103,7 @@
     <flux:header class="border-b border-zinc-200 bg-zinc-50 lg:hidden dark:border-zinc-700 dark:bg-zinc-900/95">
         <flux:sidebar.toggle icon="bars-2" inset="left" />
         <flux:spacer />
-        <x-app-logo href="{{ route('linktrackers') }}" wire:navigate />
+        <x-app-logo href="{{ route('dashboard') }}" wire:navigate />
     </flux:header>
 
     {{ $slot }}
