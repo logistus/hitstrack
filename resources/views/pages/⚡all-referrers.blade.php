@@ -124,19 +124,30 @@ new #[Title('All Referrers')] class extends Component
             ->selectRaw('SUM(total_hits) as total_hits')
             ->selectRaw('SUM(daily_unique_hits) as unique_hits')
             ->where('user_id', Auth::id())
-            ->where('source_type', 'tracker')
             ->where('stat_date', '<', today())
-            ->groupByRaw("COALESCE(ref_url, '')")
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        $todayTracker = DB::table('tracker_stats')
             ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
             ->where('trackers.user_id', Auth::id())
+            ->whereNull('tracker_stats.rotator_id')
             ->where('tracker_stats.created_at', '>=', today())
             ->selectRaw("COALESCE(tracker_stats.ref_url, '') as ref_url")
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT tracker_stats.ip_address) as unique_hits')
             ->groupByRaw("COALESCE(tracker_stats.ref_url, '')");
 
+        $todayRotator = DB::table('rotator_stats')
+            ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
+            ->where('rotators.user_id', Auth::id())
+            ->where('rotator_stats.created_at', '>=', today())
+            ->selectRaw("COALESCE(rotator_stats.ref_url, '') as ref_url")
+            ->selectRaw('COUNT(*) as total_hits')
+            ->selectRaw('COUNT(DISTINCT rotator_stats.ip_address) as unique_hits')
+            ->groupByRaw("COALESCE(rotator_stats.ref_url, '')");
+
         return DB::query()
-            ->fromSub($aggregate->unionAll($today), 'referrer_aggregates')
+            ->fromSub($aggregate->unionAll($todayTracker)->unionAll($todayRotator), 'referrer_aggregates')
             ->selectRaw('ref_url')
             ->selectRaw('SUM(total_hits) as total_hits')
             ->selectRaw('SUM(unique_hits) as unique_hits')
