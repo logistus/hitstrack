@@ -53,6 +53,14 @@
                     {{ __('All Referrers') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
+
+            @if (config('app.admin_email') && auth()->user()?->email === config('app.admin_email'))
+                <flux:sidebar.group :heading="__('Admin')">
+                    <flux:sidebar.item :href="route('admin')" icon="shield-check" :current="request()->routeIs('admin')" wire:navigate>
+                        {{ __('Admin') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+            @endif
         </flux:sidebar.nav>
 
         <flux:spacer />

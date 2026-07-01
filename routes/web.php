@@ -59,6 +59,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('bannertrackers/{slug}/stats', 'pages::bannertracker-stats')->name('bannertrackers.stats');
     Route::livewire('bannerrotators', 'pages::bannerrotators')->name('bannerrotators');
     Route::livewire('bannerrotators/{slug}/stats', 'pages::bannerrotator-stats')->name('bannerrotators.stats');
+
+    Route::livewire('admin', 'pages::admin')->name('admin');
 });
 
 require __DIR__.'/settings.php';
