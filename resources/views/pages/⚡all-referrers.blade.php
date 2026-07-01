@@ -42,11 +42,14 @@ new #[Title('All Referrers')] class extends Component
     public function with(): array
     {
         $search = trim($this->search);
+        $sortColumn = $this->sortField === 'ref_url'
+            ? 'referrer_aggregates.ref_url'
+            : $this->sortField;
 
         $referrers = $this->referrerPerformanceQuery()
-            ->when($search !== '', fn(Builder $query) => $query->where('ref_url', 'like', "%{$search}%"))
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->when($this->sortField !== 'ref_url', fn(Builder $query) => $query->orderBy('ref_url'))
+            ->when($search !== '', fn(Builder $query) => $query->where('referrer_aggregates.ref_url', 'like', "%{$search}%"))
+            ->orderBy($sortColumn, $this->sortDirection)
+            ->when($this->sortField !== 'ref_url', fn(Builder $query) => $query->orderBy('referrer_aggregates.ref_url'))
             ->simplePaginate(7, pageName: 'referrerPage');
 
         return [
@@ -123,9 +126,7 @@ new #[Title('All Referrers')] class extends Component
             ->where('user_id', Auth::id())
             ->where('source_type', 'tracker')
             ->where('stat_date', '<', today())
-            ->groupByRaw("COALESCE(ref_url, '')");
-
-        $today = DB::table('tracker_stats')
+            ->groupByRaw("COALESCE(ref_url, '')")
             ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
             ->where('trackers.user_id', Auth::id())
             ->where('tracker_stats.created_at', '>=', today())
