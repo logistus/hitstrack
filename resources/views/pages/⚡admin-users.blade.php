@@ -217,7 +217,7 @@ new #[Layout('layouts.admin')]
             <div class="space-y-3">
                 <flux:heading size="md">{{ __('Filter by') }}</flux:heading>
 
-                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_12rem_12rem_auto]">
+                <div class="grid gap-3 md:grid-cols-[1fr_1fr_10rem_10rem_auto]">
                     <flux:input
                         wire:model.defer="emailFilterInput"
                         :label="__('By Email')"
