@@ -31,7 +31,7 @@
                 <flux:sidebar.item :href="route('admin.users')" icon="users" :current="request()->routeIs('admin.users')" wire:navigate>
                     {{ __('Users') }}
                 </flux:sidebar.item>
-                <flux:sidebar.item :href="route('admin.user-types')" icon="badge-check" :current="request()->routeIs('admin.user-types')" wire:navigate>
+                <flux:sidebar.item :href="route('admin.user-types')" icon="shield-check" :current="request()->routeIs('admin.user-types')" wire:navigate>
                     {{ __('User Types') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
