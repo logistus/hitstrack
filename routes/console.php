@@ -21,9 +21,14 @@ Artisan::command('link-stats:rollup {--from=} {--to=} {--fresh} {--prune}', func
         return self::FAILURE;
     }
 
+    $oldestStatDate = collect([
+        DB::table('tracker_stats')->min('created_at'),
+        DB::table('rotator_stats')->min('created_at'),
+    ])->filter()->min();
+
     $from = $this->option('from')
         ? now()->parse($this->option('from'))->startOfDay()
-        : now()->subDays(59)->startOfDay();
+        : ($oldestStatDate ? now()->parse($oldestStatDate)->startOfDay() : now()->startOfDay());
     $to = $this->option('to')
         ? now()->parse($this->option('to'))->endOfDay()
         : now()->endOfDay();
@@ -77,6 +82,7 @@ if (! function_exists('rollupLinkReferrers')) {
             'tracker' => DB::table('tracker_stats')
                 ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
                 ->whereBetween('tracker_stats.created_at', [$from, $to])
+                ->whereNotNull('tracker_stats.tracker_id')
                 ->selectRaw('DATE(tracker_stats.created_at) as stat_date')
                 ->selectRaw('trackers.user_id as user_id')
                 ->selectRaw('tracker_stats.tracker_id as tracker_id')
@@ -91,6 +97,7 @@ if (! function_exists('rollupLinkReferrers')) {
             'rotator' => DB::table('rotator_stats')
                 ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
                 ->whereBetween('rotator_stats.created_at', [$from, $to])
+                ->whereNotNull('rotator_stats.rotator_id')
                 ->selectRaw('DATE(rotator_stats.created_at) as stat_date')
                 ->selectRaw('rotators.user_id as user_id')
                 ->selectRaw('NULL as tracker_id')
@@ -126,6 +133,7 @@ if (! function_exists('rollupLinkBreakdowns')) {
             'tracker' => DB::table('tracker_stats')
                 ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
                 ->whereBetween('tracker_stats.created_at', [$from, $to])
+                ->whereNotNull('tracker_stats.tracker_id')
                 ->selectRaw('DATE(tracker_stats.created_at) as stat_date')
                 ->selectRaw('trackers.user_id as user_id')
                 ->selectRaw('tracker_stats.tracker_id as tracker_id')
@@ -141,6 +149,7 @@ if (! function_exists('rollupLinkBreakdowns')) {
             'rotator' => DB::table('rotator_stats')
                 ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
                 ->whereBetween('rotator_stats.created_at', [$from, $to])
+                ->whereNotNull('rotator_stats.rotator_id')
                 ->selectRaw('DATE(rotator_stats.created_at) as stat_date')
                 ->selectRaw('rotators.user_id as user_id')
                 ->selectRaw('NULL as tracker_id')
@@ -171,6 +180,7 @@ if (! function_exists('rollupLinkRotatorTrackers')) {
         $query = DB::table('rotator_stats')
             ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
             ->whereBetween('rotator_stats.created_at', [$from, $to])
+            ->whereNotNull('rotator_stats.rotator_id')
             ->whereNotNull('rotator_stats.tracker_id')
             ->selectRaw('DATE(rotator_stats.created_at) as stat_date')
             ->selectRaw('rotators.user_id as user_id')
