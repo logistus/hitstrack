@@ -124,7 +124,7 @@ new #[Title('All Referrers')] class extends Component
             ->selectRaw('SUM(total_hits) as total_hits')
             ->selectRaw('SUM(daily_unique_hits) as unique_hits')
             ->where('user_id', Auth::id())
-            ->whereIn('source_type', ['tracker', 'rotator'])
+            ->where('source_type', 'tracker')
             ->where('stat_date', '<', today())
             ->groupByRaw("COALESCE(ref_url, '')");
 
