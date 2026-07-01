@@ -60,7 +60,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('bannerrotators', 'pages::bannerrotators')->name('bannerrotators');
     Route::livewire('bannerrotators/{slug}/stats', 'pages::bannerrotator-stats')->name('bannerrotators.stats');
 
-    Route::livewire('admin', 'pages::admin')->name('admin');
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::livewire('/', 'pages::admin-dashboard')->name('dashboard');
+        Route::livewire('users', 'pages::admin-users')->name('users');
+    });
 });
 
 require __DIR__.'/settings.php';
