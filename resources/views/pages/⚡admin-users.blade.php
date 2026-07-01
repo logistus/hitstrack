@@ -293,7 +293,7 @@ new #[Layout('layouts.admin')]
                         <flux:table.column>{{ __('Banner') }}</flux:table.column>
                         <flux:table.column>{{ __('Verified') }}</flux:table.column>
                         <flux:table.column>{{ __('Created') }}</flux:table.column>
-                        <flux:table.column class="text-right">{{ __('Actions') }}</flux:table.column>
+                        <flux:table.column>{{ __('Actions') }}</flux:table.column>
                     </flux:table.columns>
 
                     <flux:table.rows>
@@ -328,8 +328,8 @@ new #[Layout('layouts.admin')]
                                 <flux:table.cell>
                                     {{ $user->created_at?->format('M j, Y') }}
                                 </flux:table.cell>
-                                <flux:table.cell class="text-right">
-                                    <div class="flex justify-end gap-1">
+                                <flux:table.cell>
+                                    <div class="flex justify-start gap-1">
                                         <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editUser({{ $user->id }})" :aria-label="__('Edit')" />
                                         <flux:button variant="ghost" size="sm" icon="trash" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" wire:click="confirmDelete({{ $user->id }})" :aria-label="__('Delete')" />
                                     </div>
