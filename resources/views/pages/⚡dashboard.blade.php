@@ -15,6 +15,7 @@ new #[Title('Dashboard')] class extends Component
     {
         $userId = Auth::id();
         $today = today();
+        $since = now()->subDay();
 
         $linkHits = (int) DB::table('daily_link_referrer_stats')
             ->where('user_id', $userId)
@@ -71,7 +72,61 @@ new #[Title('Dashboard')] class extends Component
                     'route' => route('bannertrackers'),
                 ],
             ],
+            'latestLinkEvents' => $this->latestLinkEvents($userId, $since),
+            'latestBannerImpressions' => $this->latestBannerImpressions($userId, $since),
         ];
+    }
+
+    private function latestLinkEvents(int $userId, $since)
+    {
+        $trackerEvents = DB::table('tracker_stats')
+            ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
+            ->where('trackers.user_id', $userId)
+            ->whereNull('tracker_stats.rotator_id')
+            ->where('tracker_stats.created_at', '>=', $since)
+            ->select([
+                'trackers.target_url',
+                'tracker_stats.ref_url',
+                'tracker_stats.created_at as shown_at',
+            ]);
+
+        $rotatorEvents = DB::table('rotator_stats')
+            ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
+            ->join('trackers', 'trackers.id', '=', 'rotator_stats.tracker_id')
+            ->where('rotators.user_id', $userId)
+            ->where('rotator_stats.created_at', '>=', $since)
+            ->select([
+                'trackers.target_url',
+                'rotator_stats.ref_url',
+                'rotator_stats.created_at as shown_at',
+            ]);
+
+        return DB::query()
+            ->fromSub($trackerEvents->unionAll($rotatorEvents), 'latest_link_events')
+            ->orderByDesc('shown_at')
+            ->limit(10)
+            ->get();
+    }
+
+    private function latestBannerImpressions(int $userId, $since)
+    {
+        return DB::table('banner_stats')
+            ->join('banners', 'banners.id', '=', 'banner_stats.banner_id')
+            ->where('banners.user_id', $userId)
+            ->where('banner_stats.event_type', 'impression')
+            ->where('banner_stats.created_at', '>=', $since)
+            ->select([
+                'banners.name',
+                'banners.image_url',
+                'banners.alt_text',
+                'banners.width',
+                'banners.height',
+                'banner_stats.ref_url',
+                'banner_stats.created_at as shown_at',
+            ])
+            ->orderByDesc('banner_stats.created_at')
+            ->limit(10)
+            ->get();
     }
 
     private function todayTrackerHits(int $userId, $today): int
@@ -144,25 +199,92 @@ new #[Title('Dashboard')] class extends Component
         @endforeach
     </div>
 
-    <div class="grid gap-4 lg:grid-cols-2">
+    <div class="grid gap-4 xl:grid-cols-2">
         <flux:card>
-            <div class="space-y-4">
-                <flux:heading size="lg">{{ __('Link') }}</flux:heading>
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <flux:button :href="route('linktrackers')" wire:navigate icon="chart-bar">{{ __('Trackers') }}</flux:button>
-                    <flux:button :href="route('linkrotators')" wire:navigate icon="arrows-right-left">{{ __('Rotators') }}</flux:button>
-                    <flux:button :href="route('referrers')" wire:navigate icon="globe-alt">{{ __('Referrers') }}</flux:button>
+            <div class="space-y-4 overflow-hidden">
+                <flux:heading size="lg">{{ __('Recent Link Traffic') }}</flux:heading>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                            <tr>
+                                <th class="py-2 pr-4 font-medium">{{ __('Target URL') }}</th>
+                                <th class="py-2 pr-4 font-medium">{{ __('Shown On') }}</th>
+                                <th class="py-2 font-medium">{{ __('Shown At') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                            @forelse ($latestLinkEvents as $event)
+                                <tr>
+                                    <td class="max-w-64 py-3 pr-4">
+                                        <a href="{{ $event->target_url }}" target="_blank" rel="noreferrer" class="block truncate text-zinc-900 hover:underline dark:text-zinc-100">
+                                            {{ $event->target_url }}
+                                        </a>
+                                    </td>
+                                    <td class="max-w-56 py-3 pr-4">
+                                        <span class="block truncate text-zinc-600 dark:text-zinc-400">
+                                            {{ $event->ref_url ?: __('Direct / Unknown') }}
+                                        </span>
+                                    </td>
+                                    <td class="whitespace-nowrap py-3 text-zinc-600 dark:text-zinc-400">
+                                        {{ $event->shown_at ? \Illuminate\Support\Carbon::parse($event->shown_at)->format('M j, H:i') : '-' }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="py-6 text-center text-zinc-500 dark:text-zinc-400">
+                                        {{ __('No link traffic in the last 24 hours.') }}
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </flux:card>
 
         <flux:card>
-            <div class="space-y-4">
-                <flux:heading size="lg">{{ __('Banner') }}</flux:heading>
-                <div class="grid gap-3 sm:grid-cols-3">
-                    <flux:button :href="route('bannertrackers')" wire:navigate icon="photo">{{ __('Trackers') }}</flux:button>
-                    <flux:button :href="route('bannerrotators')" wire:navigate icon="rectangle-stack">{{ __('Rotators') }}</flux:button>
-                    <flux:button :href="route('banner-referrers')" wire:navigate icon="globe-alt">{{ __('Referrers') }}</flux:button>
+            <div class="space-y-4 overflow-hidden">
+                <flux:heading size="lg">{{ __('Recent Banner Impressions') }}</flux:heading>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="border-b border-zinc-200 text-xs uppercase text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                            <tr>
+                                <th class="py-2 pr-4 font-medium">{{ __('Banner') }}</th>
+                                <th class="py-2 pr-4 font-medium">{{ __('Shown On') }}</th>
+                                <th class="py-2 font-medium">{{ __('Shown At') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                            @forelse ($latestBannerImpressions as $impression)
+                                <tr>
+                                    <td class="py-3 pr-4">
+                                        <img
+                                            src="{{ $impression->image_url }}"
+                                            alt="{{ $impression->alt_text ?: $impression->name }}"
+                                            width="{{ $impression->width ? max(1, (int) floor($impression->width / 2)) : null }}"
+                                            height="{{ $impression->height ? max(1, (int) floor($impression->height / 2)) : null }}"
+                                            class="max-h-16 max-w-40 rounded border border-zinc-200 object-contain dark:border-zinc-700">
+                                    </td>
+                                    <td class="max-w-56 py-3 pr-4">
+                                        <span class="block truncate text-zinc-600 dark:text-zinc-400">
+                                            {{ $impression->ref_url ?: __('Direct / Unknown') }}
+                                        </span>
+                                    </td>
+                                    <td class="whitespace-nowrap py-3 text-zinc-600 dark:text-zinc-400">
+                                        {{ $impression->shown_at ? \Illuminate\Support\Carbon::parse($impression->shown_at)->format('M j, H:i') : '-' }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="py-6 text-center text-zinc-500 dark:text-zinc-400">
+                                        {{ __('No banner impressions in the last 24 hours.') }}
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </flux:card>
