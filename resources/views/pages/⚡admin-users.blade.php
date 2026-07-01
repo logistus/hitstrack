@@ -16,6 +16,14 @@ new #[Layout('layouts.admin')]
 {
     use WithPagination;
 
+    public string $emailFilterInput = '';
+
+    public string $nameFilterInput = '';
+
+    public string $verifiedFilterInput = '';
+
+    public string $createdFilterInput = '';
+
     public string $emailFilter = '';
 
     public string $nameFilter = '';
@@ -44,23 +52,13 @@ new #[Layout('layouts.admin')]
         );
     }
 
-    public function updatedEmailFilter(): void
+    public function applyFilters(): void
     {
-        $this->resetPage('usersPage');
-    }
+        $this->emailFilter = trim($this->emailFilterInput);
+        $this->nameFilter = trim($this->nameFilterInput);
+        $this->verifiedFilter = $this->verifiedFilterInput;
+        $this->createdFilter = $this->createdFilterInput;
 
-    public function updatedNameFilter(): void
-    {
-        $this->resetPage('usersPage');
-    }
-
-    public function updatedVerifiedFilter(): void
-    {
-        $this->resetPage('usersPage');
-    }
-
-    public function updatedCreatedFilter(): void
-    {
         $this->resetPage('usersPage');
     }
 
@@ -219,94 +217,112 @@ new #[Layout('layouts.admin')]
             <div class="space-y-3">
                 <flux:heading size="md">{{ __('Filter by') }}</flux:heading>
 
-                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_12rem_12rem_auto]">
                     <flux:input
-                        wire:model.live.debounce.300ms="emailFilter"
+                        wire:model.defer="emailFilterInput"
                         :label="__('By Email')"
                         type="search"
                         autocomplete="off"
                         placeholder="email@example.com" />
 
                     <flux:input
-                        wire:model.live.debounce.300ms="nameFilter"
+                        wire:model.defer="nameFilterInput"
                         :label="__('By Name')"
                         type="search"
                         autocomplete="off"
                         placeholder="Jane Doe" />
 
-                    <flux:select wire:model.live="verifiedFilter" :label="__('By Verified')">
+                    <flux:select wire:model.defer="verifiedFilterInput" :label="__('By Verified')">
                         <flux:select.option value="">{{ __('Any') }}</flux:select.option>
                         <flux:select.option value="verified">{{ __('Verified') }}</flux:select.option>
                         <flux:select.option value="unverified">{{ __('Unverified') }}</flux:select.option>
                     </flux:select>
 
                     <flux:input
-                        wire:model.live="createdFilter"
+                        wire:model.defer="createdFilterInput"
                         :label="__('By Created')"
                         type="date" />
+
+                    <div class="flex items-end">
+                        <flux:button variant="primary" icon="funnel" wire:click="applyFilters" class="w-full">
+                            {{ __('Filter') }}
+                        </flux:button>
+                    </div>
                 </div>
             </div>
 
-            <flux:table :paginate="$users">
-                <flux:table.columns>
-                    <flux:table.column>{{ __('ID') }}</flux:table.column>
-                    <flux:table.column>{{ __('Name') }}</flux:table.column>
-                    <flux:table.column>{{ __('Email') }}</flux:table.column>
-                    <flux:table.column>{{ __('Link') }}</flux:table.column>
-                    <flux:table.column>{{ __('Banner') }}</flux:table.column>
-                    <flux:table.column>{{ __('Verified') }}</flux:table.column>
-                    <flux:table.column>{{ __('Created') }}</flux:table.column>
-                    <flux:table.column class="text-right">{{ __('Actions') }}</flux:table.column>
-                </flux:table.columns>
+            <div class="relative">
+                <div
+                    wire:loading.flex
+                    wire:target="applyFilters,previousPage,nextPage,gotoPage"
+                    class="absolute inset-0 z-10 items-center justify-center rounded-md bg-white/75 backdrop-blur-sm dark:bg-zinc-950/75">
+                    <div class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                        <flux:icon.arrow-path class="size-4 animate-spin" />
+                        <span>{{ __('Loading users...') }}</span>
+                    </div>
+                </div>
 
-                <flux:table.rows>
-                    @forelse ($users as $user)
-                        <flux:table.row :key="$user->id">
-                            <flux:table.cell class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
-                                #{{ $user->id }}
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <div class="font-medium">{{ $user->name }}</div>
-                            </flux:table.cell>
-                            <flux:table.cell>{{ $user->email }}</flux:table.cell>
-                            <flux:table.cell>
-                                <div class="text-sm">
-                                    {{ __(':count trackers', ['count' => number_format($user->link_trackers_count)]) }}
-                                </div>
-                                <div class="text-xs text-zinc-500 dark:text-zinc-400">
-                                    {{ __(':count rotators', ['count' => number_format($user->link_rotators_count)]) }}
-                                </div>
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                <div class="text-sm">
-                                    {{ __(':count trackers', ['count' => number_format($user->banners_count)]) }}
-                                </div>
-                                <div class="text-xs text-zinc-500 dark:text-zinc-400">
-                                    {{ __(':count rotators', ['count' => number_format($user->banner_rotators_count)]) }}
-                                </div>
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                {{ $user->email_verified_at ? __('Yes') : __('No') }}
-                            </flux:table.cell>
-                            <flux:table.cell>
-                                {{ $user->created_at?->format('M j, Y') }}
-                            </flux:table.cell>
-                            <flux:table.cell class="text-right">
-                                <div class="flex justify-end gap-1">
-                                    <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editUser({{ $user->id }})" :aria-label="__('Edit')" />
-                                    <flux:button variant="ghost" size="sm" icon="trash" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" wire:click="confirmDelete({{ $user->id }})" :aria-label="__('Delete')" />
-                                </div>
-                            </flux:table.cell>
-                        </flux:table.row>
-                    @empty
-                        <flux:table.row>
-                            <flux:table.cell colspan="8" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
-                                {{ __('No users found.') }}
-                            </flux:table.cell>
-                        </flux:table.row>
-                    @endforelse
-                </flux:table.rows>
-            </flux:table>
+                <flux:table :paginate="$users">
+                    <flux:table.columns>
+                        <flux:table.column>{{ __('ID') }}</flux:table.column>
+                        <flux:table.column>{{ __('Name') }}</flux:table.column>
+                        <flux:table.column>{{ __('Email') }}</flux:table.column>
+                        <flux:table.column>{{ __('Link') }}</flux:table.column>
+                        <flux:table.column>{{ __('Banner') }}</flux:table.column>
+                        <flux:table.column>{{ __('Verified') }}</flux:table.column>
+                        <flux:table.column>{{ __('Created') }}</flux:table.column>
+                        <flux:table.column class="text-right">{{ __('Actions') }}</flux:table.column>
+                    </flux:table.columns>
+
+                    <flux:table.rows>
+                        @forelse ($users as $user)
+                            <flux:table.row :key="$user->id">
+                                <flux:table.cell class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                                    #{{ $user->id }}
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <div class="font-medium">{{ $user->name }}</div>
+                                </flux:table.cell>
+                                <flux:table.cell>{{ $user->email }}</flux:table.cell>
+                                <flux:table.cell>
+                                    <div class="text-sm">
+                                        {{ __(':count trackers', ['count' => number_format($user->link_trackers_count)]) }}
+                                    </div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">
+                                        {{ __(':count rotators', ['count' => number_format($user->link_rotators_count)]) }}
+                                    </div>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    <div class="text-sm">
+                                        {{ __(':count trackers', ['count' => number_format($user->banners_count)]) }}
+                                    </div>
+                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">
+                                        {{ __(':count rotators', ['count' => number_format($user->banner_rotators_count)]) }}
+                                    </div>
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    {{ $user->email_verified_at ? __('Yes') : __('No') }}
+                                </flux:table.cell>
+                                <flux:table.cell>
+                                    {{ $user->created_at?->format('M j, Y') }}
+                                </flux:table.cell>
+                                <flux:table.cell class="text-right">
+                                    <div class="flex justify-end gap-1">
+                                        <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editUser({{ $user->id }})" :aria-label="__('Edit')" />
+                                        <flux:button variant="ghost" size="sm" icon="trash" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" wire:click="confirmDelete({{ $user->id }})" :aria-label="__('Delete')" />
+                                    </div>
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @empty
+                            <flux:table.row>
+                                <flux:table.cell colspan="8" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
+                                    {{ __('No users found.') }}
+                                </flux:table.cell>
+                            </flux:table.row>
+                        @endforelse
+                    </flux:table.rows>
+                </flux:table>
+            </div>
         </div>
     </flux:card>
 
