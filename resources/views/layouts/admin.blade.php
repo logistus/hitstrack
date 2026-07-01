@@ -85,7 +85,6 @@
         </div>
         @endpersist
 
-        <x-desktop-user-menu />
     </flux:sidebar>
 
     <flux:header class="border-b border-zinc-200 bg-zinc-50 lg:hidden dark:border-zinc-700 dark:bg-zinc-900/95">
