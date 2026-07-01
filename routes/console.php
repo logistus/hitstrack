@@ -4,6 +4,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -161,7 +162,7 @@ function upsertAggregateRows($query, string $table, array $uniqueBy, array $upda
         ->orderBy('stat_date')
         ->chunk(1000, function ($rows) use ($table, $uniqueBy, $updateColumns, $now, &$count): void {
             $payload = $rows
-                ->map(fn ($row) => [
+                ->map(fn($row) => [
                     ...((array) $row),
                     'created_at' => $now,
                     'updated_at' => $now,
@@ -194,3 +195,6 @@ function pruneRolledUpLinkStats($from, $to): int
 
     return $trackerRows + $rotatorRows;
 }
+
+Schedule::command('link-stats:rollup --from=yesterday --to=yesterday --fresh --prune')
+    ->dailyAt('00:00');
