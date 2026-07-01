@@ -214,6 +214,7 @@ new #[Title('Banner Trackers')] class extends Component
                 'limit' => $bannerLimit,
                 'remaining' => $bannerLimit === null ? null : max(0, $bannerLimit - $bannerCount),
                 'reached' => $bannerLimit !== null && $bannerCount >= $bannerLimit,
+                'is_free' => Auth::user()?->userType?->label === 'Free',
             ],
         ];
     }
@@ -273,11 +274,20 @@ new #[Title('Banner Trackers')] class extends Component
     </div>
 
     <flux:callout
-        :variant="$usage['reached'] ? 'warning' : null"
+        inline
+        :variant="$usage['reached'] ? 'danger' : 'success'"
         :heading="__('Banner tracker usage')"
         :text="$usage['limit'] === null
             ? __('You have created :count banner trackers. Your plan has unlimited banner trackers.', ['count' => number_format($usage['count'])])
-            : __('You have created :count of :limit banner trackers. :remaining remaining.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit']), 'remaining' => number_format($usage['remaining'])])" />
+            : __('You have created :count of :limit banner trackers.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit'])])">
+        @if ($usage['reached'] && $usage['is_free'])
+            <x-slot:actions>
+                <flux:button variant="primary" size="sm" type="button">
+                    {{ __('Upgrade Now') }}
+                </flux:button>
+            </x-slot:actions>
+        @endif
+    </flux:callout>
 
     <flux:modal name="banner-form" class="max-w-2xl md:min-w-2xl" @close="closeBannerModal">
         <form wire:submit="save" class="space-y-6">
