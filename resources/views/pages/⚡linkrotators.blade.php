@@ -287,7 +287,9 @@ new #[Title('Rotators')] class extends Component
                 'limit' => $rotatorLimit,
                 'remaining' => $rotatorLimit === null ? null : max(0, $rotatorLimit - $rotatorCount),
                 'reached' => $rotatorLimit !== null && $rotatorCount >= $rotatorLimit,
-                'is_free' => Auth::user()?->userType?->label === 'Free',
+                'can_upgrade' => $rotatorLimit !== null
+                    && $rotatorCount >= $rotatorLimit
+                    && strtolower(trim((string) Auth::user()?->userType?->label)) === 'free',
             ],
         ];
     }
@@ -376,21 +378,29 @@ new #[Title('Rotators')] class extends Component
         @endunless
     </div>
 
-    <flux:callout
-        inline
-        :variant="$usage['reached'] ? 'danger' : 'success'"
-        :heading="__('Link rotator usage')"
-        :text="$usage['limit'] === null
-            ? __('You have created :count link rotators. Your plan has unlimited link rotators.', ['count' => number_format($usage['count'])])
-            : __('You have created :count of :limit link rotators.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit'])])">
-        @if ($usage['reached'] && $usage['is_free'])
+    @if ($usage['can_upgrade'])
+        <flux:callout
+            inline
+            variant="danger"
+            :heading="__('Link rotator usage')"
+            :text="$usage['limit'] === null
+                ? __('You have created :count link rotators. Your plan has unlimited link rotators.', ['count' => number_format($usage['count'])])
+                : __('You have created :count of :limit link rotators.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit'])])">
             <x-slot:actions>
                 <flux:button variant="primary" size="sm" type="button">
                     {{ __('Upgrade Now') }}
                 </flux:button>
             </x-slot:actions>
-        @endif
-    </flux:callout>
+        </flux:callout>
+    @else
+        <flux:callout
+            inline
+            :variant="$usage['reached'] ? 'danger' : 'success'"
+            :heading="__('Link rotator usage')"
+            :text="$usage['limit'] === null
+                ? __('You have created :count link rotators. Your plan has unlimited link rotators.', ['count' => number_format($usage['count'])])
+                : __('You have created :count of :limit link rotators.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit'])])" />
+    @endif
 
     <flux:modal name="rotator-form" class="max-w-lg md:min-w-lg" @close="closeRotatorModal">
         <form wire:submit="saveRotator" class="space-y-6">

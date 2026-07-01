@@ -240,7 +240,9 @@ new #[Title('Trackers')] class extends Component
                 'limit' => $trackerLimit,
                 'remaining' => $trackerLimit === null ? null : max(0, $trackerLimit - $trackerCount),
                 'reached' => $trackerLimit !== null && $trackerCount >= $trackerLimit,
-                'is_free' => Auth::user()?->userType?->label === 'Free',
+                'can_upgrade' => $trackerLimit !== null
+                    && $trackerCount >= $trackerLimit
+                    && strtolower(trim((string) Auth::user()?->userType?->label)) === 'free',
             ],
         ];
     }
@@ -262,21 +264,29 @@ new #[Title('Trackers')] class extends Component
         @endunless
     </div>
 
-    <flux:callout
-        inline
-        :variant="$usage['reached'] ? 'danger' : 'success'"
-        :heading="__('Link tracker usage')"
-        :text="$usage['limit'] === null
-            ? __('You have created :count link trackers. Your plan has unlimited link trackers.', ['count' => number_format($usage['count'])])
-            : __('You have created :count of :limit link trackers.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit'])])">
-        @if ($usage['reached'] && $usage['is_free'])
+    @if ($usage['can_upgrade'])
+        <flux:callout
+            inline
+            variant="danger"
+            :heading="__('Link tracker usage')"
+            :text="$usage['limit'] === null
+                ? __('You have created :count link trackers. Your plan has unlimited link trackers.', ['count' => number_format($usage['count'])])
+                : __('You have created :count of :limit link trackers.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit'])])">
             <x-slot:actions>
                 <flux:button variant="primary" size="sm" type="button">
                     {{ __('Upgrade Now') }}
                 </flux:button>
             </x-slot:actions>
-        @endif
-    </flux:callout>
+        </flux:callout>
+    @else
+        <flux:callout
+            inline
+            :variant="$usage['reached'] ? 'danger' : 'success'"
+            :heading="__('Link tracker usage')"
+            :text="$usage['limit'] === null
+                ? __('You have created :count link trackers. Your plan has unlimited link trackers.', ['count' => number_format($usage['count'])])
+                : __('You have created :count of :limit link trackers.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit'])])" />
+    @endif
 
     <flux:modal name="tracker-form" class="max-w-lg md:min-w-lg" @close="closeTrackerModal">
         <form wire:submit="save" class="space-y-6">
