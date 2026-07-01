@@ -17,18 +17,68 @@ return new class extends Migration
                 $table->id();
                 $table->string('name')->unique();
                 $table->string('label');
+                $table->unsignedInteger('max_link_trackers')->nullable();
+                $table->unsignedInteger('max_link_rotators')->nullable();
+                $table->unsignedInteger('max_banner_trackers')->nullable();
+                $table->unsignedInteger('max_banner_rotators')->nullable();
                 $table->timestamps();
             });
         }
 
+        if (! Schema::hasColumn('user_types', 'max_link_trackers')) {
+            Schema::table('user_types', function (Blueprint $table) {
+                $table->unsignedInteger('max_link_trackers')->nullable()->after('label');
+            });
+        }
+
+        if (! Schema::hasColumn('user_types', 'max_link_rotators')) {
+            Schema::table('user_types', function (Blueprint $table) {
+                $table->unsignedInteger('max_link_rotators')->nullable()->after('max_link_trackers');
+            });
+        }
+
+        if (! Schema::hasColumn('user_types', 'max_banner_trackers')) {
+            Schema::table('user_types', function (Blueprint $table) {
+                $table->unsignedInteger('max_banner_trackers')->nullable()->after('max_link_rotators');
+            });
+        }
+
+        if (! Schema::hasColumn('user_types', 'max_banner_rotators')) {
+            Schema::table('user_types', function (Blueprint $table) {
+                $table->unsignedInteger('max_banner_rotators')->nullable()->after('max_banner_trackers');
+            });
+        }
+
         foreach ([
-            'free' => 'Free',
-            'premium' => 'Premium',
-            'admin' => 'Admin',
-        ] as $name => $label) {
+            'free' => [
+                'label' => 'Free',
+                'max_link_trackers' => 5,
+                'max_link_rotators' => 2,
+                'max_banner_trackers' => 2,
+                'max_banner_rotators' => 1,
+            ],
+            'premium' => [
+                'label' => 'Premium',
+                'max_link_trackers' => 100,
+                'max_link_rotators' => 50,
+                'max_banner_trackers' => 100,
+                'max_banner_rotators' => 50,
+            ],
+            'admin' => [
+                'label' => 'Admin',
+                'max_link_trackers' => null,
+                'max_link_rotators' => null,
+                'max_banner_trackers' => null,
+                'max_banner_rotators' => null,
+            ],
+        ] as $name => $attributes) {
             DB::table('user_types')->updateOrInsert(
                 ['name' => $name],
-                ['label' => $label, 'updated_at' => now(), 'created_at' => now()],
+                [
+                    ...$attributes,
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ],
             );
         }
 
