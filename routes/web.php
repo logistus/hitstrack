@@ -63,6 +63,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::livewire('/', 'pages::admin-dashboard')->name('dashboard');
         Route::livewire('users', 'pages::admin-users')->name('users');
+        Route::livewire('user-types', 'pages::admin-user-types')->name('user-types');
     });
 });
 
