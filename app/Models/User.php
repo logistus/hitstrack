@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  * @property string $name
  * @property string $email
  * @property Carbon|null $email_verified_at
- * @property string $user_type
+ * @property int $user_type_id
  * @property string $password
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -27,7 +27,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password', 'user_type'])]
+#[Fillable(['name', 'email', 'password', 'user_type_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -68,8 +68,13 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isAdmin(): bool
     {
-        return $this->user_type === 'admin'
+        return $this->userType?->name === 'admin'
             || (config('app.admin_email') && $this->email === config('app.admin_email'));
+    }
+
+    public function userType()
+    {
+        return $this->belongsTo(UserType::class);
     }
 
     public function linkTrackers()
