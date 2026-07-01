@@ -119,12 +119,29 @@ new #[Title('All Referrers')] class extends Component
 
     private function referrerAggregateQuery(): Builder
     {
-        return DB::query()
+        $aggregate = DB::table('daily_link_referrer_stats')
+            ->selectRaw("COALESCE(ref_url, '') as ref_url")
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(daily_unique_hits) as unique_hits')
+            ->where('user_id', Auth::id())
+            ->whereIn('source_type', ['tracker', 'rotator'])
+            ->where('stat_date', '<', today())
+            ->groupByRaw("COALESCE(ref_url, '')");
+
+        $today = DB::query()
             ->fromSub($this->hitEventsQuery(), 'hit_events')
+            ->where('hit_at', '>=', today())
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->groupByRaw("COALESCE(ref_url, '')");
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'referrer_aggregates')
+            ->selectRaw('ref_url')
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(unique_hits) as unique_hits')
+            ->groupBy('ref_url');
     }
 
     private function referrerPerformanceQuery(): Builder
