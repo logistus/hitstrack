@@ -16,7 +16,13 @@ new #[Layout('layouts.admin')]
 {
     use WithPagination;
 
-    public string $search = '';
+    public string $emailFilter = '';
+
+    public string $nameFilter = '';
+
+    public string $verifiedFilter = '';
+
+    public string $createdFilter = '';
 
     public ?int $editingUserId = null;
 
@@ -38,7 +44,22 @@ new #[Layout('layouts.admin')]
         );
     }
 
-    public function updatedSearch(): void
+    public function updatedEmailFilter(): void
+    {
+        $this->resetPage('usersPage');
+    }
+
+    public function updatedNameFilter(): void
+    {
+        $this->resetPage('usersPage');
+    }
+
+    public function updatedVerifiedFilter(): void
+    {
+        $this->resetPage('usersPage');
+    }
+
+    public function updatedCreatedFilter(): void
     {
         $this->resetPage('usersPage');
     }
@@ -151,7 +172,8 @@ new #[Layout('layouts.admin')]
 
     public function with(): array
     {
-        $search = trim($this->search);
+        $emailFilter = trim($this->emailFilter);
+        $nameFilter = trim($this->nameFilter);
 
         return [
             'users' => User::query()
@@ -161,13 +183,11 @@ new #[Layout('layouts.admin')]
                     'banners',
                     'bannerRotators',
                 ])
-                ->when($search !== '', function ($query) use ($search) {
-                    $query->where(function ($query) use ($search) {
-                        $query
-                            ->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%");
-                    });
-                })
+                ->when($emailFilter !== '', fn ($query) => $query->where('email', 'like', "%{$emailFilter}%"))
+                ->when($nameFilter !== '', fn ($query) => $query->where('name', 'like', "%{$nameFilter}%"))
+                ->when($this->verifiedFilter === 'verified', fn ($query) => $query->whereNotNull('email_verified_at'))
+                ->when($this->verifiedFilter === 'unverified', fn ($query) => $query->whereNull('email_verified_at'))
+                ->when($this->createdFilter !== '', fn ($query) => $query->whereDate('created_at', $this->createdFilter))
                 ->latest()
                 ->simplePaginate(10, pageName: 'usersPage'),
         ];
@@ -196,13 +216,36 @@ new #[Layout('layouts.admin')]
 
     <flux:card>
         <div class="space-y-4">
-            <flux:input
-                wire:model.live.debounce.300ms="search"
-                :label="__('Search users')"
-                type="search"
-                autocomplete="off"
-                placeholder="email@example.com"
-                class="max-w-md" />
+            <div class="space-y-3">
+                <flux:heading size="md">{{ __('Filter by') }}</flux:heading>
+
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <flux:input
+                        wire:model.live.debounce.300ms="emailFilter"
+                        :label="__('By Email')"
+                        type="search"
+                        autocomplete="off"
+                        placeholder="email@example.com" />
+
+                    <flux:input
+                        wire:model.live.debounce.300ms="nameFilter"
+                        :label="__('By Name')"
+                        type="search"
+                        autocomplete="off"
+                        placeholder="Jane Doe" />
+
+                    <flux:select wire:model.live="verifiedFilter" :label="__('By Verified')">
+                        <flux:select.option value="">{{ __('Any') }}</flux:select.option>
+                        <flux:select.option value="verified">{{ __('Verified') }}</flux:select.option>
+                        <flux:select.option value="unverified">{{ __('Unverified') }}</flux:select.option>
+                    </flux:select>
+
+                    <flux:input
+                        wire:model.live="createdFilter"
+                        :label="__('By Created')"
+                        type="date" />
+                </div>
+            </div>
 
             <flux:table :paginate="$users">
                 <flux:table.columns>
