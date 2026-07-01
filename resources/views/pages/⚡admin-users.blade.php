@@ -20,6 +20,8 @@ new #[Layout('layouts.admin')]
 
     public string $nameFilterInput = '';
 
+    public string $userTypeFilterInput = '';
+
     public string $verifiedFilterInput = '';
 
     public string $createdFilterInput = '';
@@ -27,6 +29,8 @@ new #[Layout('layouts.admin')]
     public string $emailFilter = '';
 
     public string $nameFilter = '';
+
+    public string $userTypeFilter = '';
 
     public string $verifiedFilter = '';
 
@@ -59,6 +63,7 @@ new #[Layout('layouts.admin')]
     {
         $this->emailFilter = trim($this->emailFilterInput);
         $this->nameFilter = trim($this->nameFilterInput);
+        $this->userTypeFilter = $this->userTypeFilterInput;
         $this->verifiedFilter = $this->verifiedFilterInput;
         $this->createdFilter = $this->createdFilterInput;
 
@@ -77,22 +82,6 @@ new #[Layout('layouts.admin')]
             $this->sortField = $field;
             $this->sortDirection = in_array($field, ['name', 'email', 'user_type'], true) ? 'asc' : 'desc';
         }
-
-        $this->resetPage('usersPage');
-    }
-
-    public function removeFilters(): void
-    {
-        $this->reset(
-            'emailFilterInput',
-            'nameFilterInput',
-            'verifiedFilterInput',
-            'createdFilterInput',
-            'emailFilter',
-            'nameFilter',
-            'verifiedFilter',
-            'createdFilter',
-        );
 
         $this->resetPage('usersPage');
     }
@@ -215,6 +204,7 @@ new #[Layout('layouts.admin')]
             'users' => User::query()
                 ->when($emailFilter !== '', fn ($query) => $query->where('email', 'like', "%{$emailFilter}%"))
                 ->when($nameFilter !== '', fn ($query) => $query->where('name', 'like', "%{$nameFilter}%"))
+                ->when($this->userTypeFilter !== '', fn ($query) => $query->where('user_type', $this->userTypeFilter))
                 ->when($this->verifiedFilter === 'verified', fn ($query) => $query->whereNotNull('email_verified_at'))
                 ->when($this->verifiedFilter === 'unverified', fn ($query) => $query->whereNull('email_verified_at'))
                 ->when($this->createdFilter !== '', fn ($query) => $query->whereDate('created_at', $this->createdFilter))
@@ -259,7 +249,7 @@ new #[Layout('layouts.admin')]
             <div class="space-y-3">
                 <flux:heading size="md">{{ __('Filter by') }}</flux:heading>
 
-                <div class="grid gap-3 md:grid-cols-[1fr_1fr_10rem_10rem_auto_auto]">
+                <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[1fr_1fr_10rem_10rem_10rem_auto]">
                     <flux:input
                         wire:model.defer="emailFilterInput"
                         :label="__('By Email')"
@@ -273,6 +263,13 @@ new #[Layout('layouts.admin')]
                         type="search"
                         autocomplete="off"
                         placeholder="Jane Doe" />
+
+                    <flux:select wire:model.defer="userTypeFilterInput" :label="__('By User Type')">
+                        <flux:select.option value="">{{ __('Any') }}</flux:select.option>
+                        <flux:select.option value="free">{{ __('Free') }}</flux:select.option>
+                        <flux:select.option value="premium">{{ __('Premium') }}</flux:select.option>
+                        <flux:select.option value="admin">{{ __('Admin') }}</flux:select.option>
+                    </flux:select>
 
                     <flux:select wire:model.defer="verifiedFilterInput" :label="__('By Verified')">
                         <flux:select.option value="">{{ __('Any') }}</flux:select.option>
@@ -290,19 +287,13 @@ new #[Layout('layouts.admin')]
                             {{ __('Filter') }}
                         </flux:button>
                     </div>
-
-                    <div class="flex items-end">
-                        <flux:button variant="filled" icon="x-mark" wire:click="removeFilters" class="w-full">
-                            {{ __('Remove Filters') }}
-                        </flux:button>
-                    </div>
                 </div>
             </div>
 
             <div class="relative">
                 <div
                     wire:loading.flex
-                    wire:target="applyFilters,removeFilters,previousPage,nextPage,gotoPage"
+                    wire:target="applyFilters,previousPage,nextPage,gotoPage"
                     class="absolute inset-0 z-10 items-center justify-center rounded-md bg-white/75 backdrop-blur-sm dark:bg-zinc-950/75">
                     <div class="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
                         <flux:icon.arrow-path class="size-4 animate-spin" />
