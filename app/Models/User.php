@@ -18,6 +18,7 @@ use Illuminate\Support\Str;
  * @property string $name
  * @property string $email
  * @property Carbon|null $email_verified_at
+ * @property string $user_type
  * @property string $password
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
@@ -26,7 +27,7 @@ use Illuminate\Support\Str;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'user_type'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -63,6 +64,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return 'https://www.gravatar.com/avatar/'.
             md5(strtolower(trim($this->email))).
             '?d=mp&s=128';
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->user_type === 'admin'
+            || (config('app.admin_email') && $this->email === config('app.admin_email'));
     }
 
     public function linkTrackers()

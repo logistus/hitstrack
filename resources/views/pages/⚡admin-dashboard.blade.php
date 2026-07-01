@@ -10,10 +10,7 @@ new #[Layout('layouts.admin')]
 {
     public function mount(): void
     {
-        abort_unless(
-            config('app.admin_email') && auth()->user()?->email === config('app.admin_email'),
-            403,
-        );
+        abort_unless(auth()->user()?->isAdmin(), 403);
     }
 };
 ?>

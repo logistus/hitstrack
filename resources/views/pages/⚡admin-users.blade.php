@@ -44,12 +44,15 @@ new #[Layout('layouts.admin')]
 
     public bool $email_verified = true;
 
+    public string $user_type = 'free';
+
+    public string $sortField = 'created_at';
+
+    public string $sortDirection = 'desc';
+
     public function mount(): void
     {
-        abort_unless(
-            config('app.admin_email') && auth()->user()?->email === config('app.admin_email'),
-            403,
-        );
+        abort_unless(auth()->user()?->isAdmin(), 403);
     }
 
     public function applyFilters(): void
@@ -58,6 +61,22 @@ new #[Layout('layouts.admin')]
         $this->nameFilter = trim($this->nameFilterInput);
         $this->verifiedFilter = $this->verifiedFilterInput;
         $this->createdFilter = $this->createdFilterInput;
+
+        $this->resetPage('usersPage');
+    }
+
+    public function sortBy(string $field): void
+    {
+        if (! in_array($field, ['id', 'name', 'email', 'user_type', 'email_verified_at', 'created_at'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = in_array($field, ['name', 'email', 'user_type'], true) ? 'asc' : 'desc';
+        }
 
         $this->resetPage('usersPage');
     }
@@ -95,6 +114,7 @@ new #[Layout('layouts.admin')]
         $this->email = $user->email;
         $this->password = '';
         $this->email_verified = $user->email_verified_at !== null;
+        $this->user_type = $user->user_type ?? 'free';
 
         $this->resetValidation();
 
@@ -121,6 +141,7 @@ new #[Layout('layouts.admin')]
                 Password::default(),
             ],
             'email_verified' => ['boolean'],
+            'user_type' => ['required', Rule::in(['free', 'premium', 'admin'])],
         ]);
 
         $user = $isEditing
@@ -130,6 +151,7 @@ new #[Layout('layouts.admin')]
         $user->forceFill([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'user_type' => $validated['user_type'],
             'email_verified_at' => $validated['email_verified'] ? now() : null,
         ]);
 
@@ -191,18 +213,12 @@ new #[Layout('layouts.admin')]
 
         return [
             'users' => User::query()
-                ->withCount([
-                    'linkTrackers',
-                    'linkRotators',
-                    'banners',
-                    'bannerRotators',
-                ])
                 ->when($emailFilter !== '', fn ($query) => $query->where('email', 'like', "%{$emailFilter}%"))
                 ->when($nameFilter !== '', fn ($query) => $query->where('name', 'like', "%{$nameFilter}%"))
                 ->when($this->verifiedFilter === 'verified', fn ($query) => $query->whereNotNull('email_verified_at'))
                 ->when($this->verifiedFilter === 'unverified', fn ($query) => $query->whereNull('email_verified_at'))
                 ->when($this->createdFilter !== '', fn ($query) => $query->whereDate('created_at', $this->createdFilter))
-                ->latest()
+                ->orderBy($this->sortField, $this->sortDirection)
                 ->simplePaginate(10, pageName: 'usersPage'),
         ];
     }
@@ -211,7 +227,17 @@ new #[Layout('layouts.admin')]
     {
         $this->reset('editingUserId', 'name', 'email', 'password');
         $this->email_verified = true;
+        $this->user_type = 'free';
         $this->resetValidation();
+    }
+
+    public function userTypeLabel(?string $userType): string
+    {
+        return match ($userType) {
+            'premium' => __('Premium'),
+            'admin' => __('Admin'),
+            default => __('Free'),
+        };
     }
 };
 ?>
@@ -286,13 +312,12 @@ new #[Layout('layouts.admin')]
 
                 <flux:table :paginate="$users">
                     <flux:table.columns>
-                        <flux:table.column>{{ __('ID') }}</flux:table.column>
-                        <flux:table.column>{{ __('Name') }}</flux:table.column>
-                        <flux:table.column>{{ __('Email') }}</flux:table.column>
-                        <flux:table.column>{{ __('Link') }}</flux:table.column>
-                        <flux:table.column>{{ __('Banner') }}</flux:table.column>
-                        <flux:table.column>{{ __('Verified') }}</flux:table.column>
-                        <flux:table.column>{{ __('Created') }}</flux:table.column>
+                        <flux:table.column sortable :sorted="$sortField === 'id'" :direction="$sortDirection" wire:click="sortBy('id')" class="cursor-pointer">{{ __('ID') }}</flux:table.column>
+                        <flux:table.column sortable :sorted="$sortField === 'name'" :direction="$sortDirection" wire:click="sortBy('name')" class="cursor-pointer">{{ __('Name') }}</flux:table.column>
+                        <flux:table.column sortable :sorted="$sortField === 'email'" :direction="$sortDirection" wire:click="sortBy('email')" class="cursor-pointer">{{ __('Email') }}</flux:table.column>
+                        <flux:table.column sortable :sorted="$sortField === 'user_type'" :direction="$sortDirection" wire:click="sortBy('user_type')" class="cursor-pointer">{{ __('User Type') }}</flux:table.column>
+                        <flux:table.column sortable :sorted="$sortField === 'email_verified_at'" :direction="$sortDirection" wire:click="sortBy('email_verified_at')" class="cursor-pointer">{{ __('Verified') }}</flux:table.column>
+                        <flux:table.column sortable :sorted="$sortField === 'created_at'" :direction="$sortDirection" wire:click="sortBy('created_at')" class="cursor-pointer">{{ __('Created') }}</flux:table.column>
                         <flux:table.column>{{ __('Actions') }}</flux:table.column>
                     </flux:table.columns>
 
@@ -307,20 +332,7 @@ new #[Layout('layouts.admin')]
                                 </flux:table.cell>
                                 <flux:table.cell>{{ $user->email }}</flux:table.cell>
                                 <flux:table.cell>
-                                    <div class="text-sm">
-                                        {{ __(':count trackers', ['count' => number_format($user->link_trackers_count)]) }}
-                                    </div>
-                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">
-                                        {{ __(':count rotators', ['count' => number_format($user->link_rotators_count)]) }}
-                                    </div>
-                                </flux:table.cell>
-                                <flux:table.cell>
-                                    <div class="text-sm">
-                                        {{ __(':count trackers', ['count' => number_format($user->banners_count)]) }}
-                                    </div>
-                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">
-                                        {{ __(':count rotators', ['count' => number_format($user->banner_rotators_count)]) }}
-                                    </div>
+                                    {{ $this->userTypeLabel($user->user_type) }}
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     {{ $user->email_verified_at ? __('Yes') : __('No') }}
@@ -337,7 +349,7 @@ new #[Layout('layouts.admin')]
                             </flux:table.row>
                         @empty
                             <flux:table.row>
-                                <flux:table.cell colspan="8" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
+                                <flux:table.cell colspan="7" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
                                     {{ __('No users found.') }}
                                 </flux:table.cell>
                             </flux:table.row>
@@ -359,6 +371,11 @@ new #[Layout('layouts.admin')]
 
             <flux:input wire:model="name" :label="__('Name')" required />
             <flux:input wire:model="email" :label="__('Email')" type="email" required />
+            <flux:select wire:model="user_type" :label="__('User Type')">
+                <flux:select.option value="free">{{ __('Free') }}</flux:select.option>
+                <flux:select.option value="premium">{{ __('Premium') }}</flux:select.option>
+                <flux:select.option value="admin">{{ __('Admin') }}</flux:select.option>
+            </flux:select>
             <flux:input
                 wire:model="password"
                 :label="$editingUserId ? __('New password') : __('Password')"
