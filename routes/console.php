@@ -171,6 +171,7 @@ if (! function_exists('rollupLinkRotatorTrackers')) {
         $query = DB::table('rotator_stats')
             ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
             ->whereBetween('rotator_stats.created_at', [$from, $to])
+            ->whereNotNull('rotator_stats.tracker_id')
             ->selectRaw('DATE(rotator_stats.created_at) as stat_date')
             ->selectRaw('rotators.user_id as user_id')
             ->selectRaw('rotator_stats.rotator_id as rotator_id')
