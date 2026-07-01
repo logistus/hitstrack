@@ -44,7 +44,7 @@ new #[Title('All Referrers')] class extends Component
         $search = trim($this->search);
 
         $referrers = $this->referrerPerformanceQuery()
-            ->when($search !== '', fn(Builder $query) => $query->where('referrer_aggregates.ref_url', 'like', "%{$search}%"))
+            ->when($search !== '', fn(Builder $query) => $query->where('ref_url', 'like', "%{$search}%"))
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn(Builder $query) => $query->orderBy('ref_url'))
             ->simplePaginate(7, pageName: 'referrerPage');
