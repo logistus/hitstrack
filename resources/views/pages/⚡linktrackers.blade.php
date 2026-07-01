@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\LinkTracker;
-use App\Models\LinkTrackerStat;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -162,14 +161,45 @@ new #[Title('Trackers')] class extends Component
         return [
             'trackers' => LinkTracker::query()
                 ->select('trackers.*')
-                ->where('user_id', Auth::id())
-                ->withCount('stats')
-                ->selectSub(
-                    LinkTrackerStat::query()
-                        ->selectRaw('COUNT(DISTINCT ip_address)')
-                        ->whereColumn('tracker_stats.tracker_id', 'trackers.id'),
-                    'unique_hits_count',
+                ->selectRaw(
+                    "(
+                        COALESCE((
+                            SELECT SUM(total_hits)
+                            FROM daily_link_referrer_stats
+                            WHERE source_type = ?
+                                AND source_id = trackers.id
+                                AND stat_date < ?
+                        ), 0)
+                        +
+                        COALESCE((
+                            SELECT COUNT(*)
+                            FROM tracker_stats
+                            WHERE tracker_stats.tracker_id = trackers.id
+                                AND tracker_stats.created_at >= ?
+                        ), 0)
+                    ) as stats_count",
+                    ['tracker', today()->toDateString(), today()],
                 )
+                ->selectRaw(
+                    "(
+                        COALESCE((
+                            SELECT SUM(daily_unique_hits)
+                            FROM daily_link_referrer_stats
+                            WHERE source_type = ?
+                                AND source_id = trackers.id
+                                AND stat_date < ?
+                        ), 0)
+                        +
+                        COALESCE((
+                            SELECT COUNT(DISTINCT ip_address)
+                            FROM tracker_stats
+                            WHERE tracker_stats.tracker_id = trackers.id
+                                AND tracker_stats.created_at >= ?
+                        ), 0)
+                    ) as unique_hits_count",
+                    ['tracker', today()->toDateString(), today()],
+                )
+                ->where('user_id', Auth::id())
                 ->withMax('stats', 'created_at')
                 ->latest()
                 ->simplePaginate(25),

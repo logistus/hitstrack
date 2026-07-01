@@ -53,6 +53,10 @@ new #[Title('Link rotator stats')] class extends Component
     {
         if (in_array($tab, ['overview', 'hits', 'trackers', 'referrers'], true)) {
             $this->activeTab = $tab;
+
+            if ($tab === 'overview') {
+                $this->dispatch('rotator-chart-resize');
+            }
         }
     }
 
@@ -252,12 +256,28 @@ new #[Title('Link rotator stats')] class extends Component
 
     private function trackerPerformanceStats(LinkRotator $rotator)
     {
-        return LinkRotatorStat::query()
-            ->join('trackers', 'trackers.id', '=', 'rotator_stats.tracker_id')
-            ->select('trackers.id', 'trackers.target_url', 'trackers.tracker_slug')
+        $aggregate = DB::table('daily_link_rotator_tracker_stats')
+            ->select('tracker_id')
+            ->selectRaw('SUM(total_hits) as total_hits')
+            ->selectRaw('SUM(daily_unique_hits) as unique_hits')
+            ->where('rotator_id', $rotator->id)
+            ->where('stat_date', '<', today())
+            ->groupBy('tracker_id');
+
+        $today = DB::table('rotator_stats')
+            ->select('tracker_id')
             ->selectRaw('COUNT(*) as total_hits')
-            ->selectRaw('COUNT(DISTINCT rotator_stats.ip_address) as unique_hits')
-            ->where('rotator_stats.rotator_id', $rotator->id)
+            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
+            ->where('rotator_id', $rotator->id)
+            ->where('created_at', '>=', today())
+            ->groupBy('tracker_id');
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($today), 'tracker_performance')
+            ->join('trackers', 'trackers.id', '=', 'tracker_performance.tracker_id')
+            ->select('trackers.id', 'trackers.target_url', 'trackers.tracker_slug')
+            ->selectRaw('SUM(tracker_performance.total_hits) as total_hits')
+            ->selectRaw('SUM(tracker_performance.unique_hits) as unique_hits')
             ->groupBy('trackers.id', 'trackers.target_url', 'trackers.tracker_slug')
             ->orderByDesc('total_hits')
             ->get();
@@ -368,8 +388,7 @@ new #[Title('Link rotator stats')] class extends Component
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
                 :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
-                wire:click="showTab('overview')"
-                @click="activeTab = 'overview'; $nextTick(() => document.dispatchEvent(new CustomEvent('rotator-chart-resize')))">
+                wire:click="showTab('overview')">
                 {{ __('Overview') }}
             </button>
 
@@ -377,8 +396,7 @@ new #[Title('Link rotator stats')] class extends Component
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
                 :class="activeTab === 'hits' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
-                wire:click="showTab('hits')"
-                @click="activeTab = 'hits'">
+                wire:click="showTab('hits')">
                 {{ __('Daily hits') }}
             </button>
 
@@ -386,8 +404,7 @@ new #[Title('Link rotator stats')] class extends Component
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
                 :class="activeTab === 'trackers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
-                wire:click="showTab('trackers')"
-                @click="activeTab = 'trackers'">
+                wire:click="showTab('trackers')">
                 {{ __('Trackers') }}
             </button>
 
@@ -395,8 +412,7 @@ new #[Title('Link rotator stats')] class extends Component
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
                 :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
-                wire:click="showTab('referrers')"
-                @click="activeTab = 'referrers'">
+                wire:click="showTab('referrers')">
                 {{ __('Referrers') }}
             </button>
         </div>

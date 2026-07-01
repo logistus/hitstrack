@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\LinkRotator;
-use App\Models\LinkRotatorStat;
 use App\Models\LinkTracker;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
@@ -216,21 +215,49 @@ new #[Title('Rotators')] class extends Component
             : collect();
 
         $rotators = $this->userRotatorsQuery()
-            ->withCount(['stats', 'trackers'])
+            ->select('rotators.*')
+            ->selectRaw(
+                "(
+                    COALESCE((
+                        SELECT SUM(total_hits)
+                        FROM daily_link_referrer_stats
+                        WHERE source_type = ?
+                            AND source_id = rotators.id
+                            AND stat_date < ?
+                    ), 0)
+                    +
+                    COALESCE((
+                        SELECT COUNT(*)
+                        FROM rotator_stats
+                        WHERE rotator_stats.rotator_id = rotators.id
+                            AND rotator_stats.created_at >= ?
+                    ), 0)
+                ) as stats_count",
+                ['rotator', today()->toDateString(), today()],
+            )
+            ->selectRaw(
+                "(
+                    COALESCE((
+                        SELECT SUM(daily_unique_hits)
+                        FROM daily_link_referrer_stats
+                        WHERE source_type = ?
+                            AND source_id = rotators.id
+                            AND stat_date < ?
+                    ), 0)
+                    +
+                    COALESCE((
+                        SELECT COUNT(DISTINCT ip_address)
+                        FROM rotator_stats
+                        WHERE rotator_stats.rotator_id = rotators.id
+                            AND rotator_stats.created_at >= ?
+                    ), 0)
+                ) as unique_hits_count",
+                ['rotator', today()->toDateString(), today()],
+            )
+            ->withCount('trackers')
             ->withMax('stats', 'created_at')
             ->latest()
             ->simplePaginate(25);
-
-        $uniqueHitCounts = LinkRotatorStat::query()
-            ->select('rotator_id')
-            ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits_count')
-            ->whereIn('rotator_id', $rotators->getCollection()->pluck('id'))
-            ->groupBy('rotator_id')
-            ->pluck('unique_hits_count', 'rotator_id');
-
-        $rotators->getCollection()->each(function (LinkRotator $rotator) use ($uniqueHitCounts): void {
-            $rotator->unique_hits_count = (int) ($uniqueHitCounts[$rotator->id] ?? 0);
-        });
 
         return [
             'rotators' => $rotators,
