@@ -61,6 +61,10 @@ new #[Title('Link tracker stats')] class extends Component
         }
 
         $this->activeTab = $tab;
+
+        if ($tab === 'overview') {
+            $this->dispatch('tracker-chart-resize');
+        }
     }
 
     public function sortBy(string $field): void
@@ -398,8 +402,7 @@ new #[Title('Link tracker stats')] class extends Component
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
                 :class="activeTab === 'overview' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
-                wire:click="showTab('overview')"
-                @click="activeTab = 'overview'; $nextTick(() => document.dispatchEvent(new CustomEvent('tracker-chart-resize')))">
+                wire:click="showTab('overview')">
                 {{ __('Overview') }}
             </button>
 
@@ -407,8 +410,7 @@ new #[Title('Link tracker stats')] class extends Component
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
                 :class="activeTab === 'hits' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
-                wire:click="showTab('hits')"
-                @click="activeTab = 'hits'">
+                wire:click="showTab('hits')">
                 {{ __('Daily hits') }}
             </button>
 
@@ -416,8 +418,7 @@ new #[Title('Link tracker stats')] class extends Component
                 type="button"
                 class="rounded-md px-3 py-1.5 text-sm font-medium transition"
                 :class="activeTab === 'referrers' ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white'"
-                wire:click="showTab('referrers')"
-                @click="activeTab = 'referrers'">
+                wire:click="showTab('referrers')">
                 {{ __('Referrers') }}
             </button>
         </div>
