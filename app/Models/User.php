@@ -64,4 +64,24 @@ class User extends Authenticatable implements MustVerifyEmail
             md5(strtolower(trim($this->email))).
             '?d=mp&s=128';
     }
+
+    public function linkTrackers()
+    {
+        return $this->hasMany(LinkTracker::class);
+    }
+
+    public function linkRotators()
+    {
+        return $this->hasMany(LinkRotator::class);
+    }
+
+    public function banners()
+    {
+        return $this->hasMany(Banner::class);
+    }
+
+    public function bannerRotators()
+    {
+        return $this->hasMany(BannerRotator::class);
+    }
 }

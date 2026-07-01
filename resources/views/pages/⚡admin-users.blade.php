@@ -155,6 +155,12 @@ new #[Layout('layouts.admin')]
 
         return [
             'users' => User::query()
+                ->withCount([
+                    'linkTrackers',
+                    'linkRotators',
+                    'banners',
+                    'bannerRotators',
+                ])
                 ->when($search !== '', function ($query) use ($search) {
                     $query->where(function ($query) use ($search) {
                         $query
@@ -200,8 +206,11 @@ new #[Layout('layouts.admin')]
 
             <flux:table :paginate="$users">
                 <flux:table.columns>
+                    <flux:table.column>{{ __('ID') }}</flux:table.column>
                     <flux:table.column>{{ __('Name') }}</flux:table.column>
                     <flux:table.column>{{ __('Email') }}</flux:table.column>
+                    <flux:table.column>{{ __('Link') }}</flux:table.column>
+                    <flux:table.column>{{ __('Banner') }}</flux:table.column>
                     <flux:table.column>{{ __('Verified') }}</flux:table.column>
                     <flux:table.column>{{ __('Created') }}</flux:table.column>
                     <flux:table.column class="text-right">{{ __('Actions') }}</flux:table.column>
@@ -210,10 +219,29 @@ new #[Layout('layouts.admin')]
                 <flux:table.rows>
                     @forelse ($users as $user)
                         <flux:table.row :key="$user->id">
+                            <flux:table.cell class="font-mono text-xs text-zinc-500 dark:text-zinc-400">
+                                #{{ $user->id }}
+                            </flux:table.cell>
                             <flux:table.cell>
                                 <div class="font-medium">{{ $user->name }}</div>
                             </flux:table.cell>
                             <flux:table.cell>{{ $user->email }}</flux:table.cell>
+                            <flux:table.cell>
+                                <div class="text-sm">
+                                    {{ __(':count trackers', ['count' => number_format($user->link_trackers_count)]) }}
+                                </div>
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400">
+                                    {{ __(':count rotators', ['count' => number_format($user->link_rotators_count)]) }}
+                                </div>
+                            </flux:table.cell>
+                            <flux:table.cell>
+                                <div class="text-sm">
+                                    {{ __(':count trackers', ['count' => number_format($user->banners_count)]) }}
+                                </div>
+                                <div class="text-xs text-zinc-500 dark:text-zinc-400">
+                                    {{ __(':count rotators', ['count' => number_format($user->banner_rotators_count)]) }}
+                                </div>
+                            </flux:table.cell>
                             <flux:table.cell>
                                 {{ $user->email_verified_at ? __('Yes') : __('No') }}
                             </flux:table.cell>
@@ -229,7 +257,7 @@ new #[Layout('layouts.admin')]
                         </flux:table.row>
                     @empty
                         <flux:table.row>
-                            <flux:table.cell colspan="5" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
+                            <flux:table.cell colspan="8" class="py-8 text-center text-zinc-500 dark:text-zinc-400">
                                 {{ __('No users found.') }}
                             </flux:table.cell>
                         </flux:table.row>
