@@ -17,6 +17,10 @@
         });
     "
     class="min-h-screen bg-white dark:bg-zinc-950">
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PQKB2XMK"
+            height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
     <flux:sidebar collapsible="mobile" sticky class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900/95">
         <flux:sidebar.header>
             <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
@@ -55,11 +59,11 @@
             </flux:sidebar.group>
 
             @if (auth()->user()?->isAdmin())
-                <flux:sidebar.group :heading="__('Admin')">
-                    <flux:sidebar.item :href="route('admin.dashboard')" icon="shield-check" :current="request()->routeIs('admin.*')" wire:navigate>
-                        {{ __('Admin') }}
-                    </flux:sidebar.item>
-                </flux:sidebar.group>
+            <flux:sidebar.group :heading="__('Admin')">
+                <flux:sidebar.item :href="route('admin.dashboard')" icon="shield-check" :current="request()->routeIs('admin.*')" wire:navigate>
+                    {{ __('Admin') }}
+                </flux:sidebar.item>
+            </flux:sidebar.group>
             @endif
         </flux:sidebar.nav>
 
