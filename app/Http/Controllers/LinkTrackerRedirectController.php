@@ -25,7 +25,7 @@ class LinkTrackerRedirectController extends Controller
             'ip_address' => $request->ip(),
             ...$clientInfo,
         ]);
-
+        /*
         SendGA4Event::dispatch('tracker_click', [
             'client_id'   => $this->resolveClientId($request),
             'tracker_id'  => $tracker->id,
@@ -40,6 +40,7 @@ class LinkTrackerRedirectController extends Controller
             'utm_campaign' => $request->query('utm_campaign'),
             'click_id'    => $stat->id,
         ]);
+        */
 
         return redirect()->away($tracker->target_url);
     }

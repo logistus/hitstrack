@@ -42,7 +42,7 @@ class LinkRotatorRedirectController extends Controller
             'ip_address' => $request->ip(),
             ...$clientInfo,
         ]);
-
+        /*
         SendGA4Event::dispatch('rotator_click', [
             'client_id'   => $clientId,
             'rotator_id'  => $rotator->id,
@@ -58,7 +58,7 @@ class LinkRotatorRedirectController extends Controller
             'utm_campaign' => $request->query('utm_campaign'),
             'click_id'    => $rotatorStat->id,
         ]);
-
+        */
         return redirect()->away($tracker->target_url);
     }
 
