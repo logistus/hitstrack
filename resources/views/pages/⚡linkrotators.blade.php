@@ -159,16 +159,18 @@ new #[Title('Rotators')] class extends Component
     public function saveTracker(): void
     {
         $rotator = $this->managedRotator();
+        $isWeighted = $rotator->rotation_type === 'weighted';
+        $isRoundRobin = $rotator->rotation_type === 'round_robin';
 
         $validated = $this->validate([
             'tracker_id' => [$this->editingTrackerId ? 'nullable' : 'required', 'integer'],
-            'weight' => ['required', 'integer', 'min:1'],
-            'order_column' => ['required', 'integer', 'min:0'],
+            'weight' => [$isWeighted ? 'required' : 'nullable', 'integer', 'min:1'],
+            'order_column' => [$isRoundRobin ? 'required' : 'nullable', 'integer', 'min:0'],
         ]);
 
         $pivot = [
-            'weight' => $validated['weight'],
-            'order_column' => $validated['order_column'],
+            'weight' => $isWeighted ? (int) $validated['weight'] : 1,
+            'order_column' => $isRoundRobin ? (int) $validated['order_column'] : 0,
         ];
 
         if ($this->editingTrackerId) {
@@ -231,7 +233,13 @@ new #[Title('Rotators')] class extends Component
         $visibleRotatorIds = $this->visibleRotatorIds($rotatorLimit);
 
         $managedRotator = $this->managingRotatorId
-            ? $this->userRotatorsQuery()->with('trackers')->find($this->managingRotatorId)
+            ? $this->userRotatorsQuery()
+                ->with([
+                    'trackers' => fn ($query) => $query
+                        ->orderBy('rotator_tracker.created_at', 'desc')
+                        ->orderBy('rotator_tracker.id', 'desc'),
+                ])
+                ->find($this->managingRotatorId)
             : null;
 
         $attachedTrackerIds = $managedRotator
@@ -336,8 +344,23 @@ new #[Title('Rotators')] class extends Component
     {
         $this->reset('editingTrackerId', 'tracker_id', 'weight', 'order_column');
         $this->weight = 1;
-        $this->order_column = 0;
+        $this->order_column = $this->nextTrackerOrderColumn();
         $this->resetValidation();
+    }
+
+    private function nextTrackerOrderColumn(): int
+    {
+        if (! $this->managingRotatorId) {
+            return 0;
+        }
+
+        $rotator = $this->userRotatorsQuery()->find($this->managingRotatorId);
+
+        if (! $rotator || $rotator->rotation_type !== 'round_robin') {
+            return 0;
+        }
+
+        return ((int) $rotator->trackers()->max('rotator_tracker.order_column')) + 1;
     }
 
     private function resetDeleteState(): void
@@ -495,7 +518,17 @@ new #[Title('Rotators')] class extends Component
                 <flux:text>{{ __('Attach trackers and configure their rotation settings.') }}</flux:text>
             </div>
 
-            <form wire:submit="saveTracker" class="grid gap-4 md:grid-cols-[1fr_120px_120px_auto]">
+            @php
+                $managedRotationType = $managedRotator?->rotation_type ?? 'round_robin';
+                $trackerFormColumns = in_array($managedRotationType, ['round_robin', 'weighted'], true)
+                    ? 'md:grid-cols-[1fr_120px_auto]'
+                    : 'md:grid-cols-[1fr_auto]';
+                $trackerTableColspan = 2
+                    + (int) ($managedRotationType === 'weighted')
+                    + (int) ($managedRotationType === 'round_robin');
+            @endphp
+
+            <form wire:submit="saveTracker" class="grid gap-4 {{ $trackerFormColumns }}">
                 <flux:select wire:model="tracker_id" :label="__('Link tracker')" :disabled="(bool) $editingTrackerId">
                     <flux:select.option value="">{{ __('Choose tracker') }}</flux:select.option>
                     @foreach ($availableTrackers as $tracker)
@@ -506,6 +539,7 @@ new #[Title('Rotators')] class extends Component
                     @endif
                 </flux:select>
 
+                @if ($managedRotationType === 'weighted')
                 <div class="space-y-2">
                     <div class="flex h-5 items-center gap-1 text-sm font-medium text-zinc-800 dark:text-white">
                         <span>{{ __('Weight') }}</span>
@@ -521,7 +555,9 @@ new #[Title('Rotators')] class extends Component
 
                     <flux:input wire:model="weight" type="number" min="1" />
                 </div>
+                @endif
 
+                @if ($managedRotationType === 'round_robin')
                 <div class="space-y-2">
                     <div class="flex h-5 items-center gap-1 text-sm font-medium text-zinc-800 dark:text-white">
                         <span>{{ __('Order') }}</span>
@@ -537,6 +573,7 @@ new #[Title('Rotators')] class extends Component
 
                     <flux:input wire:model="order_column" type="number" min="0" />
                 </div>
+                @endif
 
                 <div class="flex items-end gap-2">
                     <flux:button variant="primary" type="submit">
@@ -554,8 +591,12 @@ new #[Title('Rotators')] class extends Component
             <flux:table>
                 <flux:table.columns>
                     <flux:table.column>{{ __('Link tracker') }}</flux:table.column>
+                    @if ($managedRotationType === 'weighted')
                     <flux:table.column>{{ __('Weight') }}</flux:table.column>
+                    @endif
+                    @if ($managedRotationType === 'round_robin')
                     <flux:table.column>{{ __('Order') }}</flux:table.column>
+                    @endif
                     <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
                 </flux:table.columns>
 
@@ -567,8 +608,12 @@ new #[Title('Rotators')] class extends Component
                                 {{ $tracker->target_url }}
                             </flux:link>
                         </flux:table.cell>
+                        @if ($managedRotationType === 'weighted')
                         <flux:table.cell>{{ $tracker->pivot->weight }}</flux:table.cell>
+                        @endif
+                        @if ($managedRotationType === 'round_robin')
                         <flux:table.cell>{{ $tracker->pivot->order_column }}</flux:table.cell>
+                        @endif
                         <flux:table.cell align="end">
                             <div class="flex justify-end gap-3">
                                 <flux:link wire:click.prevent="editTracker({{ $tracker->id }})" class="cursor-pointer">
@@ -582,7 +627,7 @@ new #[Title('Rotators')] class extends Component
                     </flux:table.row>
                     @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="4" align="center">
+                        <flux:table.cell colspan="{{ $trackerTableColspan }}" align="center">
                             {{ __('No trackers attached yet.') }}
                         </flux:table.cell>
                     </flux:table.row>
