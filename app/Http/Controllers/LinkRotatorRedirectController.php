@@ -19,13 +19,12 @@ class LinkRotatorRedirectController extends Controller
             ->where('rotator_slug', $slug)
             ->firstOrFail();
 
-        $tracker = $rotator->pickNextTracker();
-
-        abort_if(! $tracker, 404);
-
         $clientInfo = ClientInfo::fromRequest($request);
         $clientId   = $this->resolveClientId($request);
         $refUrl     = ClientInfo::referrerDomain($request);
+        $tracker    = $rotator->pickNextTracker($refUrl);
+
+        abort_if(! $tracker, 404);
 
         $rotatorStat = LinkRotatorStat::create([
             'rotator_id' => $rotator->id,

@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\ClientInfo;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class LinkRotator extends Model
 {
@@ -27,13 +29,15 @@ class LinkRotator extends Model
         return $this->hasMany(LinkRotatorStat::class, 'rotator_id');
     }
 
-    public function pickNextTracker(): ?LinkTracker
+    public function pickNextTracker(?string $refUrl = null): ?LinkTracker
     {
         $trackers = $this->trackers()->get();
 
         if ($trackers->isEmpty()) {
             return null;
         }
+
+        $trackers = $this->withoutReferrerTarget($trackers, $refUrl);
 
         return match ($this->rotation_type) {
             'random' => $trackers->random(),
@@ -70,5 +74,32 @@ class LinkRotator extends Model
         }
 
         return $trackers->first();
+    }
+
+    private function withoutReferrerTarget(Collection $trackers, ?string $refUrl): Collection
+    {
+        $refDomain = $this->domainForComparison($refUrl);
+
+        if (! $refDomain) {
+            return $trackers;
+        }
+
+        $availableTrackers = $trackers
+            ->reject(fn (LinkTracker $tracker) => $this->domainForComparison($tracker->target_url) === $refDomain)
+            ->values();
+
+        return $availableTrackers->isEmpty() ? $trackers : $availableTrackers;
+    }
+
+    private function domainForComparison(?string $url): ?string
+    {
+        if (! $url) {
+            return null;
+        }
+
+        $domain = ClientInfo::domainFromUrl($url)
+            ?? ClientInfo::domainFromUrl("https://{$url}");
+
+        return $domain ?: null;
     }
 }
