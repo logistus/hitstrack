@@ -23,6 +23,8 @@ new #[Title('Rotators')] class extends Component
 
     public string $deletingRotatorSlug = '';
 
+    public string $rotator_name = '';
+
     public string $rotation_type = 'round_robin';
 
     public string $tracker_id = '';
@@ -47,8 +49,13 @@ new #[Title('Rotators')] class extends Component
     public function saveRotator(): void
     {
         $validated = $this->validate([
+            'rotator_name' => ['nullable', 'string', 'max:255'],
             'rotation_type' => ['required', 'in:round_robin,random,weighted'],
         ]);
+
+        $validated['rotator_name'] = filled($validated['rotator_name'])
+            ? trim($validated['rotator_name'])
+            : null;
 
         if ($this->editingRotatorId) {
             LinkRotator::query()
@@ -85,6 +92,7 @@ new #[Title('Rotators')] class extends Component
         $rotator = $this->userRotatorsQuery()->findOrFail($rotatorId);
 
         $this->editingRotatorId = $rotator->id;
+        $this->rotator_name = $rotator->rotator_name ?? '';
         $this->rotation_type = $rotator->rotation_type;
 
         $this->resetValidation();
@@ -319,7 +327,7 @@ new #[Title('Rotators')] class extends Component
 
     private function resetRotatorForm(): void
     {
-        $this->reset('editingRotatorId', 'rotation_type');
+        $this->reset('editingRotatorId', 'rotator_name', 'rotation_type');
         $this->rotation_type = 'round_robin';
         $this->resetValidation();
     }
@@ -429,6 +437,13 @@ new #[Title('Rotators')] class extends Component
                 </flux:heading>
                 <flux:text>{{ __('Choose how traffic is distributed across attached trackers.') }}</flux:text>
             </div>
+
+            <flux:input
+                wire:model="rotator_name"
+                :label="__('Name')"
+                type="text"
+                autocomplete="off"
+                placeholder="{{ __('Optional rotator name') }}" />
 
             <flux:select wire:model.live="rotation_type" :label="__('Rotation type')">
                 <flux:select.option value="round_robin">{{ __('Round robin') }}</flux:select.option>
@@ -593,6 +608,7 @@ new #[Title('Rotators')] class extends Component
                     @php($rotatorUrl = route('linkrotators.redirect', $rotator->rotator_slug))
 
                     <div class="max-w-md space-y-1">
+                        <div class="font-medium">{{ $rotator->rotator_name ?: __('Unnamed rotator') }}</div>
                         <div class="flex min-w-0 items-center gap-2">
                             <flux:link href="{{ $rotatorUrl }}" target="_blank" rel="noreferrer" class="min-w-0 break-all font-medium" title="{{ $rotatorUrl }}">
                                 {{ $rotatorUrl }}

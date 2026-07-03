@@ -10,7 +10,7 @@ class LinkRotator extends Model
 {
     protected $table = 'rotators';
 
-    protected $fillable = ['user_id', 'rotator_slug', 'rotation_type'];
+    protected $fillable = ['user_id', 'rotator_name', 'rotator_slug', 'rotation_type'];
 
     public function user()
     {
