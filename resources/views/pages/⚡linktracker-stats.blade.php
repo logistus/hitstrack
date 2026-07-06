@@ -33,6 +33,10 @@ new #[Title('Link tracker stats')] class extends Component
 
     public array $deviceReferrers = [];
 
+    public string $calendarMonth = '';
+
+    public string $dailyHitSource = 'all';
+
     public function mount(string $slug): void
     {
         $this->slug = $slug;
@@ -41,6 +45,7 @@ new #[Title('Link tracker stats')] class extends Component
             ->where('tracker_slug', $slug)
             ->firstOrFail()
             ->id;
+        $this->calendarMonth = now()->format('Y-m');
     }
 
     public function refreshStats(): void
@@ -65,6 +70,25 @@ new #[Title('Link tracker stats')] class extends Component
         if ($tab === 'overview') {
             $this->dispatch('tracker-chart-resize');
         }
+    }
+
+    public function previousCalendarMonth(): void
+    {
+        $this->calendarMonth = Carbon::createFromFormat('Y-m', $this->calendarMonth)
+            ->subMonthNoOverflow()
+            ->format('Y-m');
+    }
+
+    public function nextCalendarMonth(): void
+    {
+        $this->calendarMonth = Carbon::createFromFormat('Y-m', $this->calendarMonth)
+            ->addMonthNoOverflow()
+            ->format('Y-m');
+    }
+
+    public function viewDailyHits(): void
+    {
+        $this->activeTab = 'hits';
     }
 
     public function sortBy(string $field): void
@@ -111,9 +135,12 @@ new #[Title('Link tracker stats')] class extends Component
             ),
             'chartData' => $dailyHits['chartData'],
             'maxHits' => $dailyHits['maxHits'],
-            'dailyHitRecords' => $this->activeTab === 'hits'
-                ? $this->dailyHitRecords($tracker)
-                : $this->emptyPaginator('dailyHitsPage'),
+            'dailyHitCalendar' => $this->activeTab === 'hits'
+                ? $this->dailyHitCalendar($tracker)
+                : [],
+            'dailyHitSourceOptions' => [
+                ['value' => 'all', 'label' => __('All Sources')],
+            ],
             'referrerStats' => $this->activeTab === 'referrers'
                 ? $this->referrerStats($tracker)
                 : $this->emptyPaginator('referrerPage'),
@@ -286,11 +313,33 @@ new #[Title('Link tracker stats')] class extends Component
             ->all();
     }
 
-    private function dailyHitRecords(LinkTracker $tracker)
+    private function dailyHitCalendar(LinkTracker $tracker): array
     {
-        return $this->dailyHitsQuery($tracker)
-            ->orderByDesc('hit_date')
-            ->simplePaginate(25, pageName: 'dailyHitsPage');
+        $month = Carbon::createFromFormat('Y-m', $this->calendarMonth)->startOfMonth();
+        $start = $month->copy()->startOfWeek(Carbon::SUNDAY);
+        $end = $month->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
+
+        $hitsByDay = $this->dailyHitsQuery($tracker)
+            ->whereBetween('hit_date', [$start->toDateString(), $end->toDateString()])
+            ->get()
+            ->keyBy('hit_date');
+
+        return [
+            'title' => $month->format('F Y'),
+            'weekdays' => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+            'weeks' => collect(CarbonPeriod::create($start, $end))
+                ->map(fn (Carbon $date): array => [
+                    'date' => $date->toDateString(),
+                    'day' => $date->day,
+                    'isCurrentMonth' => $date->isSameMonth($month),
+                    'total_hits' => (int) ($hitsByDay[$date->toDateString()]?->total_hits ?? 0),
+                    'unique_hits' => (int) ($hitsByDay[$date->toDateString()]?->unique_hits ?? 0),
+                ])
+                ->chunk(7)
+                ->map(fn ($week) => $week->values()->all())
+                ->values()
+                ->all(),
+        ];
     }
 
     private function dailyHitsQuery(LinkTracker $tracker)
@@ -513,35 +562,66 @@ new #[Title('Link tracker stats')] class extends Component
             </flux:modal>
         </section>
 
-        <section class="space-y-4" x-show="activeTab === 'hits'">
-            <div>
-                <flux:heading>{{ __('Daily hits') }}</flux:heading>
-                <flux:subheading>{{ __('All hits grouped by day') }}</flux:subheading>
+        <section class="space-y-5" x-show="activeTab === 'hits'">
+            <div class="mx-auto max-w-3xl space-y-5">
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                    <select
+                        wire:model="dailyHitSource"
+                        class="h-9 min-w-40 rounded border border-zinc-300 bg-white px-2 text-sm text-zinc-950 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white">
+                        @foreach ($dailyHitSourceOptions as $option)
+                            <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
+                        @endforeach
+                    </select>
+
+                    <button
+                        type="button"
+                        wire:click="viewDailyHits"
+                        class="h-9 rounded border border-zinc-400 bg-white px-3 text-sm font-medium text-zinc-950 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800">
+                        {{ __('View') }}
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-between text-sm">
+                    <button type="button" wire:click="previousCalendarMonth" class="text-blue-600 hover:underline dark:text-blue-400">
+                        &lt;&lt; {{ __('Previous Month') }}
+                    </button>
+                    <button type="button" wire:click="nextCalendarMonth" class="text-blue-600 hover:underline dark:text-blue-400">
+                        {{ __('Next Month') }}&gt;&gt;
+                    </button>
+                </div>
+
+                <div class="text-center text-xl font-medium text-zinc-950 dark:text-white">{{ $dailyHitCalendar['title'] ?? '' }}</div>
+
+                <div class="grid grid-cols-7 text-center text-sm font-bold text-zinc-950 dark:text-white">
+                    @foreach (($dailyHitCalendar['weekdays'] ?? []) as $weekday)
+                        <div>{{ __($weekday) }}</div>
+                    @endforeach
+                </div>
+
+                <div class="grid grid-cols-7 border-b border-r border-zinc-950 dark:border-zinc-200">
+                    @foreach (($dailyHitCalendar['weeks'] ?? []) as $week)
+                        @foreach ($week as $day)
+                            @php($hasHits = $day['total_hits'] > 0 || $day['unique_hits'] > 0)
+                            <div
+                                wire:key="tracker-calendar-day-{{ $day['date'] }}"
+                                @class([
+                                    'min-h-20 border-l border-t border-zinc-950 p-1 text-xs font-bold dark:border-zinc-200 sm:min-h-24',
+                                    'bg-blue-900 text-white' => $hasHits,
+                                    'bg-zinc-300 text-zinc-950 dark:bg-zinc-700 dark:text-white' => ! $hasHits && $day['isCurrentMonth'],
+                                    'bg-zinc-100 text-zinc-400 dark:bg-zinc-900 dark:text-zinc-500' => ! $hasHits && ! $day['isCurrentMonth'],
+                                ])>
+                                <div>{{ $day['day'] }}</div>
+                                @if ($hasHits)
+                                    <div class="mt-1 leading-tight">
+                                        <div>{{ __('Hits') }}:{{ number_format($day['total_hits']) }}</div>
+                                        <div>{{ __('Unq') }}:{{ number_format($day['unique_hits']) }}</div>
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    @endforeach
+                </div>
             </div>
-
-            <flux:table :paginate="$dailyHitRecords">
-                <flux:table.columns>
-                    <flux:table.column>{{ __('Date') }}</flux:table.column>
-                    <flux:table.column>{{ __('Total hits') }}</flux:table.column>
-                    <flux:table.column>{{ __('Unique hits') }}</flux:table.column>
-                </flux:table.columns>
-
-                <flux:table.rows>
-                    @forelse ($dailyHitRecords as $stat)
-                    <flux:table.row wire:key="tracker-daily-hit-{{ $stat->hit_date }}">
-                        <flux:table.cell>{{ \Carbon\Carbon::parse($stat->hit_date)->format('Y-m-d') }}</flux:table.cell>
-                        <flux:table.cell>{{ number_format($stat->total_hits) }}</flux:table.cell>
-                        <flux:table.cell>{{ number_format($stat->unique_hits) }}</flux:table.cell>
-                    </flux:table.row>
-                    @empty
-                    <flux:table.row>
-                        <flux:table.cell colspan="3" align="center">
-                            {{ __('No hits yet.') }}
-                        </flux:table.cell>
-                    </flux:table.row>
-                    @endforelse
-                </flux:table.rows>
-            </flux:table>
         </section>
 
         <div x-show="activeTab === 'referrers'" class="space-y-8">
