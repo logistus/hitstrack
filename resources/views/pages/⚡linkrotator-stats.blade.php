@@ -131,7 +131,9 @@ new #[Title('Link rotator stats')] class extends Component
             'dailyHitCalendar' => $this->activeTab === 'hits'
                 ? $this->dailyHitCalendar($rotator)
                 : [],
-            'dailyHitSourceOptions' => $this->dailyHitSourceOptions($rotator),
+            'dailyHitSourceOptions' => $this->activeTab === 'hits'
+                ? $this->dailyHitSourceOptions($rotator)
+                : [['value' => 'all', 'label' => __('All Sources')]],
             'referrerStats' => $this->activeTab === 'referrers'
                 ? $this->referrerStats($rotator)
                 : $this->emptyPaginator('referrerPage'),
@@ -313,11 +315,11 @@ new #[Title('Link rotator stats')] class extends Component
         $month = Carbon::createFromFormat('Y-m', $this->calendarMonth)->startOfMonth();
         $start = $month->copy()->startOfWeek(Carbon::SUNDAY);
         $end = $month->copy()->endOfMonth()->endOfWeek(Carbon::SATURDAY);
-        $trackerId = $this->selectedDailyHitTrackerId($rotator);
+        $referrer = $this->selectedDailyHitReferrer();
 
-        $hitsByDay = ($trackerId
-            ? $this->dailyHitsByTrackerQuery($rotator, $trackerId)
-            : $this->dailyHitsQuery($rotator))
+        $hitsByDay = ($referrer === null
+            ? $this->dailyHitsQuery($rotator)
+            : $this->dailyHitsByReferrerQuery($rotator, $referrer))
             ->whereBetween('hit_date', [$start->toDateString(), $end->toDateString()])
             ->get()
             ->keyBy('hit_date');
@@ -344,27 +346,26 @@ new #[Title('Link rotator stats')] class extends Component
     {
         return collect([['value' => 'all', 'label' => __('All Sources')]])
             ->merge(
-                $rotator->trackers()
-                    ->orderBy('tracker_name')
-                    ->get(['trackers.id', 'trackers.tracker_name', 'trackers.tracker_slug', 'trackers.target_url'])
-                    ->map(fn ($tracker): array => [
-                        'value' => (string) $tracker->id,
-                        'label' => $tracker->tracker_name ?: route('linktrackers.redirect', $tracker->tracker_slug),
+                $this->referrerStatsQuery($rotator)
+                    ->orderByDesc('total_hits')
+                    ->orderBy('ref_url')
+                    ->get()
+                    ->map(fn ($stat): array => [
+                        'value' => 'ref:'.base64_encode($stat->ref_url),
+                        'label' => $stat->ref_url ?: __('Direct / unknown'),
                     ])
             )
             ->values()
             ->all();
     }
 
-    private function selectedDailyHitTrackerId(LinkRotator $rotator): ?int
+    private function selectedDailyHitReferrer(): ?string
     {
-        if ($this->dailyHitSource === 'all') {
+        if (! str_starts_with($this->dailyHitSource, 'ref:')) {
             return null;
         }
 
-        $trackerId = (int) $this->dailyHitSource;
-
-        return $rotator->trackers()->whereKey($trackerId)->exists() ? $trackerId : null;
+        return base64_decode(substr($this->dailyHitSource, 4), true) ?: '';
     }
 
     private function dailyHitsQuery(LinkRotator $rotator)
@@ -394,14 +395,16 @@ new #[Title('Link rotator stats')] class extends Component
             ->groupBy('hit_date');
     }
 
-    private function dailyHitsByTrackerQuery(LinkRotator $rotator, int $trackerId)
+    private function dailyHitsByReferrerQuery(LinkRotator $rotator, string $referrer)
     {
-        $aggregate = DB::table('daily_link_rotator_tracker_stats')
+        $aggregate = DB::table('daily_link_referrer_stats')
             ->selectRaw('stat_date as hit_date')
             ->selectRaw('SUM(total_hits) as total_hits')
             ->selectRaw('SUM(daily_unique_hits) as unique_hits')
+            ->where('source_type', 'rotator')
+            ->where('source_id', $rotator->id)
             ->where('rotator_id', $rotator->id)
-            ->where('tracker_id', $trackerId)
+            ->whereRaw("COALESCE(ref_url, '') = ?", [$referrer])
             ->where('stat_date', '<', today())
             ->groupBy('stat_date');
 
@@ -410,7 +413,7 @@ new #[Title('Link rotator stats')] class extends Component
             ->selectRaw('COUNT(*) as total_hits')
             ->selectRaw('COUNT(DISTINCT ip_address) as unique_hits')
             ->where('rotator_id', $rotator->id)
-            ->where('tracker_id', $trackerId)
+            ->whereRaw("COALESCE(ref_url, '') = ?", [$referrer])
             ->where('created_at', '>=', today())
             ->groupByRaw('DATE(created_at)');
 
@@ -688,8 +691,8 @@ new #[Title('Link rotator stats')] class extends Component
                                 <div>{{ $day['day'] }}</div>
                                 @if ($hasHits)
                                     <div class="mt-1 leading-tight">
-                                        <div>{{ __('Hits') }}:{{ number_format($day['total_hits']) }}</div>
-                                        <div>{{ __('Unq') }}:{{ number_format($day['unique_hits']) }}</div>
+                                        <div>{{ __('Hits') }}: {{ number_format($day['total_hits']) }}</div>
+                                        <div>{{ __('Unq') }}: {{ number_format($day['unique_hits']) }}</div>
                                     </div>
                                 @endif
                             </div>
