@@ -23,6 +23,8 @@ new #[Title('Banner Rotators')] class extends Component
 
     public string $deletingRotatorSlug = '';
 
+    public array $selectedRotatorIds = [];
+
     public string $name = '';
 
     public string $rotation_type = 'round_robin';
@@ -141,6 +143,40 @@ new #[Title('Banner Rotators')] class extends Component
     public function closeDeleteModal(): void
     {
         $this->resetDeleteState();
+    }
+
+    public function togglePageSelection(array $rotatorIds): void
+    {
+        $rotatorIds = array_map('intval', $rotatorIds);
+        $selectedIds = array_map('intval', $this->selectedRotatorIds);
+        $allSelected = count(array_intersect($rotatorIds, $selectedIds)) === count($rotatorIds);
+
+        $this->selectedRotatorIds = $allSelected
+            ? array_values(array_diff($selectedIds, $rotatorIds))
+            : array_values(array_unique([...$selectedIds, ...$rotatorIds]));
+    }
+
+    public function confirmDeleteSelected(): void
+    {
+        if ($this->selectedRotatorIds !== []) {
+            Flux::modal('delete-selected-rotators')->show();
+        }
+    }
+
+    public function deleteSelected(): void
+    {
+        $rotators = $this->userRotatorsQuery()->whereKey($this->selectedRotatorIds)->get();
+        $rotators->each->delete();
+        $deletedCount = $rotators->count();
+
+        $this->selectedRotatorIds = [];
+        Flux::modal('delete-selected-rotators')->close();
+        Flux::toast(variant: 'success', text: trans_choice(':count banner rotator deleted.|:count banner rotators deleted.', $deletedCount, ['count' => $deletedCount]));
+    }
+
+    public function cancelDeleteSelected(): void
+    {
+        Flux::modal('delete-selected-rotators')->close();
     }
 
     public function manageBanners(int $rotatorId): void
@@ -463,6 +499,19 @@ new #[Title('Banner Rotators')] class extends Component
         </div>
     </flux:modal>
 
+    <flux:modal name="delete-selected-rotators" class="max-w-md md:min-w-md">
+        <div class="space-y-6">
+            <div class="space-y-2">
+                <flux:heading size="lg">{{ __('Delete selected rotators') }}</flux:heading>
+                <flux:text>{{ trans_choice('Are you sure you want to delete :count selected rotator? This action cannot be undone.|Are you sure you want to delete :count selected rotators? This action cannot be undone.', count($selectedRotatorIds), ['count' => count($selectedRotatorIds)]) }}</flux:text>
+            </div>
+            <div class="flex justify-end gap-3">
+                <flux:button variant="filled" type="button" wire:click="cancelDeleteSelected">{{ __('Cancel') }}</flux:button>
+                <flux:button variant="danger" type="button" wire:click="deleteSelected">{{ __('Delete selected') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
     <flux:modal name="manage-banners" class="max-w-4xl md:min-w-4xl" @close="closeManageBannersModal">
         <div class="space-y-6">
             <div class="space-y-2">
@@ -547,8 +596,24 @@ new #[Title('Banner Rotators')] class extends Component
         </div>
     </flux:modal>
 
+    @if (count($selectedRotatorIds) > 0)
+        <div>
+            <flux:button variant="danger" type="button" icon="trash" wire:click="confirmDeleteSelected">
+                {{ trans_choice('Delete (:count) Rotator|Delete (:count) Rotators', count($selectedRotatorIds), ['count' => count($selectedRotatorIds)]) }}
+            </flux:button>
+        </div>
+    @endif
+
+    @php
+        $pageRotatorIds = $rotators->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $allPageRotatorsSelected = $pageRotatorIds !== []
+            && count(array_intersect($pageRotatorIds, array_map('intval', $selectedRotatorIds))) === count($pageRotatorIds);
+    @endphp
     <flux:table :paginate="$rotators">
         <flux:table.columns>
+            <flux:table.column>
+                <input type="checkbox" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" wire:click="togglePageSelection(@js($pageRotatorIds))" @checked($allPageRotatorsSelected) aria-label="{{ __('Select or deselect all rotators on this page') }}">
+            </flux:table.column>
             <flux:table.column>{{ __('Name') }}</flux:table.column>
             <flux:table.column>{{ __('Trackers') }}</flux:table.column>
             <flux:table.column>{{ __('Links') }}</flux:table.column>
@@ -566,6 +631,9 @@ new #[Title('Banner Rotators')] class extends Component
             $ctr = $impressions > 0 ? ($rotator->total_clicks_count / $impressions) * 100 : 0;
             @endphp
             <flux:table.row :key="$rotator->id">
+                <flux:table.cell>
+                    <input type="checkbox" value="{{ $rotator->id }}" wire:model.live="selectedRotatorIds" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" aria-label="{{ __('Select rotator :name', ['name' => $rotator->name ?: $rotator->rotator_slug]) }}">
+                </flux:table.cell>
                 <flux:table.cell>
                     <div class="max-w-md truncate font-medium">
                         {{ $rotator->name ?: __('Untitled rotator') }}
@@ -649,7 +717,7 @@ new #[Title('Banner Rotators')] class extends Component
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="6" align="center">
+                <flux:table.cell colspan="7" align="center">
                     {{ __('No banner rotators created yet.') }}
                 </flux:table.cell>
             </flux:table.row>

@@ -18,6 +18,8 @@ new #[Title('Trackers')] class extends Component
 
     public string $deletingTrackerSlug = '';
 
+    public array $selectedTrackerIds = [];
+
     public string $tracker_name = '';
 
     public string $target_url = '';
@@ -146,6 +148,46 @@ new #[Title('Trackers')] class extends Component
     {
         $this->resetDeleteState();
         Flux::modal('delete-tracker')->close();
+    }
+
+    public function togglePageSelection(array $trackerIds): void
+    {
+        $trackerIds = array_map('intval', $trackerIds);
+        $selectedIds = array_map('intval', $this->selectedTrackerIds);
+        $allSelected = count(array_intersect($trackerIds, $selectedIds)) === count($trackerIds);
+
+        $this->selectedTrackerIds = $allSelected
+            ? array_values(array_diff($selectedIds, $trackerIds))
+            : array_values(array_unique([...$selectedIds, ...$trackerIds]));
+    }
+
+    public function confirmDeleteSelected(): void
+    {
+        if ($this->selectedTrackerIds === []) {
+            return;
+        }
+
+        Flux::modal('delete-selected-trackers')->show();
+    }
+
+    public function deleteSelected(): void
+    {
+        $trackers = LinkTracker::query()
+            ->where('user_id', Auth::id())
+            ->whereKey($this->selectedTrackerIds)
+            ->get();
+
+        $trackers->each->delete();
+        $deletedCount = $trackers->count();
+
+        $this->selectedTrackerIds = [];
+        Flux::modal('delete-selected-trackers')->close();
+        Flux::toast(variant: 'success', text: trans_choice(':count link tracker deleted.|:count link trackers deleted.', $deletedCount, ['count' => $deletedCount]));
+    }
+
+    public function cancelDeleteSelected(): void
+    {
+        Flux::modal('delete-selected-trackers')->close();
     }
 
     private function resetForm(): void
@@ -365,8 +407,45 @@ new #[Title('Trackers')] class extends Component
         </div>
     </flux:modal>
 
+    <flux:modal name="delete-selected-trackers" class="max-w-md md:min-w-md">
+        <div class="space-y-6">
+            <div class="space-y-2">
+                <flux:heading size="lg">{{ __('Delete selected trackers') }}</flux:heading>
+                <flux:text>
+                    {{ trans_choice('Are you sure you want to delete :count selected tracker? This action cannot be undone.|Are you sure you want to delete :count selected trackers? This action cannot be undone.', count($selectedTrackerIds), ['count' => count($selectedTrackerIds)]) }}
+                </flux:text>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <flux:button variant="filled" type="button" wire:click="cancelDeleteSelected">{{ __('Cancel') }}</flux:button>
+                <flux:button variant="danger" type="button" wire:click="deleteSelected">{{ __('Delete selected') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    @if (count($selectedTrackerIds) > 0)
+        <div>
+            <flux:button variant="danger" type="button" icon="trash" wire:click="confirmDeleteSelected">
+                {{ trans_choice('Delete (:count) Tracker|Delete (:count) Trackers', count($selectedTrackerIds), ['count' => count($selectedTrackerIds)]) }}
+            </flux:button>
+        </div>
+    @endif
+
+    @php
+        $pageTrackerIds = $trackers->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $allPageTrackersSelected = $pageTrackerIds !== []
+            && count(array_intersect($pageTrackerIds, array_map('intval', $selectedTrackerIds))) === count($pageTrackerIds);
+    @endphp
     <flux:table :paginate="$trackers">
         <flux:table.columns>
+            <flux:table.column>
+                <input
+                    type="checkbox"
+                    class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800"
+                    wire:click="togglePageSelection(@js($pageTrackerIds))"
+                    @checked($allPageTrackersSelected)
+                    aria-label="{{ __('Select or deselect all trackers on this page') }}">
+            </flux:table.column>
             <flux:table.column>{{ __('Tracker') }}</flux:table.column>
             <flux:table.column>{{ __('Link') }}</flux:table.column>
             <flux:table.column>{{ __('Performance') }}</flux:table.column>
@@ -377,6 +456,14 @@ new #[Title('Trackers')] class extends Component
         <flux:table.rows>
             @forelse ($trackers as $tracker)
             <flux:table.row :key="$tracker->id">
+                <flux:table.cell>
+                    <input
+                        type="checkbox"
+                        value="{{ $tracker->id }}"
+                        wire:model.live="selectedTrackerIds"
+                        class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800"
+                        aria-label="{{ __('Select tracker :name', ['name' => $tracker->tracker_name ?: $tracker->tracker_slug]) }}">
+                </flux:table.cell>
                 <flux:table.cell>
                     @php($trackerUrl = route('linktrackers.redirect', $tracker->tracker_slug))
 
@@ -453,7 +540,7 @@ new #[Title('Trackers')] class extends Component
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="5" align="center">
+                <flux:table.cell colspan="6" align="center">
                     {{ __('No trackers created yet.') }}
                 </flux:table.cell>
             </flux:table.row>

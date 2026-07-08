@@ -18,6 +18,8 @@ new #[Title('Banner Trackers')] class extends Component
 
     public string $deletingBannerName = '';
 
+    public array $selectedBannerIds = [];
+
     public string $name = '';
 
     public string $target_url = '';
@@ -154,6 +156,44 @@ new #[Title('Banner Trackers')] class extends Component
     public function closeDeleteModal(): void
     {
         $this->resetDeleteState();
+    }
+
+    public function togglePageSelection(array $bannerIds): void
+    {
+        $bannerIds = array_map('intval', $bannerIds);
+        $selectedIds = array_map('intval', $this->selectedBannerIds);
+        $allSelected = count(array_intersect($bannerIds, $selectedIds)) === count($bannerIds);
+
+        $this->selectedBannerIds = $allSelected
+            ? array_values(array_diff($selectedIds, $bannerIds))
+            : array_values(array_unique([...$selectedIds, ...$bannerIds]));
+    }
+
+    public function confirmDeleteSelected(): void
+    {
+        if ($this->selectedBannerIds !== []) {
+            Flux::modal('delete-selected-banners')->show();
+        }
+    }
+
+    public function deleteSelected(): void
+    {
+        $banners = Banner::query()
+            ->where('user_id', Auth::id())
+            ->whereKey($this->selectedBannerIds)
+            ->get();
+
+        $banners->each->delete();
+        $deletedCount = $banners->count();
+
+        $this->selectedBannerIds = [];
+        Flux::modal('delete-selected-banners')->close();
+        Flux::toast(variant: 'success', text: trans_choice(':count banner tracker deleted.|:count banner trackers deleted.', $deletedCount, ['count' => $deletedCount]));
+    }
+
+    public function cancelDeleteSelected(): void
+    {
+        Flux::modal('delete-selected-banners')->close();
     }
 
     public function with(): array
@@ -354,8 +394,37 @@ new #[Title('Banner Trackers')] class extends Component
         </div>
     </flux:modal>
 
+    <flux:modal name="delete-selected-banners" class="max-w-md md:min-w-md">
+        <div class="space-y-6">
+            <div class="space-y-2">
+                <flux:heading size="lg">{{ __('Delete selected trackers') }}</flux:heading>
+                <flux:text>{{ trans_choice('Are you sure you want to delete :count selected tracker? This action cannot be undone.|Are you sure you want to delete :count selected trackers? This action cannot be undone.', count($selectedBannerIds), ['count' => count($selectedBannerIds)]) }}</flux:text>
+            </div>
+            <div class="flex justify-end gap-3">
+                <flux:button variant="filled" type="button" wire:click="cancelDeleteSelected">{{ __('Cancel') }}</flux:button>
+                <flux:button variant="danger" type="button" wire:click="deleteSelected">{{ __('Delete selected') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    @if (count($selectedBannerIds) > 0)
+        <div>
+            <flux:button variant="danger" type="button" icon="trash" wire:click="confirmDeleteSelected">
+                {{ trans_choice('Delete (:count) Tracker|Delete (:count) Trackers', count($selectedBannerIds), ['count' => count($selectedBannerIds)]) }}
+            </flux:button>
+        </div>
+    @endif
+
+    @php
+        $pageBannerIds = $banners->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $allPageBannersSelected = $pageBannerIds !== []
+            && count(array_intersect($pageBannerIds, array_map('intval', $selectedBannerIds))) === count($pageBannerIds);
+    @endphp
     <flux:table :paginate="$banners">
         <flux:table.columns>
+            <flux:table.column>
+                <input type="checkbox" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" wire:click="togglePageSelection(@js($pageBannerIds))" @checked($allPageBannersSelected) aria-label="{{ __('Select or deselect all trackers on this page') }}">
+            </flux:table.column>
             <flux:table.column>{{ __('Banner') }}</flux:table.column>
             <flux:table.column>{{ __('Links') }}</flux:table.column>
             <flux:table.column>{{ __('Performance') }}</flux:table.column>
@@ -372,6 +441,9 @@ new #[Title('Banner Trackers')] class extends Component
             $previewHeight = $banner->height ? max(1, (int) round($banner->height / 2)) : 80;
             @endphp
             <flux:table.row :key="$banner->id">
+                <flux:table.cell>
+                    <input type="checkbox" value="{{ $banner->id }}" wire:model.live="selectedBannerIds" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" aria-label="{{ __('Select tracker :name', ['name' => $banner->name]) }}">
+                </flux:table.cell>
                 <flux:table.cell>
                     <div class="max-w-lg space-y-2">
                         <div class="truncate font-medium">{{ $banner->name }}</div>
@@ -460,7 +532,7 @@ new #[Title('Banner Trackers')] class extends Component
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="4" align="center">
+                <flux:table.cell colspan="5" align="center">
                     {{ __('No banners created yet.') }}
                 </flux:table.cell>
             </flux:table.row>
