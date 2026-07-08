@@ -150,19 +150,10 @@ new #[Title('Trackers')] class extends Component
         Flux::modal('delete-tracker')->close();
     }
 
-    public function togglePageSelection(array $trackerIds): void
+    public function confirmDeleteSelected(array $trackerIds): void
     {
-        $trackerIds = array_map('intval', $trackerIds);
-        $selectedIds = array_map('intval', $this->selectedTrackerIds);
-        $allSelected = count(array_intersect($trackerIds, $selectedIds)) === count($trackerIds);
+        $this->selectedTrackerIds = array_values(array_unique(array_map('intval', $trackerIds)));
 
-        $this->selectedTrackerIds = $allSelected
-            ? array_values(array_diff($selectedIds, $trackerIds))
-            : array_values(array_unique([...$selectedIds, ...$trackerIds]));
-    }
-
-    public function confirmDeleteSelected(): void
-    {
         if ($this->selectedTrackerIds === []) {
             return;
         }
@@ -181,6 +172,7 @@ new #[Title('Trackers')] class extends Component
         $deletedCount = $trackers->count();
 
         $this->selectedTrackerIds = [];
+        $this->dispatch('bulk-selection-cleared');
         Flux::modal('delete-selected-trackers')->close();
         Flux::toast(variant: 'success', text: trans_choice(':count link tracker deleted.|:count link trackers deleted.', $deletedCount, ['count' => $deletedCount]));
     }
@@ -423,27 +415,24 @@ new #[Title('Trackers')] class extends Component
         </div>
     </flux:modal>
 
-    @if (count($selectedTrackerIds) > 0)
-        <div>
-            <flux:button variant="danger" type="button" icon="trash" wire:click="confirmDeleteSelected">
-                {{ trans_choice('Delete (:count) Tracker|Delete (:count) Trackers', count($selectedTrackerIds), ['count' => count($selectedTrackerIds)]) }}
+    @php
+        $pageTrackerIds = $trackers->pluck('id')->map(fn ($id) => (string) $id)->all();
+    @endphp
+    <div x-data="{ selected: [] }" x-on:bulk-selection-cleared.window="selected = []" class="space-y-4">
+        <div x-show="selected.length > 0" x-cloak>
+            <flux:button variant="danger" type="button" icon="trash" x-on:click="$wire.confirmDeleteSelected(selected)">
+                {{ __('Delete') }} (<span x-text="selected.length"></span>) {{ __('Tracker(s)') }}
             </flux:button>
         </div>
-    @endif
 
-    @php
-        $pageTrackerIds = $trackers->pluck('id')->map(fn ($id) => (int) $id)->all();
-        $allPageTrackersSelected = $pageTrackerIds !== []
-            && count(array_intersect($pageTrackerIds, array_map('intval', $selectedTrackerIds))) === count($pageTrackerIds);
-    @endphp
     <flux:table :paginate="$trackers">
         <flux:table.columns>
             <flux:table.column>
                 <input
                     type="checkbox"
                     class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800"
-                    wire:click="togglePageSelection(@js($pageTrackerIds))"
-                    @checked($allPageTrackersSelected)
+                    x-on:change="selected = $event.target.checked ? [...new Set([...selected, ...@js($pageTrackerIds)])] : selected.filter(id => !@js($pageTrackerIds).includes(id))"
+                    x-bind:checked="@js($pageTrackerIds).length > 0 && @js($pageTrackerIds).every(id => selected.includes(id))"
                     aria-label="{{ __('Select or deselect all trackers on this page') }}">
             </flux:table.column>
             <flux:table.column>{{ __('Tracker') }}</flux:table.column>
@@ -460,7 +449,7 @@ new #[Title('Trackers')] class extends Component
                     <input
                         type="checkbox"
                         value="{{ $tracker->id }}"
-                        wire:model.live="selectedTrackerIds"
+                        x-model="selected"
                         class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800"
                         aria-label="{{ __('Select tracker :name', ['name' => $tracker->tracker_name ?: $tracker->tracker_slug]) }}">
                 </flux:table.cell>
@@ -547,4 +536,5 @@ new #[Title('Trackers')] class extends Component
             @endforelse
         </flux:table.rows>
     </flux:table>
+    </div>
 </section>

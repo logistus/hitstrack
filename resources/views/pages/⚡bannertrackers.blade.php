@@ -158,19 +158,10 @@ new #[Title('Banner Trackers')] class extends Component
         $this->resetDeleteState();
     }
 
-    public function togglePageSelection(array $bannerIds): void
+    public function confirmDeleteSelected(array $bannerIds): void
     {
-        $bannerIds = array_map('intval', $bannerIds);
-        $selectedIds = array_map('intval', $this->selectedBannerIds);
-        $allSelected = count(array_intersect($bannerIds, $selectedIds)) === count($bannerIds);
+        $this->selectedBannerIds = array_values(array_unique(array_map('intval', $bannerIds)));
 
-        $this->selectedBannerIds = $allSelected
-            ? array_values(array_diff($selectedIds, $bannerIds))
-            : array_values(array_unique([...$selectedIds, ...$bannerIds]));
-    }
-
-    public function confirmDeleteSelected(): void
-    {
         if ($this->selectedBannerIds !== []) {
             Flux::modal('delete-selected-banners')->show();
         }
@@ -187,6 +178,7 @@ new #[Title('Banner Trackers')] class extends Component
         $deletedCount = $banners->count();
 
         $this->selectedBannerIds = [];
+        $this->dispatch('bulk-selection-cleared');
         Flux::modal('delete-selected-banners')->close();
         Flux::toast(variant: 'success', text: trans_choice(':count banner tracker deleted.|:count banner trackers deleted.', $deletedCount, ['count' => $deletedCount]));
     }
@@ -407,23 +399,20 @@ new #[Title('Banner Trackers')] class extends Component
         </div>
     </flux:modal>
 
-    @if (count($selectedBannerIds) > 0)
-        <div>
-            <flux:button variant="danger" type="button" icon="trash" wire:click="confirmDeleteSelected">
-                {{ trans_choice('Delete (:count) Tracker|Delete (:count) Trackers', count($selectedBannerIds), ['count' => count($selectedBannerIds)]) }}
+    @php
+        $pageBannerIds = $banners->pluck('id')->map(fn ($id) => (string) $id)->all();
+    @endphp
+    <div x-data="{ selected: [] }" x-on:bulk-selection-cleared.window="selected = []" class="space-y-4">
+        <div x-show="selected.length > 0" x-cloak>
+            <flux:button variant="danger" type="button" icon="trash" x-on:click="$wire.confirmDeleteSelected(selected)">
+                {{ __('Delete') }} (<span x-text="selected.length"></span>) {{ __('Tracker(s)') }}
             </flux:button>
         </div>
-    @endif
 
-    @php
-        $pageBannerIds = $banners->pluck('id')->map(fn ($id) => (int) $id)->all();
-        $allPageBannersSelected = $pageBannerIds !== []
-            && count(array_intersect($pageBannerIds, array_map('intval', $selectedBannerIds))) === count($pageBannerIds);
-    @endphp
     <flux:table :paginate="$banners">
         <flux:table.columns>
             <flux:table.column>
-                <input type="checkbox" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" wire:click="togglePageSelection(@js($pageBannerIds))" @checked($allPageBannersSelected) aria-label="{{ __('Select or deselect all trackers on this page') }}">
+                <input type="checkbox" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" x-on:change="selected = $event.target.checked ? [...new Set([...selected, ...@js($pageBannerIds)])] : selected.filter(id => !@js($pageBannerIds).includes(id))" x-bind:checked="@js($pageBannerIds).length > 0 && @js($pageBannerIds).every(id => selected.includes(id))" aria-label="{{ __('Select or deselect all trackers on this page') }}">
             </flux:table.column>
             <flux:table.column>{{ __('Banner') }}</flux:table.column>
             <flux:table.column>{{ __('Links') }}</flux:table.column>
@@ -442,7 +431,7 @@ new #[Title('Banner Trackers')] class extends Component
             @endphp
             <flux:table.row :key="$banner->id">
                 <flux:table.cell>
-                    <input type="checkbox" value="{{ $banner->id }}" wire:model.live="selectedBannerIds" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" aria-label="{{ __('Select tracker :name', ['name' => $banner->name]) }}">
+                    <input type="checkbox" value="{{ $banner->id }}" x-model="selected" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" aria-label="{{ __('Select tracker :name', ['name' => $banner->name]) }}">
                 </flux:table.cell>
                 <flux:table.cell>
                     <div class="max-w-lg space-y-2">
@@ -539,4 +528,5 @@ new #[Title('Banner Trackers')] class extends Component
             @endforelse
         </flux:table.rows>
     </flux:table>
+    </div>
 </section>

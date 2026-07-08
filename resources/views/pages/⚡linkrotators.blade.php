@@ -148,19 +148,10 @@ new #[Title('Rotators')] class extends Component
         $this->resetDeleteState();
     }
 
-    public function togglePageSelection(array $rotatorIds): void
+    public function confirmDeleteSelected(array $rotatorIds): void
     {
-        $rotatorIds = array_map('intval', $rotatorIds);
-        $selectedIds = array_map('intval', $this->selectedRotatorIds);
-        $allSelected = count(array_intersect($rotatorIds, $selectedIds)) === count($rotatorIds);
+        $this->selectedRotatorIds = array_values(array_unique(array_map('intval', $rotatorIds)));
 
-        $this->selectedRotatorIds = $allSelected
-            ? array_values(array_diff($selectedIds, $rotatorIds))
-            : array_values(array_unique([...$selectedIds, ...$rotatorIds]));
-    }
-
-    public function confirmDeleteSelected(): void
-    {
         if ($this->selectedRotatorIds !== []) {
             Flux::modal('delete-selected-rotators')->show();
         }
@@ -173,6 +164,7 @@ new #[Title('Rotators')] class extends Component
         $deletedCount = $rotators->count();
 
         $this->selectedRotatorIds = [];
+        $this->dispatch('bulk-selection-cleared');
         Flux::modal('delete-selected-rotators')->close();
         Flux::toast(variant: 'success', text: trans_choice(':count link rotator deleted.|:count link rotators deleted.', $deletedCount, ['count' => $deletedCount]));
     }
@@ -686,23 +678,20 @@ new #[Title('Rotators')] class extends Component
         </div>
     </flux:modal>
 
-    @if (count($selectedRotatorIds) > 0)
-        <div>
-            <flux:button variant="danger" type="button" icon="trash" wire:click="confirmDeleteSelected">
-                {{ trans_choice('Delete (:count) Rotator|Delete (:count) Rotators', count($selectedRotatorIds), ['count' => count($selectedRotatorIds)]) }}
+    @php
+        $pageRotatorIds = $rotators->pluck('id')->map(fn ($id) => (string) $id)->all();
+    @endphp
+    <div x-data="{ selected: [] }" x-on:bulk-selection-cleared.window="selected = []" class="space-y-4">
+        <div x-show="selected.length > 0" x-cloak>
+            <flux:button variant="danger" type="button" icon="trash" x-on:click="$wire.confirmDeleteSelected(selected)">
+                {{ __('Delete') }} (<span x-text="selected.length"></span>) {{ __('Rotator(s)') }}
             </flux:button>
         </div>
-    @endif
 
-    @php
-        $pageRotatorIds = $rotators->pluck('id')->map(fn ($id) => (int) $id)->all();
-        $allPageRotatorsSelected = $pageRotatorIds !== []
-            && count(array_intersect($pageRotatorIds, array_map('intval', $selectedRotatorIds))) === count($pageRotatorIds);
-    @endphp
     <flux:table :paginate="$rotators">
         <flux:table.columns>
             <flux:table.column>
-                <input type="checkbox" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" wire:click="togglePageSelection(@js($pageRotatorIds))" @checked($allPageRotatorsSelected) aria-label="{{ __('Select or deselect all rotators on this page') }}">
+                <input type="checkbox" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" x-on:change="selected = $event.target.checked ? [...new Set([...selected, ...@js($pageRotatorIds)])] : selected.filter(id => !@js($pageRotatorIds).includes(id))" x-bind:checked="@js($pageRotatorIds).length > 0 && @js($pageRotatorIds).every(id => selected.includes(id))" aria-label="{{ __('Select or deselect all rotators on this page') }}">
             </flux:table.column>
             <flux:table.column>{{ __('Rotator') }}</flux:table.column>
             <flux:table.column>{{ __('Trackers') }}</flux:table.column>
@@ -715,7 +704,7 @@ new #[Title('Rotators')] class extends Component
             @forelse ($rotators as $rotator)
             <flux:table.row :key="$rotator->id">
                 <flux:table.cell>
-                    <input type="checkbox" value="{{ $rotator->id }}" wire:model.live="selectedRotatorIds" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" aria-label="{{ __('Select rotator :name', ['name' => $rotator->rotator_name ?: $rotator->rotator_slug]) }}">
+                    <input type="checkbox" value="{{ $rotator->id }}" x-model="selected" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" aria-label="{{ __('Select rotator :name', ['name' => $rotator->rotator_name ?: $rotator->rotator_slug]) }}">
                 </flux:table.cell>
                 <flux:table.cell>
                     @php($rotatorUrl = route('linkrotators.redirect', $rotator->rotator_slug))
@@ -789,4 +778,5 @@ new #[Title('Rotators')] class extends Component
             @endforelse
         </flux:table.rows>
     </flux:table>
+    </div>
 </section>
