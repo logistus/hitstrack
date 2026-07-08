@@ -419,7 +419,7 @@ new #[Title('Trackers')] class extends Component
         $pageTrackerIds = $trackers->pluck('id')->map(fn ($id) => (string) $id)->all();
     @endphp
     <div x-data="{ selected: [] }" x-on:bulk-selection-cleared.window="selected = []" class="space-y-4">
-        <div x-show="selected.length > 0" x-cloak>
+        <div style="visibility: hidden" x-bind:style="selected.length > 0 ? 'visibility: visible' : 'visibility: hidden'">
             <flux:button variant="danger" type="button" icon="trash" x-on:click="$wire.confirmDeleteSelected(selected)">
                 {{ __('Delete') }} (<span x-text="selected.length"></span>) {{ __('Tracker(s)') }}
             </flux:button>
