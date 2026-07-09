@@ -93,6 +93,7 @@ if (! function_exists('rollupLinkReferrers')) {
                 ->selectRaw("SHA2(COALESCE(tracker_stats.ref_url, ''), 256) as ref_url_hash")
                 ->selectRaw('COUNT(*) as total_hits')
                 ->selectRaw('COUNT(DISTINCT tracker_stats.ip_address) as daily_unique_hits')
+                ->selectRaw('MAX(tracker_stats.created_at) as last_hit_at')
                 ->groupByRaw("DATE(tracker_stats.created_at), trackers.user_id, tracker_stats.tracker_id, tracker_stats.ref_url, SHA2(COALESCE(tracker_stats.ref_url, ''), 256)"),
             'rotator' => DB::table('rotator_stats')
                 ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
@@ -108,6 +109,7 @@ if (! function_exists('rollupLinkReferrers')) {
                 ->selectRaw("SHA2(COALESCE(rotator_stats.ref_url, ''), 256) as ref_url_hash")
                 ->selectRaw('COUNT(*) as total_hits')
                 ->selectRaw('COUNT(DISTINCT rotator_stats.ip_address) as daily_unique_hits')
+                ->selectRaw('MAX(rotator_stats.created_at) as last_hit_at')
                 ->groupByRaw("DATE(rotator_stats.created_at), rotators.user_id, rotator_stats.rotator_id, rotator_stats.ref_url, SHA2(COALESCE(rotator_stats.ref_url, ''), 256)"),
         };
 
@@ -115,7 +117,7 @@ if (! function_exists('rollupLinkReferrers')) {
             $query,
             'daily_link_referrer_stats',
             ['source_type', 'source_id', 'stat_date', 'ref_url_hash'],
-            ['user_id', 'tracker_id', 'rotator_id', 'ref_url', 'total_hits', 'daily_unique_hits', 'updated_at'],
+            ['user_id', 'tracker_id', 'rotator_id', 'ref_url', 'total_hits', 'daily_unique_hits', 'last_hit_at', 'updated_at'],
             $now,
         );
     }

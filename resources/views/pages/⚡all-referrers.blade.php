@@ -82,39 +82,37 @@ new #[Title('All Referrers')] class extends Component
             : 'https://' . $refUrl;
     }
 
-    private function hitEventsQuery(): Builder
-    {
-        $userId = Auth::id();
-
-        $directTrackerHits = DB::table('tracker_stats')
-            ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
-            ->where('trackers.user_id', $userId)
-            ->whereNull('tracker_stats.rotator_id')
-            ->select([
-                'tracker_stats.ref_url',
-                'tracker_stats.ip_address',
-                'tracker_stats.created_at as hit_at',
-            ]);
-
-        $rotatorHits = DB::table('rotator_stats')
-            ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
-            ->where('rotators.user_id', $userId)
-            ->select([
-                'rotator_stats.ref_url',
-                'rotator_stats.ip_address',
-                'rotator_stats.created_at as hit_at',
-            ]);
-
-        return $directTrackerHits->unionAll($rotatorHits);
-    }
-
     private function latestHitQuery(): Builder
     {
-        return DB::query()
-            ->fromSub($this->hitEventsQuery(), 'hit_events')
+        $aggregate = DB::table('daily_link_referrer_stats')
+            ->where('user_id', Auth::id())
+            ->where('stat_date', '<', today())
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
-            ->selectRaw('MAX(hit_at) as last_hit_at')
+            ->selectRaw('MAX(last_hit_at) as last_hit_at')
             ->groupByRaw("COALESCE(ref_url, '')");
+
+        $todayTracker = DB::table('tracker_stats')
+            ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
+            ->where('trackers.user_id', Auth::id())
+            ->whereNull('tracker_stats.rotator_id')
+            ->where('tracker_stats.created_at', '>=', today())
+            ->selectRaw("COALESCE(tracker_stats.ref_url, '') as ref_url")
+            ->selectRaw('MAX(tracker_stats.created_at) as last_hit_at')
+            ->groupByRaw("COALESCE(tracker_stats.ref_url, '')");
+
+        $todayRotator = DB::table('rotator_stats')
+            ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
+            ->where('rotators.user_id', Auth::id())
+            ->where('rotator_stats.created_at', '>=', today())
+            ->selectRaw("COALESCE(rotator_stats.ref_url, '') as ref_url")
+            ->selectRaw('MAX(rotator_stats.created_at) as last_hit_at')
+            ->groupByRaw("COALESCE(rotator_stats.ref_url, '')");
+
+        return DB::query()
+            ->fromSub($aggregate->unionAll($todayTracker)->unionAll($todayRotator), 'latest_hits')
+            ->selectRaw('ref_url')
+            ->selectRaw('MAX(last_hit_at) as last_hit_at')
+            ->groupBy('ref_url');
     }
 
     private function referrerAggregateQuery(): Builder
