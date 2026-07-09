@@ -304,8 +304,27 @@ new #[Title('Banner Rotators')] class extends Component
                 ) as total_clicks_count",
                 ['rotator', today()->toDateString(), today()],
             )
+            ->selectRaw(
+                "(
+                    SELECT MAX(last_impression_at)
+                    FROM daily_banner_referrer_stats
+                    WHERE source_type = ?
+                        AND source_id = banner_rotators.id
+                        AND stat_date < ?
+                ) as aggregate_last_impression_at",
+                ['rotator', today()->toDateString()],
+            )
+            ->selectRaw(
+                "(
+                    SELECT MAX(created_at)
+                    FROM banner_stats
+                    WHERE banner_stats.banner_rotator_id = banner_rotators.id
+                        AND banner_stats.event_type = 'impression'
+                        AND banner_stats.created_at >= ?
+                ) as today_last_impression_at",
+                [today()],
+            )
             ->withCount('banners')
-            ->withMax('stats', 'created_at')
             ->latest()
             ->simplePaginate(25);
 
@@ -607,7 +626,7 @@ new #[Title('Banner Rotators')] class extends Component
             <flux:table.column>{{ __('Trackers') }}</flux:table.column>
             <flux:table.column>{{ __('Links') }}</flux:table.column>
             <flux:table.column>{{ __('Performance') }}</flux:table.column>
-            <flux:table.column>{{ __('Activity') }}</flux:table.column>
+            <flux:table.column>{{ __('Last Impression') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 
@@ -618,6 +637,11 @@ new #[Title('Banner Rotators')] class extends Component
             $clickUrl = route('bannerrotators.click', $rotator->rotator_slug);
             $impressions = (int) $rotator->impressions_count;
             $ctr = $impressions > 0 ? ($rotator->total_clicks_count / $impressions) * 100 : 0;
+            $lastImpressionAt = collect([$rotator->aggregate_last_impression_at, $rotator->today_last_impression_at])
+                ->filter()
+                ->map(fn ($value) => \Carbon\Carbon::parse($value))
+                ->sortDesc()
+                ->first();
             @endphp
             <flux:table.row :key="$rotator->id">
                 <flux:table.cell>
@@ -680,10 +704,9 @@ new #[Title('Banner Rotators')] class extends Component
                 </flux:table.cell>
                 <flux:table.cell>
                     <div class="space-y-1 text-sm">
-                        @if ($rotator->stats_max_created_at)
-                        @php($lastHitAt = \Carbon\Carbon::parse($rotator->stats_max_created_at))
-                        <div title="{{ $lastHitAt->format('Y-m-d H:i:s') }}" class="font-medium">
-                            {{ $lastHitAt->diffForHumans(short: true) }}
+                        @if ($lastImpressionAt)
+                        <div title="{{ $lastImpressionAt->format('Y-m-d H:i:s') }}" class="font-medium">
+                            {{ $lastImpressionAt->diffForHumans(short: true) }}
                         </div>
                         @else
                         <div class="font-medium">{{ __('Never') }}</div>

@@ -235,6 +235,26 @@ new #[Title('Banner Trackers')] class extends Component
                 ) as clicks_count",
                 ['banner', today()->toDateString(), today()],
             )
+            ->selectRaw(
+                "(
+                    SELECT MAX(last_impression_at)
+                    FROM daily_banner_referrer_stats
+                    WHERE source_type = ?
+                        AND source_id = banners.id
+                        AND stat_date < ?
+                ) as aggregate_last_impression_at",
+                ['banner', today()->toDateString()],
+            )
+            ->selectRaw(
+                "(
+                    SELECT MAX(created_at)
+                    FROM banner_stats
+                    WHERE banner_stats.banner_id = banners.id
+                        AND banner_stats.event_type = 'impression'
+                        AND banner_stats.created_at >= ?
+                ) as today_last_impression_at",
+                [today()],
+            )
             ->where('user_id', Auth::id())
             ->latest()
             ->simplePaginate(25);
@@ -417,6 +437,7 @@ new #[Title('Banner Trackers')] class extends Component
             <flux:table.column>{{ __('Banner') }}</flux:table.column>
             <flux:table.column>{{ __('Links') }}</flux:table.column>
             <flux:table.column>{{ __('Performance') }}</flux:table.column>
+            <flux:table.column>{{ __('Last Impression') }}</flux:table.column>
             <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
         </flux:table.columns>
 
@@ -428,6 +449,11 @@ new #[Title('Banner Trackers')] class extends Component
             $ctr = $banner->impressions_count > 0 ? ($banner->clicks_count / $banner->impressions_count) * 100 : 0;
             $previewWidth = $banner->width ? max(1, (int) round($banner->width / 2)) : 160;
             $previewHeight = $banner->height ? max(1, (int) round($banner->height / 2)) : 80;
+            $lastImpressionAt = collect([$banner->aggregate_last_impression_at, $banner->today_last_impression_at])
+                ->filter()
+                ->map(fn ($value) => \Carbon\Carbon::parse($value))
+                ->sortDesc()
+                ->first();
             @endphp
             <flux:table.row :key="$banner->id">
                 <flux:table.cell>
@@ -486,6 +512,15 @@ new #[Title('Banner Trackers')] class extends Component
                         <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ number_format($banner->clicks_count) }} {{ __('clicks') }} · {{ number_format($ctr, 2) }}% CTR</div>
                     </div>
                 </flux:table.cell>
+                <flux:table.cell>
+                    @if ($lastImpressionAt)
+                        <span title="{{ $lastImpressionAt->format('Y-m-d H:i:s') }}" class="font-medium">
+                            {{ $lastImpressionAt->diffForHumans(short: true) }}
+                        </span>
+                    @else
+                        <span class="font-medium">{{ __('Never') }}</span>
+                    @endif
+                </flux:table.cell>
                 <flux:table.cell align="end">
                     <div class="flex justify-end gap-1">
                         <flux:tooltip :content="__('Stats')">
@@ -521,7 +556,7 @@ new #[Title('Banner Trackers')] class extends Component
             </flux:table.row>
             @empty
             <flux:table.row>
-                <flux:table.cell colspan="5" align="center">
+                <flux:table.cell colspan="6" align="center">
                     {{ __('No banners created yet.') }}
                 </flux:table.cell>
             </flux:table.row>

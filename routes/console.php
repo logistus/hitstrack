@@ -323,6 +323,7 @@ if (! function_exists('rollupBannerReferrers')) {
                 ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
                 ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.ip_address END) as daily_unique_impressions")
                 ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'click' THEN banner_stats.ip_address END) as daily_unique_clicks")
+                ->selectRaw("MAX(CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.created_at ELSE NULL END) as last_impression_at")
                 ->groupByRaw("DATE(banner_stats.created_at), banners.user_id, banner_stats.banner_id, banner_stats.ref_url, SHA2(COALESCE(banner_stats.ref_url, ''), 256)"),
             'rotator' => DB::table('banner_stats')
                 ->join('banner_rotators', 'banner_rotators.id', '=', 'banner_stats.banner_rotator_id')
@@ -340,6 +341,7 @@ if (! function_exists('rollupBannerReferrers')) {
                 ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
                 ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.ip_address END) as daily_unique_impressions")
                 ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'click' THEN banner_stats.ip_address END) as daily_unique_clicks")
+                ->selectRaw("MAX(CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.created_at ELSE NULL END) as last_impression_at")
                 ->groupByRaw("DATE(banner_stats.created_at), banner_rotators.user_id, banner_stats.banner_rotator_id, banner_stats.ref_url, SHA2(COALESCE(banner_stats.ref_url, ''), 256)"),
         };
 
@@ -347,7 +349,7 @@ if (! function_exists('rollupBannerReferrers')) {
             $query,
             'daily_banner_referrer_stats',
             ['source_type', 'source_id', 'stat_date', 'ref_url_hash'],
-            ['user_id', 'banner_id', 'banner_rotator_id', 'ref_url', 'impressions', 'clicks', 'daily_unique_impressions', 'daily_unique_clicks', 'updated_at'],
+            ['user_id', 'banner_id', 'banner_rotator_id', 'ref_url', 'impressions', 'clicks', 'daily_unique_impressions', 'daily_unique_clicks', 'last_impression_at', 'updated_at'],
             $now,
         );
     }

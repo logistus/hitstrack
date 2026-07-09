@@ -111,7 +111,7 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('SUM(impressions) as impressions')
             ->selectRaw('SUM(clicks) as clicks')
-            ->selectRaw('SUM(daily_unique_impressions + daily_unique_clicks) as unique_events')
+            ->selectRaw('SUM(daily_unique_impressions) as unique_events')
             ->groupByRaw("COALESCE(ref_url, '')");
 
         $today = DB::query()
@@ -119,7 +119,7 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->selectRaw('COUNT(DISTINCT ip_address) as unique_events')
+            ->selectRaw("COUNT(DISTINCT CASE WHEN event_type = 'impression' THEN ip_address ELSE NULL END) as unique_events")
             ->groupByRaw("COALESCE(ref_url, '')");
 
         return DB::query()
@@ -194,7 +194,7 @@ new #[Title('Banner Referrers')] class extends Component
                     {{ __('Clicks') }}
                 </flux:table.column>
                 <flux:table.column sortable :sorted="$sortField === 'unique_events'" :direction="$sortDirection" wire:click="sortBy('unique_events')" class="cursor-pointer text-right">
-                    {{ __('Unique IPs') }}
+                    {{ __('Unique Impressions') }}
                 </flux:table.column>
                 <flux:table.column sortable :sorted="$sortField === 'ctr'" :direction="$sortDirection" wire:click="sortBy('ctr')" class="cursor-pointer text-right">
                     {{ __('CTR') }}
