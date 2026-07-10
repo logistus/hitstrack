@@ -69,3 +69,62 @@ test('target url checker can include google web risk reputation results', functi
         ->assertSet('result.reputation.status', 'danger')
         ->assertSee('Google Web Risk matched this URL as');
 });
+
+test('a clean checker result can add the link tracker', function () {
+    $user = \App\Models\User::factory()->create();
+
+    config(['services.google_web_risk.key' => null]);
+
+    Http::fake([
+        'https://93.184.216.34/*' => Http::response('<html><body>Landing page</body></html>', 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]),
+    ]);
+
+    Livewire::withQueryParams([
+        'target_url' => 'https://93.184.216.34/landing',
+        'tracker_name' => 'Campaign landing page',
+        'add_link' => '1',
+    ])
+        ->actingAs($user)
+        ->test('pages::target-url-checker')
+        ->assertSet('result.status', 'safe')
+        ->assertSee('Add Link')
+        ->call('addLink')
+        ->assertRedirect(route('linktrackers', absolute: false));
+
+    $this->assertDatabaseHas('trackers', [
+        'user_id' => $user->id,
+        'tracker_name' => 'Campaign landing page',
+        'target_url' => 'https://93.184.216.34/landing',
+    ]);
+});
+
+test('a checker result with issues shows the link trackers return action instead of add link', function () {
+    $user = \App\Models\User::factory()->create();
+
+    config(['services.google_web_risk.key' => null]);
+
+    Http::fake([
+        'https://93.184.216.34/*' => Http::response('<html><body>Landing page</body></html>', 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+            'X-Frame-Options' => 'DENY',
+        ]),
+    ]);
+
+    Livewire::withQueryParams([
+        'target_url' => 'https://93.184.216.34/landing',
+        'tracker_name' => 'Campaign landing page',
+        'add_link' => '1',
+    ])
+        ->actingAs($user)
+        ->test('pages::target-url-checker')
+        ->assertSet('result.status', 'danger')
+        ->assertDontSee('Add Link')
+        ->assertSee('Link Trackers');
+
+    $this->assertDatabaseMissing('trackers', [
+        'user_id' => $user->id,
+        'target_url' => 'https://93.184.216.34/landing',
+    ]);
+});

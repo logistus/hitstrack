@@ -1,6 +1,10 @@
 <?php
 
+use App\Models\LinkTracker;
 use App\Support\TargetUrlChecker;
+use Flux\Flux;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -8,15 +12,79 @@ new #[Title('Target URL Checker')] class extends Component
 {
     public string $target_url = '';
 
+    public string $tracker_name = '';
+
+    public bool $add_link = false;
+
+    public string $checkedTargetUrl = '';
+
     public ?array $result = null;
 
+    public function mount(TargetUrlChecker $checker): void
+    {
+        $this->target_url = (string) request()->query('target_url', '');
+        $this->tracker_name = (string) request()->query('tracker_name', '');
+        $this->add_link = request()->boolean('add_link');
+
+        if ($this->target_url !== '') {
+            $this->runCheck($checker);
+        }
+    }
+
     public function check(TargetUrlChecker $checker): void
+    {
+        $this->runCheck($checker);
+    }
+
+    public function addLink(): void
+    {
+        $validated = $this->validate([
+            'target_url' => ['required', 'url', 'max:255'],
+            'tracker_name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if (! $this->linkCanBeAdded()) {
+            $this->addError('target_url', __('This URL can only be added after a clean checker result.'));
+            Flux::toast(variant: 'warning', text: __('This URL cannot be added because the checker found issues.'));
+
+            return;
+        }
+
+        if ($this->trackerLimitReached()) {
+            Flux::toast(variant: 'warning', text: __('Your link tracker limit has been reached.'));
+
+            $this->redirectRoute('linktrackers', absolute: false, navigate: true);
+
+            return;
+        }
+
+        LinkTracker::create([
+            'user_id' => Auth::id(),
+            'tracker_name' => filled($validated['tracker_name']) ? trim($validated['tracker_name']) : null,
+            'target_url' => $validated['target_url'],
+            'tracker_slug' => $this->generateTrackerSlug(),
+        ]);
+
+        Flux::toast(variant: 'success', text: __('Link tracker created.'));
+
+        $this->redirectRoute('linktrackers', absolute: false, navigate: true);
+    }
+
+    private function runCheck(TargetUrlChecker $checker): void
     {
         $validated = $this->validate([
             'target_url' => ['required', 'string', 'max:2048'],
         ]);
 
         $this->result = $checker->check($validated['target_url']);
+        $this->checkedTargetUrl = trim($validated['target_url']);
+    }
+
+    public function linkCanBeAdded(): bool
+    {
+        return $this->add_link
+            && ($this->result['status'] ?? null) === 'safe'
+            && $this->checkedTargetUrl === trim($this->target_url);
     }
 
     public function badgeClasses(?string $status): string
@@ -38,6 +106,34 @@ new #[Title('Target URL Checker')] class extends Component
             default => 'border-zinc-200 dark:border-zinc-700',
         };
     }
+
+    public function headerDescription(string $header): string
+    {
+        return match ($header) {
+            'x-frame-options' => __('Shows whether the page blocks iframe embedding. DENY blocks all frames; SAMEORIGIN only allows the same domain.'),
+            'content-security-policy' => __('Shows browser security rules. The frame-ancestors directive controls which sites may embed this page.'),
+            'content-type' => __('Shows what kind of content was returned, such as HTML, JSON, PDF, or an image.'),
+            'location' => __('Shows the next URL when the response is a redirect.'),
+            'referrer-policy' => __('Shows how much referrer information browsers should send when navigating away from this page.'),
+            default => __('HTTP response header returned by the target server.'),
+        };
+    }
+
+    private function trackerLimitReached(): bool
+    {
+        $limit = Auth::user()?->userType?->max_link_trackers;
+
+        return $limit !== null && LinkTracker::query()->where('user_id', Auth::id())->count() >= $limit;
+    }
+
+    private function generateTrackerSlug(): string
+    {
+        do {
+            $slug = Str::random(6);
+        } while (LinkTracker::query()->where('tracker_slug', $slug)->exists());
+
+        return $slug;
+    }
 };
 ?>
 
@@ -51,6 +147,15 @@ new #[Title('Target URL Checker')] class extends Component
 
     <flux:card>
         <form wire:submit="check" class="space-y-4">
+            @if ($add_link)
+                <flux:input
+                    wire:model="tracker_name"
+                    :label="__('Name')"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="{{ __('Optional tracker name') }}" />
+            @endif
+
             <div class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
                 <flux:input
                     wire:model="target_url"
@@ -196,8 +301,13 @@ new #[Title('Target URL Checker')] class extends Component
                     <dl class="grid gap-3 text-sm md:grid-cols-2">
                         @foreach (['x-frame-options', 'content-security-policy', 'content-type', 'location', 'referrer-policy'] as $header)
                             @if (! empty($result['headers'][$header]))
-                                <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
+                                <div class="relative rounded-lg border border-zinc-200 bg-zinc-50 p-3 pr-10 dark:border-zinc-700 dark:bg-zinc-900">
                                     <dt class="font-medium text-zinc-900 dark:text-white">{{ $header }}</dt>
+                                    <flux:tooltip :content="$this->headerDescription($header)">
+                                        <button type="button" class="absolute right-3 top-3 flex size-5 items-center justify-center rounded-full border border-zinc-300 text-xs font-semibold text-zinc-500 hover:border-blue-300 hover:text-blue-700 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-blue-500 dark:hover:text-blue-300" aria-label="{{ __('What does this header show?') }}">
+                                            ?
+                                        </button>
+                                    </flux:tooltip>
                                     <dd class="mt-1 break-words text-zinc-600 dark:text-zinc-400">{{ $result['headers'][$header] }}</dd>
                                 </div>
                             @endif
@@ -205,6 +315,20 @@ new #[Title('Target URL Checker')] class extends Component
                     </dl>
                 </div>
             </flux:card>
+        @endif
+
+        @if ($add_link)
+            <div class="flex justify-end gap-3">
+                @if ($this->linkCanBeAdded())
+                    <flux:button variant="primary" type="button" wire:click="addLink">
+                        {{ __('Add Link') }}
+                    </flux:button>
+                @else
+                    <flux:button variant="filled" :href="route('linktrackers')" wire:navigate>
+                        {{ __('Link Trackers') }}
+                    </flux:button>
+                @endif
+            </div>
         @endif
     @endif
 </section>

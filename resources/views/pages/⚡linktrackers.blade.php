@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\LinkTracker;
-use App\Support\TargetUrlChecker;
 use Flux\Flux;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -25,10 +24,6 @@ new #[Title('Trackers')] class extends Component
 
     public string $target_url = '';
 
-    public ?array $targetUrlCheckResult = null;
-
-    public string $checkedTargetUrl = '';
-
     public function createTracker(): void
     {
         if ($this->trackerLimitReached()) {
@@ -42,42 +37,12 @@ new #[Title('Trackers')] class extends Component
         Flux::modal('tracker-form')->show();
     }
 
-    public function updatedTargetUrl(): void
-    {
-        $this->resetTargetUrlCheck();
-    }
-
-    public function checkTargetUrl(TargetUrlChecker $checker): void
-    {
-        $validated = $this->validate([
-            'target_url' => ['required', 'url', 'max:255'],
-        ]);
-
-        $this->targetUrlCheckResult = $checker->check($validated['target_url']);
-        $this->checkedTargetUrl = trim($validated['target_url']);
-
-        if (($this->targetUrlCheckResult['status'] ?? null) === 'safe') {
-            Flux::toast(variant: 'success', text: __('Target URL approved. You can now save this tracker.'));
-
-            return;
-        }
-
-        Flux::toast(variant: 'warning', text: __('Target URL check found issues. Please review before saving.'));
-    }
-
     public function save(): void
     {
         $validated = $this->validate([
             'tracker_name' => ['nullable', 'string', 'max:255'],
             'target_url' => ['required', 'url', 'max:255'],
         ]);
-
-        if (! $this->targetUrlApproved($validated['target_url'])) {
-            $this->addError('target_url', __('Run the Target URL check first. The tracker can only be saved when the URL check passes without issues.'));
-            Flux::toast(variant: 'warning', text: __('Please approve the Target URL before saving.'));
-
-            return;
-        }
 
         $validated['tracker_name'] = filled($validated['tracker_name'])
             ? trim($validated['tracker_name'])
@@ -97,22 +62,11 @@ new #[Title('Trackers')] class extends Component
             return;
         }
 
-        if ($this->trackerLimitReached()) {
-            Flux::toast(variant: 'warning', text: __('Your link tracker limit has been reached.'));
-
-            return;
-        }
-
-        LinkTracker::create([
-            ...$validated,
-            'tracker_slug' => $this->generateTrackerSlug(),
-            'user_id' => Auth::id(),
-        ]);
-
-        $this->resetForm();
-        Flux::modal('tracker-form')->close();
-
-        Flux::toast(variant: 'success', text: __('Link tracker created.'));
+        $this->redirectRoute('target-url-checker', [
+            'target_url' => $validated['target_url'],
+            'tracker_name' => $validated['tracker_name'],
+            'add_link' => 1,
+        ], navigate: true);
     }
 
     public function editTracker(int $trackerId): void
@@ -220,30 +174,7 @@ new #[Title('Trackers')] class extends Component
     private function resetForm(): void
     {
         $this->reset('editingTrackerId', 'tracker_name', 'target_url');
-        $this->resetTargetUrlCheck();
         $this->resetValidation();
-    }
-
-    private function resetTargetUrlCheck(): void
-    {
-        $this->targetUrlCheckResult = null;
-        $this->checkedTargetUrl = '';
-    }
-
-    private function targetUrlApproved(string $targetUrl): bool
-    {
-        return ($this->targetUrlCheckResult['status'] ?? null) === 'safe'
-            && $this->checkedTargetUrl === trim($targetUrl);
-    }
-
-    public function badgeClasses(?string $status): string
-    {
-        return match ($status) {
-            'safe' => 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300',
-            'warning' => 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300',
-            'danger' => 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-300',
-            default => 'border-zinc-200 bg-zinc-50 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300',
-        };
     }
 
     private function resetDeleteState(): void
@@ -424,48 +355,16 @@ new #[Title('Trackers')] class extends Component
                 autocomplete="url"
                 placeholder="https://example.com/landing-page" />
 
-            <div class="space-y-3 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <flux:text class="text-sm text-zinc-600 dark:text-zinc-400">
-                        {{ __('Target URL must be checked and approved before saving this tracker.') }}
-                    </flux:text>
-
-                    <flux:button variant="filled" size="sm" type="button" wire:click="checkTargetUrl" wire:loading.attr="disabled">
-                        <span wire:loading.remove wire:target="checkTargetUrl">{{ __('Check URL') }}</span>
-                        <span wire:loading wire:target="checkTargetUrl">{{ __('Checking...') }}</span>
-                    </flux:button>
-                </div>
-
-                @if ($targetUrlCheckResult)
-                    <div class="space-y-2 text-sm">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="rounded-full border px-2.5 py-1 text-xs font-medium {{ $this->badgeClasses($targetUrlCheckResult['status'] ?? null) }}">
-                                {{ str($targetUrlCheckResult['status'] ?? 'unknown')->title() }}
-                            </span>
-                            <span class="text-zinc-600 dark:text-zinc-400">{{ $targetUrlCheckResult['summary'] ?? '' }}</span>
-                        </div>
-
-                        @if (($targetUrlCheckResult['status'] ?? null) !== 'safe')
-                            <ul class="space-y-1 text-zinc-600 dark:text-zinc-400">
-                                @foreach (array_slice(array_merge($targetUrlCheckResult['frame']['findings'] ?? [], $targetUrlCheckResult['security']['findings'] ?? [], $targetUrlCheckResult['reputation']['findings'] ?? []), 0, 5) as $finding)
-                                    <li>• {{ $finding }}</li>
-                                @endforeach
-                            </ul>
-                        @endif
-                    </div>
-                @else
-                    <flux:text class="text-xs text-zinc-500 dark:text-zinc-400">
-                        {{ __('You can also open the full checker page from the Link menu for redirect and header details.') }}
-                    </flux:text>
-                @endif
-            </div>
+            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
+                {{ __('Create will open the Target URL Checker first. The link will only be added if the checker finds no issues.') }}
+            </flux:text>
 
             <div class="flex justify-end gap-3">
                 <flux:button variant="filled" type="button" wire:click="cancelEdit">
                     {{ __('Cancel') }}
                 </flux:button>
 
-                <flux:button variant="primary" type="submit" :disabled="! $this->targetUrlApproved($target_url)">
+                <flux:button variant="primary" type="submit">
                     {{ $editingTrackerId ? __('Update tracker') : __('Create tracker') }}
                 </flux:button>
             </div>
