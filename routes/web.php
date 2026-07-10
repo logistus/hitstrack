@@ -27,22 +27,28 @@ $statelessImageMiddleware = [
 
 Route::get('t/{slug}', LinkTrackerRedirectController::class)->name('linktrackers.redirect');
 Route::get('r/{slug}', LinkRotatorRedirectController::class)->name('linkrotators.redirect');
-Route::get('b/{slug}', BannerClickRedirectController::class)->name('bannertrackers.click');
-Route::get('b/{slug}/image', BannerImageController::class)
+Route::get('b/{slug}.gif', BannerImageController::class)
     ->withoutMiddleware($statelessImageMiddleware)
     ->name('bannertrackers.image');
+Route::get('b/{slug}/image', BannerImageController::class)
+    ->withoutMiddleware($statelessImageMiddleware)
+    ->name('bannertrackers.image.legacy');
 Route::get('b/{slug}/image.{extension}', BannerImageController::class)
     ->whereIn('extension', ['jpg', 'jpeg', 'png', 'gif', 'webp'])
     ->withoutMiddleware($statelessImageMiddleware)
     ->name('bannertrackers.image.extension');
-Route::get('br/{slug}', BannerRotatorClickRedirectController::class)->name('bannerrotators.click');
-Route::get('br/{slug}/image', BannerRotatorImageController::class)
+Route::get('b/{slug}', BannerClickRedirectController::class)->name('bannertrackers.click');
+Route::get('br/{slug}.gif', BannerRotatorImageController::class)
     ->withoutMiddleware($statelessImageMiddleware)
     ->name('bannerrotators.image');
+Route::get('br/{slug}/image', BannerRotatorImageController::class)
+    ->withoutMiddleware($statelessImageMiddleware)
+    ->name('bannerrotators.image.legacy');
 Route::get('br/{slug}/image.{extension}', BannerRotatorImageController::class)
     ->whereIn('extension', ['jpg', 'jpeg', 'png', 'gif', 'webp'])
     ->withoutMiddleware($statelessImageMiddleware)
     ->name('bannerrotators.image.extension');
+Route::get('br/{slug}', BannerRotatorClickRedirectController::class)->name('bannerrotators.click');
 
 Route::get('pixel', PixelTrackingController::class)->name('pixels.track');
 Route::get('datacrove', DataCroveController::class)->name('datacrove');
