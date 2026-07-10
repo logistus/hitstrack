@@ -3,14 +3,12 @@
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 
-test('target url checker page renders for authenticated users', function () {
+test('target url checker cannot be opened directly', function () {
     $user = \App\Models\User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('target-url-checker'))
-        ->assertOk()
-        ->assertSee('Target URL Checker')
-        ->assertSee('Check URL');
+        ->assertRedirect(route('linktrackers', absolute: false));
 });
 
 test('target url checker blocks private network targets before fetching', function () {
@@ -18,10 +16,12 @@ test('target url checker blocks private network targets before fetching', functi
 
     Http::fake();
 
-    Livewire::actingAs($user)
+    Livewire::withQueryParams([
+        'target_url' => 'http://127.0.0.1/admin',
+        'add_link' => '1',
+    ])
+        ->actingAs($user)
         ->test('pages::target-url-checker')
-        ->set('target_url', 'http://127.0.0.1/admin')
-        ->call('check')
         ->assertSet('result.status', 'danger')
         ->assertSee('Private, local, or reserved network addresses cannot be checked.');
 
@@ -38,10 +38,12 @@ test('target url checker detects iframe blocking headers', function () {
         ]),
     ]);
 
-    Livewire::actingAs($user)
+    Livewire::withQueryParams([
+        'target_url' => 'https://93.184.216.34/landing',
+        'add_link' => '1',
+    ])
+        ->actingAs($user)
         ->test('pages::target-url-checker')
-        ->set('target_url', 'https://93.184.216.34/landing')
-        ->call('check')
         ->assertSet('result.frame.status', 'danger')
         ->assertSee('X-Frame-Options is DENY');
 });
@@ -62,10 +64,12 @@ test('target url checker can include google web risk reputation results', functi
         ], 200),
     ]);
 
-    Livewire::actingAs($user)
+    Livewire::withQueryParams([
+        'target_url' => 'https://93.184.216.34/landing',
+        'add_link' => '1',
+    ])
+        ->actingAs($user)
         ->test('pages::target-url-checker')
-        ->set('target_url', 'https://93.184.216.34/landing')
-        ->call('check')
         ->assertSet('result.reputation.status', 'danger')
         ->assertSee('Google Web Risk matched this URL as');
 });

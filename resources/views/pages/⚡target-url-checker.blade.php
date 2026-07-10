@@ -26,9 +26,13 @@ new #[Title('Target URL Checker')] class extends Component
         $this->tracker_name = (string) request()->query('tracker_name', '');
         $this->add_link = request()->boolean('add_link');
 
-        if ($this->target_url !== '') {
-            $this->runCheck($checker);
+        if (! $this->add_link || $this->target_url === '') {
+            $this->redirectRoute('linktrackers', absolute: false, navigate: true);
+
+            return;
         }
+
+        $this->runCheck($checker);
     }
 
     public function check(TargetUrlChecker $checker): void
@@ -119,6 +123,11 @@ new #[Title('Target URL Checker')] class extends Component
         };
     }
 
+    public function googleReputationDescription(): string
+    {
+        return __('Checks the final URL against Google Web Risk for known malware, social engineering/phishing, and unwanted software matches. It sends the URL to Google and returns whether Google has a known unsafe match; it is a reputation check, not a full page code audit.');
+    }
+
     private function trackerLimitReached(): bool
     {
         $limit = Auth::user()?->userType?->max_link_trackers;
@@ -144,37 +153,6 @@ new #[Title('Target URL Checker')] class extends Component
             {{ __('Check a target URL for iframe blocking headers, frame-breaker scripts, redirects, and obvious suspicious HTML/JavaScript patterns before creating a link tracker.') }}
         </flux:subheading>
     </div>
-
-    <flux:card>
-        <form wire:submit="check" class="space-y-4">
-            @if ($add_link)
-                <flux:input
-                    wire:model="tracker_name"
-                    :label="__('Name')"
-                    type="text"
-                    autocomplete="off"
-                    placeholder="{{ __('Optional tracker name') }}" />
-            @endif
-
-            <div class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-                <flux:input
-                    wire:model="target_url"
-                    :label="__('Target URL')"
-                    type="url"
-                    placeholder="https://example.com/landing-page"
-                    required />
-
-                <flux:button variant="primary" type="submit" wire:loading.attr="disabled">
-                    <span wire:loading.remove>{{ __('Check URL') }}</span>
-                    <span wire:loading>{{ __('Checking...') }}</span>
-                </flux:button>
-            </div>
-
-            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
-                {{ __('Note: malware detection here is heuristic only. For strong reputation checks, connect a service such as Google Safe Browsing or VirusTotal later.') }}
-            </flux:text>
-        </form>
-    </flux:card>
 
     @if ($result)
         <div class="grid gap-4 lg:grid-cols-3">
@@ -257,7 +235,14 @@ new #[Title('Target URL Checker')] class extends Component
             <flux:card class="{{ $this->cardBorderClasses($result['reputation']['status'] ?? null) }}">
                 <div class="space-y-4">
                     <div class="flex items-center justify-between gap-3">
-                        <flux:heading>{{ __('Google Reputation') }}</flux:heading>
+                        <div class="flex items-center gap-2">
+                            <flux:heading>{{ __('Google Reputation') }}</flux:heading>
+                            <flux:tooltip :content="$this->googleReputationDescription()">
+                                <button type="button" class="flex size-5 items-center justify-center rounded-full border border-zinc-300 text-xs font-semibold text-zinc-500 hover:border-blue-300 hover:text-blue-700 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-blue-500 dark:hover:text-blue-300" aria-label="{{ __('What does Google Reputation check?') }}">
+                                    ?
+                                </button>
+                            </flux:tooltip>
+                        </div>
                         <span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium {{ $this->badgeClasses($result['reputation']['status'] ?? null) }}">
                             {{ $result['reputation']['label'] }}
                         </span>

@@ -44,9 +44,6 @@
                 <flux:sidebar.item :href="route('referrers')" icon="globe-alt" :current="request()->routeIs('referrers')" wire:navigate>
                     {{ __('All Referrers') }}
                 </flux:sidebar.item>
-                <flux:sidebar.item :href="route('target-url-checker')" icon="shield-check" :current="request()->routeIs('target-url-checker')" wire:navigate>
-                    {{ __('URL Checker') }}
-                </flux:sidebar.item>
             </flux:sidebar.group>
 
             <flux:sidebar.group :heading="__('Banner')">
