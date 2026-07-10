@@ -237,10 +237,13 @@ new #[Title('Target URL Checker')] class extends Component
                     <div class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2">
                             <flux:heading>{{ __('Google Reputation') }}</flux:heading>
-                            <flux:tooltip :content="$this->googleReputationDescription()">
+                            <flux:tooltip>
                                 <button type="button" class="flex size-5 items-center justify-center rounded-full border border-zinc-300 text-xs font-semibold text-zinc-500 hover:border-blue-300 hover:text-blue-700 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-blue-500 dark:hover:text-blue-300" aria-label="{{ __('What does Google Reputation check?') }}">
                                     ?
                                 </button>
+                                <flux:tooltip.content class="max-w-72 whitespace-normal text-wrap leading-relaxed">
+                                    {{ $this->googleReputationDescription() }}
+                                </flux:tooltip.content>
                             </flux:tooltip>
                         </div>
                         <span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium {{ $this->badgeClasses($result['reputation']['status'] ?? null) }}">
@@ -288,10 +291,13 @@ new #[Title('Target URL Checker')] class extends Component
                             @if (! empty($result['headers'][$header]))
                                 <div class="relative rounded-lg border border-zinc-200 bg-zinc-50 p-3 pr-10 dark:border-zinc-700 dark:bg-zinc-900">
                                     <dt class="font-medium text-zinc-900 dark:text-white">{{ $header }}</dt>
-                                    <flux:tooltip :content="$this->headerDescription($header)">
+                                    <flux:tooltip>
                                         <button type="button" class="absolute right-3 top-3 flex size-5 items-center justify-center rounded-full border border-zinc-300 text-xs font-semibold text-zinc-500 hover:border-blue-300 hover:text-blue-700 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-blue-500 dark:hover:text-blue-300" aria-label="{{ __('What does this header show?') }}">
                                             ?
                                         </button>
+                                        <flux:tooltip.content class="max-w-72 whitespace-normal text-wrap leading-relaxed">
+                                            {{ $this->headerDescription($header) }}
+                                        </flux:tooltip.content>
                                     </flux:tooltip>
                                     <dd class="mt-1 break-words text-zinc-600 dark:text-zinc-400">{{ $result['headers'][$header] }}</dd>
                                 </div>
