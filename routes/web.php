@@ -57,6 +57,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('dashboard', 'pages::dashboard')->name('dashboard');
     Route::livewire('referrers', 'pages::all-referrers')->name('referrers');
     Route::livewire('banner-referrers', 'pages::all-banner-referrers')->name('banner-referrers');
+    Route::livewire('target-url-checker', 'pages::target-url-checker')->name('target-url-checker');
     Route::livewire('linktrackers', 'pages::linktrackers')->name('linktrackers');
     Route::livewire('linktrackers/{slug}/stats', 'pages::linktracker-stats')->name('linktrackers.stats');
     Route::livewire('linkrotators', 'pages::linkrotators')->name('linkrotators');

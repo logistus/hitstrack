@@ -366,6 +366,13 @@ new #[Title('Trackers')] class extends Component
                 autocomplete="url"
                 placeholder="https://example.com/landing-page" />
 
+            <flux:text class="text-sm text-zinc-500 dark:text-zinc-400">
+                {{ __('Not sure if the destination can be embedded safely?') }}
+                <flux:link :href="route('target-url-checker')" wire:navigate>
+                    {{ __('Check the target URL first.') }}
+                </flux:link>
+            </flux:text>
+
             <div class="flex justify-end gap-3">
                 <flux:button variant="filled" type="button" wire:click="cancelEdit">
                     {{ __('Cancel') }}
