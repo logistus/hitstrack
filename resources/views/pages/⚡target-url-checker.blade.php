@@ -51,8 +51,8 @@ new #[Title('Target URL Checker')] class extends Component
         ]);
 
         if (! $this->linkCanBeAdded()) {
-            $this->addError('target_url', __('This URL can only be added after a clean checker result.'));
-            Flux::toast(variant: 'warning', text: __('This URL cannot be added because the checker found issues.'));
+            $this->addError('target_url', __('This URL cannot be added because the checker found blocking issues.'));
+            Flux::toast(variant: 'warning', text: __('This URL cannot be added because the checker found blocking issues.'));
 
             return;
         }
@@ -106,8 +106,14 @@ new #[Title('Target URL Checker')] class extends Component
     public function linkCanBeAdded(): bool
     {
         return $this->add_link
-            && ($this->result['status'] ?? null) === 'safe'
+            && in_array($this->result['status'] ?? null, ['safe', 'warning'], true)
             && $this->checkedTargetUrl === trim($this->target_url);
+    }
+
+    public function linkHasWarnings(): bool
+    {
+        return $this->linkCanBeAdded()
+            && ($this->result['status'] ?? null) === 'warning';
     }
 
     public function actionLabel(): string
@@ -298,16 +304,28 @@ new #[Title('Target URL Checker')] class extends Component
         @endif
 
         @if ($add_link)
-            <div class="flex justify-end gap-3">
-                @if ($this->linkCanBeAdded())
-                    <flux:button variant="primary" type="button" wire:click="addLink">
-                        {{ $this->actionLabel() }}
-                    </flux:button>
-                @else
-                    <flux:button variant="filled" :href="route('linktrackers')" wire:navigate>
-                        {{ __('Link Trackers') }}
-                    </flux:button>
+            <div class="space-y-4">
+                @if ($this->linkHasWarnings())
+                    <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
+                        {{ __('The checker found warnings. You can still add this link, but review the findings above first.') }}
+                    </div>
                 @endif
+
+                <div class="flex justify-end gap-3">
+                    <flux:button variant="filled" :href="route('linktrackers')" wire:navigate>
+                        {{ __('Cancel') }}
+                    </flux:button>
+
+                    @if ($this->linkCanBeAdded())
+                        <flux:button variant="primary" type="button" wire:click="addLink">
+                            {{ $this->actionLabel() }}
+                        </flux:button>
+                    @else
+                        <flux:button variant="filled" :href="route('linktrackers')" wire:navigate>
+                            {{ __('Link Trackers') }}
+                        </flux:button>
+                    @endif
+                </div>
             </div>
         @endif
     @endif

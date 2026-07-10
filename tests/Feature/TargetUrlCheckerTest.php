@@ -76,7 +76,37 @@ test('a clean checker result can add the link tracker', function () {
     ]);
 });
 
-test('a checker result with issues shows the link trackers return action instead of add link', function () {
+test('a checker result with warnings can still add the link tracker', function () {
+    $user = \App\Models\User::factory()->create();
+
+    Http::fake([
+        'http://93.184.216.34/*' => Http::response('<html><body>Landing page</body></html>', 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]),
+    ]);
+
+    Livewire::withQueryParams([
+        'target_url' => 'http://93.184.216.34/landing',
+        'tracker_name' => 'Warning campaign',
+        'add_link' => '1',
+    ])
+        ->actingAs($user)
+        ->test('pages::target-url-checker')
+        ->assertSet('result.status', 'warning')
+        ->assertSee('The checker found warnings.')
+        ->assertSee('Add Link')
+        ->assertSee('Cancel')
+        ->call('addLink')
+        ->assertRedirect(route('linktrackers', absolute: false));
+
+    $this->assertDatabaseHas('trackers', [
+        'user_id' => $user->id,
+        'tracker_name' => 'Warning campaign',
+        'target_url' => 'http://93.184.216.34/landing',
+    ]);
+});
+
+test('a checker result with blocking issues shows the link trackers return action instead of add link', function () {
     $user = \App\Models\User::factory()->create();
 
     Http::fake([
@@ -95,6 +125,7 @@ test('a checker result with issues shows the link trackers return action instead
         ->test('pages::target-url-checker')
         ->assertSet('result.status', 'danger')
         ->assertDontSee('Add Link')
+        ->assertSee('Cancel')
         ->assertSee('Link Trackers');
 
     $this->assertDatabaseMissing('trackers', [
