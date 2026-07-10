@@ -776,8 +776,9 @@ new #[Title('Link tracker stats')] class extends Component
             let chartData = JSON.parse(canvas.dataset.chart);
             const accent = getComputedStyle(document.documentElement).getPropertyValue('--color-blue-600').trim() || '#2563eb';
             const secondary = getComputedStyle(document.documentElement).getPropertyValue('--color-emerald-600').trim() || '#059669';
-            const grid = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'rgba(255,255,255,.10)' : 'rgba(39,39,42,.10)';
-            const text = window.matchMedia('(prefers-color-scheme: dark)').matches ? '#d4d4d8' : '#52525b';
+            const isDark = document.documentElement.classList.contains('dark');
+            const grid = isDark ? 'rgba(255,255,255,.10)' : 'rgba(15,23,42,.12)';
+            const text = isDark ? '#d4d4d8' : '#334155';
 
             if (canvas._trackerChart) {
                 canvas._trackerChart.destroy();

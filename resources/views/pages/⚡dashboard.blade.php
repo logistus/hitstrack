@@ -217,7 +217,7 @@ new #[Title('Dashboard')] class extends Component
                             @forelse ($latestLinkEvents as $event)
                                 <tr>
                                     <td class="max-w-64 py-3 pr-4">
-                                        <a href="{{ $event->target_url }}" target="_blank" rel="noreferrer" class="block truncate text-white hover:underline">
+                                        <a href="{{ $event->target_url }}" target="_blank" rel="noreferrer" class="block truncate text-blue-700 underline-offset-2 hover:text-blue-900 hover:underline dark:text-blue-300 dark:hover:text-blue-200">
                                             {{ $event->target_url }}
                                         </a>
                                     </td>
