@@ -384,10 +384,19 @@ class TargetUrlChecker
                 ->get('https://webrisk.googleapis.com/v1/uris:search?' . $query . '&threatTypes=MALWARE&threatTypes=SOCIAL_ENGINEERING&threatTypes=UNWANTED_SOFTWARE');
 
             if (! $response->successful()) {
+                $message = $response->json('error.message')
+                    ?: Str::limit((string) $response->body(), 300);
+
                 return [
                     'status' => 'warning',
                     'label' => __('Could not verify'),
-                    'findings' => [__('Google Web Risk could not verify this URL. HTTP :status was returned.', ['status' => $response->status()])],
+                    'findings' => array_filter([
+                        __('Google Web Risk could not verify this URL. HTTP :status was returned.', ['status' => $response->status()]),
+                        $message ? __('Google response: :message', ['message' => $message]) : null,
+                        $response->status() === 403
+                            ? __('Check that the API key belongs to the same Google Cloud project, Web Risk API is enabled, billing/quota is available, and key restrictions allow server-side requests.')
+                            : null,
+                    ]),
                 ];
             }
 
