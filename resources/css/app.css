@@ -74,6 +74,92 @@ select:focus[data-flux-control] {
 }
 
 @layer components {
+    html:not(.dark) {
+        --app-bg: #eef3f8;
+        --app-bg-soft: #f7f9fc;
+        --app-surface: #ffffff;
+        --app-surface-muted: #f8fafc;
+        --app-sidebar: #f6f8fb;
+        --app-border: #d7e0ea;
+        --app-border-soft: #e3eaf2;
+        --app-text-muted: #64748b;
+        --color-accent: #2563eb;
+        --color-accent-content: #1d4ed8;
+        --color-accent-foreground: #ffffff;
+    }
+
+    html:not(.dark) body {
+        background:
+            radial-gradient(circle at top right, rgba(59, 130, 246, 0.10), transparent 32rem),
+            linear-gradient(180deg, var(--app-bg-soft) 0%, var(--app-bg) 44rem) !important;
+        color: var(--color-zinc-900);
+    }
+
+    html:not(.dark) [data-flux-main] {
+        background: transparent;
+    }
+
+    html:not(.dark) [data-flux-sidebar] {
+        background:
+            linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(246, 248, 251, 0.96)),
+            var(--app-sidebar) !important;
+        border-color: var(--app-border) !important;
+        box-shadow: 1px 0 0 rgba(15, 23, 42, 0.03);
+    }
+
+    html:not(.dark) [data-flux-header] {
+        background: rgba(255, 255, 255, 0.86) !important;
+        border-color: var(--app-border) !important;
+        backdrop-filter: blur(12px);
+    }
+
+    html:not(.dark) [data-flux-card] {
+        background: var(--app-surface) !important;
+        border-color: var(--app-border-soft) !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, 0.04),
+            0 12px 30px rgba(15, 23, 42, 0.035);
+    }
+
+    html:not(.dark) [data-flux-table] {
+        color: var(--color-zinc-900);
+    }
+
+    html:not(.dark) [data-flux-table] thead th {
+        background: rgba(248, 250, 252, 0.92);
+        color: var(--app-text-muted);
+    }
+
+    html:not(.dark) [data-flux-table] tbody > tr > * {
+        border-color: var(--app-border-soft);
+    }
+
+    html:not(.dark) table tbody > tr:hover > * {
+        background: #eff6ff;
+    }
+
+    html:not(.dark) [data-flux-sidebar-profile],
+    html:not(.dark) [data-flux-sidebar-item] {
+        color: var(--color-zinc-700);
+    }
+
+    html:not(.dark) [data-flux-sidebar-item][aria-current],
+    html:not(.dark) [data-flux-sidebar-item][data-current] {
+        background: #e8f1ff;
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+    }
+
+    html:not(.dark) [data-flux-sidebar-group] {
+        color: var(--app-text-muted);
+    }
+
+    html:not(.dark) [data-flux-footer],
+    html:not(.dark) footer {
+        background: rgba(255, 255, 255, 0.72) !important;
+        border-color: var(--app-border) !important;
+    }
+
     .dark body {
         background:
             radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 30rem),
