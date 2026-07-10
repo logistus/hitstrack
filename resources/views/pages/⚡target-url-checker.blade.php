@@ -129,7 +129,7 @@ new #[Title('Target URL Checker')] class extends Component
                 </div>
             </flux:card>
 
-            <flux:card class="{{ $this->cardBorderClasses($result['security']['status'] ?? null) }} lg:col-span-2">
+            <flux:card class="{{ $this->cardBorderClasses($result['security']['status'] ?? null) }}">
                 <div class="space-y-4">
                     <div class="flex items-center justify-between gap-3">
                         <flux:heading>{{ __('Suspicious Code Scan') }}</flux:heading>
@@ -140,6 +140,26 @@ new #[Title('Target URL Checker')] class extends Component
 
                     <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
                         @foreach ($result['security']['findings'] as $finding)
+                            <li class="flex gap-2">
+                                <span class="mt-1 size-1.5 shrink-0 rounded-full bg-current"></span>
+                                <span>{{ $finding }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            </flux:card>
+
+            <flux:card class="{{ $this->cardBorderClasses($result['reputation']['status'] ?? null) }}">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <flux:heading>{{ __('Google Reputation') }}</flux:heading>
+                        <span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium {{ $this->badgeClasses($result['reputation']['status'] ?? null) }}">
+                            {{ $result['reputation']['label'] }}
+                        </span>
+                    </div>
+
+                    <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+                        @foreach ($result['reputation']['findings'] as $finding)
                             <li class="flex gap-2">
                                 <span class="mt-1 size-1.5 shrink-0 rounded-full bg-current"></span>
                                 <span>{{ $finding }}</span>

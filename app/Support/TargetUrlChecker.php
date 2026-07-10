@@ -36,6 +36,11 @@ class TargetUrlChecker
                 'label' => __('Unknown'),
                 'findings' => [],
             ],
+            'reputation' => [
+                'status' => 'unknown',
+                'label' => __('Not configured'),
+                'findings' => [],
+            ],
             'headers' => [],
             'errors' => [],
         ];
@@ -82,8 +87,9 @@ class TargetUrlChecker
 
         $result['frame'] = $this->checkFrameCompatibility($headers, $body);
         $result['security'] = $this->checkSuspiciousContent($startedUrl, $result['final_url'], $headers, $body);
-        $result['status'] = $this->overallStatus($response, $result['frame']['status'], $result['security']['status']);
-        $result['summary'] = $this->summaryFor($result['status'], $result['frame']['status'], $result['security']['status']);
+        $result['reputation'] = $this->checkGoogleWebRisk($result['final_url']);
+        $result['status'] = $this->overallStatus($response, $result['frame']['status'], $result['security']['status'], $result['reputation']['status']);
+        $result['summary'] = $this->summaryFor($result['status'], $result['frame']['status'], $result['security']['status'], $result['reputation']['status']);
 
         return $result;
     }
@@ -355,23 +361,88 @@ class TargetUrlChecker
         ];
     }
 
-    private function overallStatus(Response $response, string $frameStatus, string $securityStatus): string
+    private function checkGoogleWebRisk(string $url): array
     {
-        if ($response->status() >= 400 || $securityStatus === 'danger' || $frameStatus === 'danger') {
+        $apiKey = config('services.google_web_risk.key');
+
+        if (! filled($apiKey)) {
+            return [
+                'status' => 'unknown',
+                'label' => __('Not configured'),
+                'findings' => [__('Google Web Risk reputation check is not configured.')],
+            ];
+        }
+
+        try {
+            $query = http_build_query([
+                'key' => $apiKey,
+                'uri' => $url,
+            ]);
+
+            $response = Http::timeout(6)
+                ->acceptJson()
+                ->get('https://webrisk.googleapis.com/v1/uris:search?' . $query . '&threatTypes=MALWARE&threatTypes=SOCIAL_ENGINEERING&threatTypes=UNWANTED_SOFTWARE');
+
+            if (! $response->successful()) {
+                return [
+                    'status' => 'warning',
+                    'label' => __('Could not verify'),
+                    'findings' => [__('Google Web Risk could not verify this URL. HTTP :status was returned.', ['status' => $response->status()])],
+                ];
+            }
+
+            $threat = $response->json('threat');
+
+            if (is_array($threat) && $threat !== []) {
+                $types = implode(', ', $threat['threatTypes'] ?? []);
+
+                return [
+                    'status' => 'danger',
+                    'label' => __('Potential threat'),
+                    'findings' => [
+                        $types
+                            ? __('Google Web Risk matched this URL as: :types', ['types' => $types])
+                            : __('Google Web Risk matched this URL as potentially unsafe.'),
+                        __('Advisory provided by Google. Google cannot guarantee that its information is comprehensive and error-free.'),
+                    ],
+                ];
+            }
+
+            return [
+                'status' => 'safe',
+                'label' => __('No match'),
+                'findings' => [__('Google Web Risk did not return a known threat match for this URL.')],
+            ];
+        } catch (Throwable $exception) {
+            return [
+                'status' => 'warning',
+                'label' => __('Could not verify'),
+                'findings' => [__('Google Web Risk check failed: :message', ['message' => $exception->getMessage()])],
+            ];
+        }
+    }
+
+    private function overallStatus(Response $response, string $frameStatus, string $securityStatus, string $reputationStatus): string
+    {
+        if ($response->status() >= 400 || $securityStatus === 'danger' || $frameStatus === 'danger' || $reputationStatus === 'danger') {
             return 'danger';
         }
 
-        if ($response->redirect() || in_array('warning', [$frameStatus, $securityStatus], true)) {
+        if ($response->redirect() || in_array('warning', [$frameStatus, $securityStatus, $reputationStatus], true)) {
             return 'warning';
         }
 
         return 'safe';
     }
 
-    private function summaryFor(string $status, string $frameStatus, string $securityStatus): string
+    private function summaryFor(string $status, string $frameStatus, string $securityStatus, string $reputationStatus): string
     {
         if ($status === 'danger' && $frameStatus === 'danger') {
             return __('This URL likely cannot be embedded in an iframe.');
+        }
+
+        if ($status === 'danger' && $reputationStatus === 'danger') {
+            return __('Google Web Risk matched this URL as a potential threat.');
         }
 
         if ($status === 'warning' || $securityStatus === 'warning') {
