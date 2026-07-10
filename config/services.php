@@ -41,8 +41,4 @@ return [
         'debug'          => env('GA4_DEBUG', false),
     ],
 
-    'google_web_risk' => [
-        'key' => env('GOOGLE_WEB_RISK_API_KEY'),
-    ],
-
 ];

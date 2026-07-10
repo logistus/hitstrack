@@ -48,36 +48,8 @@ test('target url checker detects iframe blocking headers', function () {
         ->assertSee('X-Frame-Options is DENY');
 });
 
-test('target url checker can include google web risk reputation results', function () {
-    $user = \App\Models\User::factory()->create();
-
-    config(['services.google_web_risk.key' => 'test-key']);
-
-    Http::fake([
-        'https://93.184.216.34/*' => Http::response('<html><body>Landing page</body></html>', 200, [
-            'Content-Type' => 'text/html; charset=UTF-8',
-        ]),
-        'https://webrisk.googleapis.com/*' => Http::response([
-            'threat' => [
-                'threatTypes' => ['MALWARE'],
-            ],
-        ], 200),
-    ]);
-
-    Livewire::withQueryParams([
-        'target_url' => 'https://93.184.216.34/landing',
-        'add_link' => '1',
-    ])
-        ->actingAs($user)
-        ->test('pages::target-url-checker')
-        ->assertSet('result.reputation.status', 'danger')
-        ->assertSee('Google Web Risk matched this URL as');
-});
-
 test('a clean checker result can add the link tracker', function () {
     $user = \App\Models\User::factory()->create();
-
-    config(['services.google_web_risk.key' => null]);
 
     Http::fake([
         'https://93.184.216.34/*' => Http::response('<html><body>Landing page</body></html>', 200, [
@@ -106,8 +78,6 @@ test('a clean checker result can add the link tracker', function () {
 
 test('a checker result with issues shows the link trackers return action instead of add link', function () {
     $user = \App\Models\User::factory()->create();
-
-    config(['services.google_web_risk.key' => null]);
 
     Http::fake([
         'https://93.184.216.34/*' => Http::response('<html><body>Landing page</body></html>', 200, [
@@ -141,8 +111,6 @@ test('a clean checker result can update an existing link tracker url', function 
         'tracker_name' => 'Old campaign',
         'target_url' => 'https://example.com/old-page',
     ]);
-
-    config(['services.google_web_risk.key' => null]);
 
     Http::fake([
         'https://93.184.216.34/*' => Http::response('<html><body>Landing page</body></html>', 200, [

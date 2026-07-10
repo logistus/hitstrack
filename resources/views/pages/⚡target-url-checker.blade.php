@@ -147,11 +147,6 @@ new #[Title('Target URL Checker')] class extends Component
         };
     }
 
-    public function googleReputationDescription(): string
-    {
-        return __('Checks the final URL against Google Web Risk for known malware, social engineering/phishing, and unwanted software matches. It sends the URL to Google and returns whether Google has a known unsafe match; it is a reputation check, not a full page code audit.');
-    }
-
     private function trackerLimitReached(): bool
     {
         $limit = Auth::user()?->userType?->max_link_trackers;
@@ -179,8 +174,8 @@ new #[Title('Target URL Checker')] class extends Component
     </div>
 
     @if ($result)
-        <div class="grid gap-4 lg:grid-cols-3">
-            <flux:card class="{{ $this->cardBorderClasses($result['status'] ?? null) }} lg:col-span-3">
+        <div class="grid gap-4 lg:grid-cols-2">
+            <flux:card class="{{ $this->cardBorderClasses($result['status'] ?? null) }} lg:col-span-2">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="min-w-0 space-y-2">
                         <div class="flex flex-wrap items-center gap-2">
@@ -247,36 +242,6 @@ new #[Title('Target URL Checker')] class extends Component
 
                     <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
                         @foreach ($result['security']['findings'] as $finding)
-                            <li class="flex gap-2">
-                                <span class="mt-1 size-1.5 shrink-0 rounded-full bg-current"></span>
-                                <span>{{ $finding }}</span>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-            </flux:card>
-
-            <flux:card class="{{ $this->cardBorderClasses($result['reputation']['status'] ?? null) }}">
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2">
-                            <flux:heading>{{ __('Google Reputation') }}</flux:heading>
-                            <flux:tooltip>
-                                <button type="button" class="flex size-5 items-center justify-center rounded-full border border-zinc-300 text-xs font-semibold text-zinc-500 hover:border-blue-300 hover:text-blue-700 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-blue-500 dark:hover:text-blue-300" aria-label="{{ __('What does Google Reputation check?') }}">
-                                    ?
-                                </button>
-                                <flux:tooltip.content class="max-w-72 whitespace-normal text-wrap leading-relaxed">
-                                    {{ $this->googleReputationDescription() }}
-                                </flux:tooltip.content>
-                            </flux:tooltip>
-                        </div>
-                        <span class="shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium {{ $this->badgeClasses($result['reputation']['status'] ?? null) }}">
-                            {{ $result['reputation']['label'] }}
-                        </span>
-                    </div>
-
-                    <ul class="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
-                        @foreach ($result['reputation']['findings'] as $finding)
                             <li class="flex gap-2">
                                 <span class="mt-1 size-1.5 shrink-0 rounded-full bg-current"></span>
                                 <span>{{ $finding }}</span>
