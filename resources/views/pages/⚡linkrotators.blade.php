@@ -89,13 +89,11 @@ new #[Title('Rotators')] class extends Component
         Flux::toast(variant: 'success', text: __('Link rotator created.'));
     }
 
-    public function editRotator(int $rotatorId): void
+    public function editRotator(int $rotatorId, ?string $rotatorName, string $rotationType): void
     {
-        $rotator = $this->userRotatorsQuery()->findOrFail($rotatorId);
-
-        $this->editingRotatorId = $rotator->id;
-        $this->rotator_name = $rotator->rotator_name ?? '';
-        $this->rotation_type = $rotator->rotation_type;
+        $this->editingRotatorId = $rotatorId;
+        $this->rotator_name = $rotatorName ?? '';
+        $this->rotation_type = $rotationType;
 
         $this->resetValidation();
         Flux::modal('rotator-form')->show();
@@ -217,17 +215,12 @@ new #[Title('Rotators')] class extends Component
         Flux::toast(variant: 'success', text: $message);
     }
 
-    public function editTracker(int $trackerId): void
+    public function editTracker(int $trackerId, int $weight, int $orderColumn): void
     {
-        $tracker = $this->managedRotator()
-            ->trackers()
-            ->where('trackers.id', $trackerId)
-            ->firstOrFail();
-
-        $this->editingTrackerId = $tracker->id;
-        $this->tracker_id = (string) $tracker->id;
-        $this->weight = (int) $tracker->pivot->weight;
-        $this->order_column = (int) $tracker->pivot->order_column;
+        $this->editingTrackerId = $trackerId;
+        $this->tracker_id = (string) $trackerId;
+        $this->weight = $weight;
+        $this->order_column = $orderColumn;
 
         $this->resetValidation();
     }
@@ -657,7 +650,7 @@ new #[Title('Rotators')] class extends Component
                         @endif
                         <flux:table.cell align="end">
                             <div class="flex justify-end gap-3">
-                                <flux:link wire:click.prevent="editTracker({{ $tracker->id }})" class="cursor-pointer">
+                                <flux:link wire:click.prevent="editTracker({{ $tracker->id }}, {{ (int) $tracker->pivot->weight }}, {{ (int) $tracker->pivot->order_column }})" class="cursor-pointer">
                                     {{ __('Edit') }}
                                 </flux:link>
                                 <flux:link wire:click.prevent="removeTracker({{ $tracker->id }})" class="cursor-pointer text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
@@ -761,7 +754,7 @@ new #[Title('Rotators')] class extends Component
                             <flux:button :href="route('linkrotators.stats', $rotator->rotator_slug)" variant="ghost" size="sm" icon="chart-bar" wire:navigate :aria-label="__('Stats')" />
                         </flux:tooltip>
                         <flux:tooltip :content="__('Edit')">
-                            <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editRotator({{ $rotator->id }})" :aria-label="__('Edit')" />
+                            <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editRotator({{ $rotator->id }}, @js($rotator->rotator_name), @js($rotator->rotation_type))" :aria-label="__('Edit')" />
                         </flux:tooltip>
                         <flux:tooltip :content="__('Delete')">
                             <flux:button variant="ghost" size="sm" icon="trash" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" wire:click="confirmDeleteRotator({{ $rotator->id }})" :aria-label="__('Delete')" />

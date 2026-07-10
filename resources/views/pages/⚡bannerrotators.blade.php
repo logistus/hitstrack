@@ -86,13 +86,11 @@ new #[Title('Banner Rotators')] class extends Component
         Flux::toast(variant: 'success', text: __('Banner rotator created.'));
     }
 
-    public function editRotator(int $rotatorId): void
+    public function editRotator(int $rotatorId, ?string $name, string $rotationType): void
     {
-        $rotator = $this->userRotatorsQuery()->findOrFail($rotatorId);
-
-        $this->editingRotatorId = $rotator->id;
-        $this->name = (string) ($rotator->name ?? '');
-        $this->rotation_type = $rotator->rotation_type;
+        $this->editingRotatorId = $rotatorId;
+        $this->name = (string) ($name ?? '');
+        $this->rotation_type = $rotationType;
 
         $this->resetValidation();
         Flux::modal('rotator-form')->show();
@@ -212,17 +210,12 @@ new #[Title('Banner Rotators')] class extends Component
         Flux::toast(variant: 'success', text: $message);
     }
 
-    public function editBanner(int $bannerId): void
+    public function editBanner(int $bannerId, int $weight, int $orderColumn): void
     {
-        $banner = $this->managedRotator()
-            ->banners()
-            ->where('banners.id', $bannerId)
-            ->firstOrFail();
-
-        $this->editingBannerId = $banner->id;
-        $this->banner_id = (string) $banner->id;
-        $this->weight = (int) $banner->pivot->weight;
-        $this->order_column = (int) $banner->pivot->order_column;
+        $this->editingBannerId = $bannerId;
+        $this->banner_id = (string) $bannerId;
+        $this->weight = $weight;
+        $this->order_column = $orderColumn;
 
         $this->resetValidation();
     }
@@ -586,7 +579,7 @@ new #[Title('Banner Rotators')] class extends Component
                         <flux:table.cell>{{ $banner->pivot->order_column }}</flux:table.cell>
                         <flux:table.cell align="end">
                             <div class="flex justify-end gap-3">
-                                <flux:link wire:click.prevent="editBanner({{ $banner->id }})" class="cursor-pointer">
+                                <flux:link wire:click.prevent="editBanner({{ $banner->id }}, {{ (int) $banner->pivot->weight }}, {{ (int) $banner->pivot->order_column }})" class="cursor-pointer">
                                     {{ __('Edit') }}
                                 </flux:link>
                                 <flux:link wire:click.prevent="removeBanner({{ $banner->id }})" class="cursor-pointer text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
@@ -719,7 +712,7 @@ new #[Title('Banner Rotators')] class extends Component
                             <flux:button :href="route('bannerrotators.stats', $rotator->rotator_slug)" variant="ghost" size="sm" icon="chart-bar" wire:navigate :aria-label="__('Stats')" />
                         </flux:tooltip>
                         <flux:tooltip :content="__('Edit')">
-                            <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editRotator({{ $rotator->id }})" :aria-label="__('Edit')" />
+                            <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editRotator({{ $rotator->id }}, @js($rotator->name), @js($rotator->rotation_type))" :aria-label="__('Edit')" />
                         </flux:tooltip>
                         <flux:tooltip :content="__('Delete')">
                             <flux:button variant="ghost" size="sm" icon="trash" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" wire:click="confirmDeleteRotator({{ $rotator->id }})" :aria-label="__('Delete')" />

@@ -60,16 +60,14 @@ new #[Layout('layouts.admin')]
         Flux::modal('user-type-form')->show();
     }
 
-    public function editUserType(int $userTypeId): void
+    public function editUserType(int $userTypeId, string $label, ?int $maxLinkTrackers, ?int $maxLinkRotators, ?int $maxBannerTrackers, ?int $maxBannerRotators): void
     {
-        $userType = UserType::query()->findOrFail($userTypeId);
-
-        $this->editingUserTypeId = $userType->id;
-        $this->label = $userType->label;
-        $this->max_link_trackers = $this->limitToInput($userType->max_link_trackers);
-        $this->max_link_rotators = $this->limitToInput($userType->max_link_rotators);
-        $this->max_banner_trackers = $this->limitToInput($userType->max_banner_trackers);
-        $this->max_banner_rotators = $this->limitToInput($userType->max_banner_rotators);
+        $this->editingUserTypeId = $userTypeId;
+        $this->label = $label;
+        $this->max_link_trackers = $this->limitToInput($maxLinkTrackers);
+        $this->max_link_rotators = $this->limitToInput($maxLinkRotators);
+        $this->max_banner_trackers = $this->limitToInput($maxBannerTrackers);
+        $this->max_banner_rotators = $this->limitToInput($maxBannerRotators);
 
         $this->resetValidation();
 
@@ -240,7 +238,7 @@ new #[Layout('layouts.admin')]
                             <flux:table.cell>{{ number_format($userType->users_count) }}</flux:table.cell>
                             <flux:table.cell>
                                 <div class="flex justify-start gap-1">
-                                    <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editUserType({{ $userType->id }})" :aria-label="__('Edit')" />
+                                    <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editUserType({{ $userType->id }}, @js($userType->label), @js($userType->max_link_trackers), @js($userType->max_link_rotators), @js($userType->max_banner_trackers), @js($userType->max_banner_rotators))" :aria-label="__('Edit')" />
                                     <flux:button variant="ghost" size="sm" icon="trash" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" wire:click="confirmDelete({{ $userType->id }})" :aria-label="__('Delete')" />
                                 </div>
                             </flux:table.cell>

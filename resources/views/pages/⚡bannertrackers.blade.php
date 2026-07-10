@@ -86,19 +86,15 @@ new #[Title('Banner Trackers')] class extends Component
         Flux::toast(variant: 'success', text: __('Banner tracker created.'));
     }
 
-    public function editBanner(int $bannerId): void
+    public function editBanner(int $bannerId, string $name, string $targetUrl, string $imageUrl, ?string $altText, ?int $width, ?int $height): void
     {
-        $banner = Banner::query()
-            ->where('user_id', Auth::id())
-            ->findOrFail($bannerId);
-
-        $this->editingBannerId = $banner->id;
-        $this->name = $banner->name;
-        $this->target_url = $banner->target_url;
-        $this->image_url = $banner->image_url;
-        $this->alt_text = (string) $banner->alt_text;
-        $this->width = $banner->width;
-        $this->height = $banner->height;
+        $this->editingBannerId = $bannerId;
+        $this->name = $name;
+        $this->target_url = $targetUrl;
+        $this->image_url = $imageUrl;
+        $this->alt_text = (string) $altText;
+        $this->width = $width;
+        $this->height = $height;
 
         $this->resetValidation();
         Flux::modal('banner-form')->show();
@@ -538,7 +534,7 @@ new #[Title('Banner Trackers')] class extends Component
                                 size="sm"
                                 icon="pencil-square"
                                 type="button"
-                                wire:click="editBanner({{ $banner->id }})"
+                                wire:click="editBanner({{ $banner->id }}, @js($banner->name), @js($banner->target_url), @js($banner->image_url), @js($banner->alt_text), @js($banner->width), @js($banner->height))"
                                 :aria-label="__('Edit')" />
                         </flux:tooltip>
                         <flux:tooltip :content="__('Delete')">

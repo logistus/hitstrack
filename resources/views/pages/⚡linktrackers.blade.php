@@ -83,15 +83,11 @@ new #[Title('Trackers')] class extends Component
         ], navigate: true);
     }
 
-    public function editTracker(int $trackerId): void
+    public function editTracker(int $trackerId, ?string $trackerName, string $targetUrl): void
     {
-        $tracker = LinkTracker::query()
-            ->where('user_id', Auth::id())
-            ->findOrFail($trackerId);
-
-        $this->editingTrackerId = $tracker->id;
-        $this->tracker_name = $tracker->tracker_name ?? '';
-        $this->target_url = $tracker->target_url;
+        $this->editingTrackerId = $trackerId;
+        $this->tracker_name = $trackerName ?? '';
+        $this->target_url = $targetUrl;
 
         $this->resetValidation();
 
@@ -526,7 +522,7 @@ new #[Title('Trackers')] class extends Component
                             <flux:button :href="route('linktrackers.stats', $tracker->tracker_slug)" variant="ghost" size="sm" icon="chart-bar" wire:navigate :aria-label="__('Stats')" />
                         </flux:tooltip>
                         <flux:tooltip :content="__('Edit')">
-                            <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editTracker({{ $tracker->id }})" :aria-label="__('Edit')" />
+                            <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editTracker({{ $tracker->id }}, @js($tracker->tracker_name), @js($tracker->target_url))" :aria-label="__('Edit')" />
                         </flux:tooltip>
                         <flux:tooltip :content="__('Delete')">
                             <flux:button variant="ghost" size="sm" icon="trash" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" wire:click="confirmDeleteTracker({{ $tracker->id }})" :aria-label="__('Delete')" />

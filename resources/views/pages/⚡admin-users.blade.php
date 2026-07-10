@@ -95,16 +95,14 @@ new #[Layout('layouts.admin')]
         Flux::modal('user-form')->show();
     }
 
-    public function editUser(int $userId): void
+    public function editUser(int $userId, string $name, string $email, ?int $userTypeId, bool $emailVerified): void
     {
-        $user = User::query()->findOrFail($userId);
-
-        $this->editingUserId = $user->id;
-        $this->name = $user->name;
-        $this->email = $user->email;
+        $this->editingUserId = $userId;
+        $this->name = $name;
+        $this->email = $email;
         $this->password = '';
-        $this->email_verified = $user->email_verified_at !== null;
-        $this->user_type_id = (string) $user->user_type_id;
+        $this->email_verified = $emailVerified;
+        $this->user_type_id = (string) $userTypeId;
 
         $this->resetValidation();
 
@@ -327,7 +325,7 @@ new #[Layout('layouts.admin')]
                                 </flux:table.cell>
                                 <flux:table.cell>
                                     <div class="flex justify-start gap-1">
-                                        <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editUser({{ $user->id }})" :aria-label="__('Edit')" />
+                                        <flux:button variant="ghost" size="sm" icon="pencil-square" type="button" wire:click="editUser({{ $user->id }}, @js($user->name), @js($user->email), @js($user->user_type_id), @js($user->email_verified_at !== null))" :aria-label="__('Edit')" />
                                         <flux:button variant="ghost" size="sm" icon="trash" type="button" class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300" wire:click="confirmDelete({{ $user->id }})" :aria-label="__('Delete')" />
                                     </div>
                                 </flux:table.cell>
