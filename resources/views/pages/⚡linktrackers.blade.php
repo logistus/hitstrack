@@ -49,10 +49,24 @@ new #[Title('Trackers')] class extends Component
             : null;
 
         if ($this->editingTrackerId) {
-            LinkTracker::query()
+            $tracker = LinkTracker::query()
                 ->where('user_id', Auth::id())
-                ->findOrFail($this->editingTrackerId)
-                ->update($validated);
+                ->findOrFail($this->editingTrackerId);
+
+            if ($tracker->target_url !== $validated['target_url']) {
+                $this->redirectRoute('target-url-checker', [
+                    'target_url' => $validated['target_url'],
+                    'tracker_name' => $validated['tracker_name'],
+                    'tracker_id' => $tracker->id,
+                    'add_link' => 1,
+                ], navigate: true);
+
+                return;
+            }
+
+            $tracker->update([
+                'tracker_name' => $validated['tracker_name'],
+            ]);
 
             $this->resetForm();
             Flux::modal('tracker-form')->close();

@@ -16,6 +16,8 @@ new #[Title('Target URL Checker')] class extends Component
 
     public bool $add_link = false;
 
+    public ?int $tracker_id = null;
+
     public string $checkedTargetUrl = '';
 
     public ?array $result = null;
@@ -24,6 +26,7 @@ new #[Title('Target URL Checker')] class extends Component
     {
         $this->target_url = (string) request()->query('target_url', '');
         $this->tracker_name = (string) request()->query('tracker_name', '');
+        $this->tracker_id = request()->query('tracker_id') !== null ? (int) request()->query('tracker_id') : null;
         $this->add_link = request()->boolean('add_link');
 
         if (! $this->add_link || $this->target_url === '') {
@@ -50,6 +53,22 @@ new #[Title('Target URL Checker')] class extends Component
         if (! $this->linkCanBeAdded()) {
             $this->addError('target_url', __('This URL can only be added after a clean checker result.'));
             Flux::toast(variant: 'warning', text: __('This URL cannot be added because the checker found issues.'));
+
+            return;
+        }
+
+        if ($this->tracker_id) {
+            LinkTracker::query()
+                ->where('user_id', Auth::id())
+                ->findOrFail($this->tracker_id)
+                ->update([
+                    'tracker_name' => filled($validated['tracker_name']) ? trim($validated['tracker_name']) : null,
+                    'target_url' => $validated['target_url'],
+                ]);
+
+            Flux::toast(variant: 'success', text: __('Link tracker updated.'));
+
+            $this->redirectRoute('linktrackers', absolute: false, navigate: true);
 
             return;
         }
@@ -89,6 +108,11 @@ new #[Title('Target URL Checker')] class extends Component
         return $this->add_link
             && ($this->result['status'] ?? null) === 'safe'
             && $this->checkedTargetUrl === trim($this->target_url);
+    }
+
+    public function actionLabel(): string
+    {
+        return $this->tracker_id ? __('Update Link') : __('Add Link');
     }
 
     public function badgeClasses(?string $status): string
@@ -312,7 +336,7 @@ new #[Title('Target URL Checker')] class extends Component
             <div class="flex justify-end gap-3">
                 @if ($this->linkCanBeAdded())
                     <flux:button variant="primary" type="button" wire:click="addLink">
-                        {{ __('Add Link') }}
+                        {{ $this->actionLabel() }}
                     </flux:button>
                 @else
                     <flux:button variant="filled" :href="route('linktrackers')" wire:navigate>

@@ -132,3 +132,40 @@ test('a checker result with issues shows the link trackers return action instead
         'target_url' => 'https://93.184.216.34/landing',
     ]);
 });
+
+test('a clean checker result can update an existing link tracker url', function () {
+    $user = \App\Models\User::factory()->create();
+    $tracker = \App\Models\LinkTracker::query()->create([
+        'user_id' => $user->id,
+        'tracker_slug' => 'abc123',
+        'tracker_name' => 'Old campaign',
+        'target_url' => 'https://example.com/old-page',
+    ]);
+
+    config(['services.google_web_risk.key' => null]);
+
+    Http::fake([
+        'https://93.184.216.34/*' => Http::response('<html><body>Landing page</body></html>', 200, [
+            'Content-Type' => 'text/html; charset=UTF-8',
+        ]),
+    ]);
+
+    Livewire::withQueryParams([
+        'target_url' => 'https://93.184.216.34/new-page',
+        'tracker_name' => 'New campaign',
+        'tracker_id' => (string) $tracker->id,
+        'add_link' => '1',
+    ])
+        ->actingAs($user)
+        ->test('pages::target-url-checker')
+        ->assertSet('result.status', 'safe')
+        ->assertSee('Update Link')
+        ->call('addLink')
+        ->assertRedirect(route('linktrackers', absolute: false));
+
+    $this->assertDatabaseHas('trackers', [
+        'id' => $tracker->id,
+        'tracker_name' => 'New campaign',
+        'target_url' => 'https://93.184.216.34/new-page',
+    ]);
+});
