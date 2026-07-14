@@ -189,7 +189,33 @@ new #[Title('Banner rotator stats')] class extends Component
             return [
                 'impressions' => 0,
                 'clicks' => 0,
-            'ctr'                => $impressions > 0 ? ($clicks / $impressions) * 100 : 0,
+                'ctr' => 0,
+            ];
+        }
+
+        $aggregate = DB::table('daily_banner_referrer_stats')
+            ->where('source_type', 'rotator')
+            ->where('source_id', $rotator->id)
+            ->where('stat_date', '<', today())
+            ->selectRaw('COALESCE(SUM(impressions), 0) as impressions')
+            ->selectRaw('COALESCE(SUM(clicks), 0) as clicks')
+            ->first();
+
+        $today = DB::table('banner_stats')
+            ->where('banner_rotator_id', $rotator->id)
+            ->where('created_at', '>=', today());
+
+        $impressions = (int) $aggregate->impressions + (clone $today)
+            ->where('event_type', 'impression')
+            ->count();
+        $clicks = (int) $aggregate->clicks + (clone $today)
+            ->where('event_type', 'click')
+            ->count();
+
+        return [
+            'impressions' => $impressions,
+            'clicks' => $clicks,
+            'ctr' => $impressions > 0 ? ($clicks / $impressions) * 100 : 0,
         ];
     }
 
