@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hungry For Hits</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Syne:wght@800&display=swap"
+    rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0c0c0c;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── SINGLE BACKGROUND GLOW ── */
+    .glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -60%);
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 80, 0, 0.18) 0%, rgba(255, 40, 0, 0.06) 45%, transparent 70%);
+      pointer-events: none;
+      animation: breathe 4s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+
+      0%,
+      100% {
+        transform: translate(-50%, -60%) scale(1);
+      }
+
+      50% {
+        transform: translate(-50%, -60%) scale(1.12);
+      }
+    }
+
+    /* ── CENTER STAGE ── */
+    .stage {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    /* ── EYEBROW ── */
+    .eyebrow {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+      margin-bottom: 2rem;
+      animation: up 0.9s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    /* ── HEADLINE ── */
+    .headline {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(4rem, 12vw, 9rem);
+      font-weight: 800;
+      line-height: 0.9;
+      letter-spacing: -0.03em;
+      margin-bottom: 2.5rem;
+      animation: up 0.9s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .headline .top {
+      display: block;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .headline .bottom {
+      display: block;
+      /* fire gradient on the key word */
+      background: linear-gradient(135deg, #ff6600 0%, #ff2200 50%, #ff8800 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      background-size: 200% 200%;
+      animation: gradShift 3s ease infinite;
+    }
+
+    @keyframes gradShift {
+
+      0%,
+      100% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+    }
+
+    /* ── ONE-LINER ── */
+    .oneliner {
+      font-size: clamp(0.9rem, 1.8vw, 1.1rem);
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.4);
+      letter-spacing: 0.04em;
+      line-height: 1.7;
+      margin-bottom: 3rem;
+      animation: up 0.9s 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .oneliner strong {
+      color: rgba(255, 255, 255, 0.75);
+      font-weight: 500;
+    }
+
+    /* ── CTA ── */
+    .cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: #fff;
+      color: #0c0c0c;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+      padding: 1rem 2.2rem;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+      animation: up 0.9s 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+      box-shadow: 0 0 0 rgba(255, 100, 0, 0);
+    }
+
+    .cta:hover {
+      transform: translateY(-3px);
+      background: #fff;
+      box-shadow: 0 8px 40px rgba(255, 80, 0, 0.35);
+    }
+
+    .cta-arrow {
+      font-size: 1rem;
+      transition: transform 0.2s;
+    }
+
+    .cta:hover .cta-arrow {
+      transform: translateX(4px);
+    }
+
+    /* ── SOCIAL PROOF ── */
+    .proof {
+      margin-top: 2.2rem;
+      font-size: 0.68rem;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.2);
+      animation: up 0.9s 0.65s cubic-bezier(0.16, 1, 0.3, 1) both;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .proof-sep {
+      width: 24px;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* ── INVITE BOX ── */
+    .invite-box {
+      position: fixed;
+      bottom: 2rem;
+      right: 1.5rem;
+      z-index: 25;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      padding: 0.4rem 1rem 0.4rem 0.4rem;
+      backdrop-filter: blur(10px);
+      animation: up 0.9s 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .invite-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 100, 0, 0.5);
+      object-fit: cover;
+      display: block;
+    }
+
+    .invite-text {
+      font-size: 0.78rem;
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.45);
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+    }
+
+    .invite-text strong {
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+    }
+
+    /* ── ANIMATION ── */
+    @keyframes up {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media(max-width:480px) {
+
+      html,
+      body {
+        overflow-y: auto;
+      }
+
+      body {
+        align-items: flex-start;
+        padding: 4rem 1.5rem 6rem;
+      }
+
+      .invite-box {
+        bottom: 1.5rem;
+        right: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="glow"></div>
+
+  <div class="stage">
+
+    <div class="eyebrow">Free Traffic Exchange · Ranked #2</div>
+
+    <h1 class="headline">
+      <span class="top">Hungry</span>
+      <span class="bottom">For Hits.</span>
+    </h1>
+
+    <p class="oneliner">
+      Real visitors. Zero cost.<br>
+      <strong>35,000 members</strong> already feeding.
+    </p>
+
+    <a href="https://hungryforhits.com/signup.php?rid=17" target="_blank" class="cta">
+      Get free traffic
+      <span class="cta-arrow">→</span>
+    </a>
+
+    <div class="proof">
+      <span class="proof-sep"></span>
+      hungryforhits.com
+      <span class="proof-sep"></span>
+    </div>
+
+  </div>
+
+  <div class="invite-box">
+    <img class="invite-avatar" src="https://www.gravatar.com/avatar/0101c72c97a4bef379faf316240a89dd?s=96&d=identicon"
+      alt="Sinan">
+    <span class="invite-text">Invited by <strong>Sinan</strong></span>
+  </div>
+
+</body>
+
+</html>
