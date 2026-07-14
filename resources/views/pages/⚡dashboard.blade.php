@@ -86,9 +86,11 @@ new #[Title('Dashboard')] class extends Component
             ->where('tracker_stats.created_at', '>=', $since)
             ->select([
                 'trackers.target_url',
+                'trackers.tracker_slug as source_slug',
                 'tracker_stats.ref_url',
                 'tracker_stats.created_at as shown_at',
-            ]);
+            ])
+            ->selectRaw("'tracker' as source_type");
 
         $rotatorEvents = DB::table('rotator_stats')
             ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
@@ -97,9 +99,11 @@ new #[Title('Dashboard')] class extends Component
             ->where('rotator_stats.created_at', '>=', $since)
             ->select([
                 'trackers.target_url',
+                'rotators.rotator_slug as source_slug',
                 'rotator_stats.ref_url',
                 'rotator_stats.created_at as shown_at',
-            ]);
+            ])
+            ->selectRaw("'rotator' as source_type");
 
         return DB::query()
             ->fromSub($trackerEvents->unionAll($rotatorEvents), 'latest_link_events')
@@ -112,6 +116,7 @@ new #[Title('Dashboard')] class extends Component
     {
         return DB::table('banner_stats')
             ->join('banners', 'banners.id', '=', 'banner_stats.banner_id')
+            ->leftJoin('banner_rotators', 'banner_rotators.id', '=', 'banner_stats.banner_rotator_id')
             ->where('banners.user_id', $userId)
             ->where('banner_stats.event_type', 'impression')
             ->where('banner_stats.created_at', '>=', $since)
@@ -121,6 +126,9 @@ new #[Title('Dashboard')] class extends Component
                 'banners.alt_text',
                 'banners.width',
                 'banners.height',
+                'banners.banner_slug',
+                'banner_rotators.rotator_slug',
+                'banner_stats.banner_rotator_id',
                 'banner_stats.ref_url',
                 'banner_stats.created_at as shown_at',
             ])
@@ -220,6 +228,14 @@ new #[Title('Dashboard')] class extends Component
                                         <a href="{{ $event->target_url }}" target="_blank" rel="noreferrer" class="block truncate text-blue-700 underline-offset-2 hover:text-blue-900 hover:underline dark:text-blue-300 dark:hover:text-blue-200">
                                             {{ $event->target_url }}
                                         </a>
+                                        @php
+                                            $sourceUrl = $event->source_type === 'rotator'
+                                                ? route('linkrotators.redirect', $event->source_slug)
+                                                : route('linktrackers.redirect', $event->source_slug);
+                                        @endphp
+                                        <a href="{{ $sourceUrl }}" target="_blank" rel="noreferrer" class="mt-1 block truncate text-xs text-zinc-500 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200">
+                                            {{ $sourceUrl }}
+                                        </a>
                                     </td>
                                     <td class="max-w-56 py-3 pr-4">
                                         <span class="block truncate text-zinc-600 dark:text-zinc-400">
@@ -266,6 +282,14 @@ new #[Title('Dashboard')] class extends Component
                                             width="{{ $impression->width ? max(1, (int) floor($impression->width / 2)) : null }}"
                                             height="{{ $impression->height ? max(1, (int) floor($impression->height / 2)) : null }}"
                                             class="max-h-16 max-w-40 rounded border border-zinc-200 object-contain dark:border-zinc-700">
+                                        @php
+                                            $sourceUrl = $impression->banner_rotator_id
+                                                ? route('bannerrotators.image', $impression->rotator_slug)
+                                                : route('bannertrackers.image', $impression->banner_slug);
+                                        @endphp
+                                        <a href="{{ $sourceUrl }}" target="_blank" rel="noreferrer" class="mt-1 block max-w-40 truncate text-xs text-zinc-500 underline-offset-2 hover:text-zinc-900 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200">
+                                            {{ $sourceUrl }}
+                                        </a>
                                     </td>
                                     <td class="max-w-56 py-3 pr-4">
                                         <span class="block truncate text-zinc-600 dark:text-zinc-400">
