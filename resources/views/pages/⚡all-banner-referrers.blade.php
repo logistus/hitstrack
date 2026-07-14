@@ -25,7 +25,7 @@ new #[Title('Banner Referrers')] class extends Component
 
     public function sortBy(string $field): void
     {
-        if (! in_array($field, ['ref_url', 'impressions', 'clicks', 'unique_events', 'ctr', 'last_event_at'], true)) {
+        if (! in_array($field, ['ref_url', 'impressions', 'clicks', 'ctr', 'last_event_at'], true)) {
             return;
         }
 
@@ -87,7 +87,6 @@ new #[Title('Banner Referrers')] class extends Component
             ->where('banner_stats.created_at', '>=', today())
             ->select([
                 'banner_stats.ref_url',
-                'banner_stats.ip_address',
                 'banner_stats.event_type',
                 'banner_stats.created_at as event_at',
             ]);
@@ -111,7 +110,6 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw('SUM(impressions) as impressions')
             ->selectRaw('SUM(clicks) as clicks')
-            ->selectRaw('SUM(daily_unique_impressions) as unique_events')
             ->groupByRaw("COALESCE(ref_url, '')");
 
         $today = DB::query()
@@ -119,7 +117,6 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw("COALESCE(ref_url, '') as ref_url")
             ->selectRaw("SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->selectRaw("COUNT(DISTINCT CASE WHEN event_type = 'impression' THEN ip_address ELSE NULL END) as unique_events")
             ->groupByRaw("COALESCE(ref_url, '')");
 
         return DB::query()
@@ -127,7 +124,6 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw('ref_url')
             ->selectRaw('SUM(impressions) as impressions')
             ->selectRaw('SUM(clicks) as clicks')
-            ->selectRaw('SUM(unique_events) as unique_events')
             ->groupBy('ref_url');
     }
 
@@ -139,7 +135,6 @@ new #[Title('Banner Referrers')] class extends Component
             ->selectRaw('referrer_aggregates.ref_url as ref_url')
             ->selectRaw('referrer_aggregates.impressions as impressions')
             ->selectRaw('referrer_aggregates.clicks as clicks')
-            ->selectRaw('referrer_aggregates.unique_events as unique_events')
             ->selectRaw('ROUND((referrer_aggregates.clicks * 100.0) / NULLIF(referrer_aggregates.impressions, 0), 2) as ctr')
             ->selectRaw('latest_events.last_event_at as last_event_at');
     }
@@ -193,9 +188,6 @@ new #[Title('Banner Referrers')] class extends Component
                 <flux:table.column sortable :sorted="$sortField === 'clicks'" :direction="$sortDirection" wire:click="sortBy('clicks')" class="cursor-pointer text-right">
                     {{ __('Clicks') }}
                 </flux:table.column>
-                <flux:table.column sortable :sorted="$sortField === 'unique_events'" :direction="$sortDirection" wire:click="sortBy('unique_events')" class="cursor-pointer text-right">
-                    {{ __('Unique Impressions') }}
-                </flux:table.column>
                 <flux:table.column sortable :sorted="$sortField === 'ctr'" :direction="$sortDirection" wire:click="sortBy('ctr')" class="cursor-pointer text-right">
                     {{ __('CTR') }}
                 </flux:table.column>
@@ -218,7 +210,6 @@ new #[Title('Banner Referrers')] class extends Component
                         </flux:table.cell>
                         <flux:table.cell>{{ number_format($referrer->impressions) }}</flux:table.cell>
                         <flux:table.cell>{{ number_format($referrer->clicks) }}</flux:table.cell>
-                        <flux:table.cell>{{ number_format($referrer->unique_events) }}</flux:table.cell>
                         <flux:table.cell>{{ number_format((float) ($referrer->ctr ?? 0), 2) }}%</flux:table.cell>
                         <flux:table.cell>
                             @if ($referrer->last_event_at)
@@ -233,7 +224,7 @@ new #[Title('Banner Referrers')] class extends Component
                     </flux:table.row>
                 @empty
                     <flux:table.row>
-                        <flux:table.cell colspan="6">
+                        <flux:table.cell colspan="5">
                             <div class="py-6 text-center text-zinc-500 dark:text-zinc-400">
                                 {{ __('No referrer data yet.') }}
                             </div>

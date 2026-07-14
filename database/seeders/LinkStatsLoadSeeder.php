@@ -160,18 +160,9 @@ class LinkStatsLoadSeeder extends Seeder
             null,
         ];
 
-        $devices = ['desktop', 'mobile', 'tablet'];
-        $operatingSystems = ['Windows', 'macOS', 'iOS', 'Android', 'Linux'];
-        $browsers = ['Chrome', 'Firefox', 'Safari', 'Edge', 'Opera'];
-        $countries = ['US', 'TR', 'GB', 'CA', 'DE', 'AU', null];
-
         return [
             'ref_url' => $referrers[array_rand($referrers)],
             'ip_address' => $this->randomIp(),
-            'device_type' => $devices[array_rand($devices)],
-            'operating_system' => $operatingSystems[array_rand($operatingSystems)],
-            'browser' => $browsers[array_rand($browsers)],
-            'country_code' => $countries[array_rand($countries)],
         ];
     }
 

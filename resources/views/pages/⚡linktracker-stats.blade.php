@@ -5,7 +5,6 @@ use App\Models\LinkTrackerStat;
 use App\Support\AnalyticsCache;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
-use Flux\Flux;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -28,10 +27,6 @@ new #[Title('Link tracker stats')] class extends Component
     public string $referrerSearch = '';
 
     public string $activeTab = 'overview';
-
-    public string $selectedDeviceType = '';
-
-    public array $deviceReferrers = [];
 
     public string $calendarMonth = '';
 
@@ -127,12 +122,6 @@ new #[Title('Link tracker stats')] class extends Component
                 'summary',
                 fn (): array => $this->summaryStats($tracker),
             ),
-            'breakdownStats' => AnalyticsCache::remember(
-                'link-tracker',
-                $tracker->id,
-                'breakdowns',
-                fn (): array => $this->breakdownStats($tracker),
-            ),
             'chartData' => $dailyHits['chartData'],
             'maxHits' => $dailyHits['maxHits'],
             'dailyHitCalendar' => $this->activeTab === 'hits'
@@ -165,14 +154,6 @@ new #[Title('Link tracker stats')] class extends Component
         }
 
         return 'https://'.$refUrl;
-    }
-
-    public function showDeviceReferrers(string $deviceType): void
-    {
-        $this->selectedDeviceType = $deviceType;
-        $this->deviceReferrers = $this->topDeviceReferrers($this->tracker(), $deviceType);
-
-        Flux::modal('device-referrers')->show();
     }
 
     private function tracker(): LinkTracker
@@ -236,53 +217,6 @@ new #[Title('Link tracker stats')] class extends Component
         ];
     }
 
-    private function breakdownStats(LinkTracker $tracker): array
-    {
-        return [
-            'device_types' => $this->groupedStatCounts($tracker, 'device_type'),
-            'operating_systems' => $this->groupedStatCounts($tracker, 'operating_system'),
-            'browsers' => $this->groupedStatCounts($tracker, 'browser'),
-            'countries' => $this->groupedStatCounts($tracker, 'country_code'),
-        ];
-    }
-
-    private function groupedStatCounts(LinkTracker $tracker, string $field)
-    {
-        $field = match ($field) {
-            'device_type', 'operating_system', 'browser', 'country_code' => $field,
-            default => throw new InvalidArgumentException('Invalid field'),
-        };
-
-        $aggregate = DB::table('daily_link_breakdown_stats')
-            ->select('label')
-            ->selectRaw('SUM(total_hits) as total')
-            ->where('source_type', 'tracker')
-            ->where('source_id', $tracker->id)
-            ->where('breakdown_type', $field)
-            ->where('stat_date', '<', today())
-            ->groupBy('label');
-
-        $today = DB::table('tracker_stats')
-            ->select("{$field} as label")
-            ->selectRaw('COUNT(*) as total')
-            ->where('tracker_id', $tracker->id)
-            ->where('created_at', '>=', today())
-            ->groupBy($field);
-
-        return DB::query()
-            ->fromSub($aggregate->unionAll($today), 'breakdown_stats')
-            ->selectRaw("COALESCE(label, ?) as label", [__('Unknown')])
-            ->selectRaw('SUM(total) as total')
-            ->groupBy('label')
-            ->orderByDesc('total')
-            ->get()
-            ->map(fn ($stat): array => [
-                'label' => $stat->label,
-                'total' => (int) $stat->total,
-            ])
-            ->all();
-    }
-
     private function referrerStats(LinkTracker $tracker)
     {
         $search = trim($this->referrerSearch);
@@ -292,25 +226,6 @@ new #[Title('Link tracker stats')] class extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
             ->simplePaginate(25, pageName: 'referrerPage');
-    }
-
-    private function topDeviceReferrers(LinkTracker $tracker, string $deviceType): array
-    {
-        return DB::table('tracker_stats')
-            ->selectRaw("COALESCE(ref_url, '') as ref_url")
-            ->selectRaw('COUNT(*) as total_hits')
-            ->where('tracker_id', $tracker->id)
-            ->where('device_type', $deviceType)
-            ->where('created_at', '>=', today())
-            ->groupByRaw("COALESCE(ref_url, '')")
-            ->orderByDesc('total_hits')
-            ->limit(5)
-            ->get()
-            ->map(fn ($stat): array => [
-                'ref_url' => $stat->ref_url,
-                'total' => (int) $stat->total_hits,
-            ])
-            ->all();
     }
 
     private function dailyHitCalendar(LinkTracker $tracker): array
@@ -551,73 +466,7 @@ new #[Title('Link tracker stats')] class extends Component
                 </div>
             </section>
 
-            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach ([
-                __('Device Type') => $breakdownStats['device_types'],
-                __('Operating System') => $breakdownStats['operating_systems'],
-                __('Browser') => $breakdownStats['browsers'],
-                __('Country') => $breakdownStats['countries'],
-                ] as $label => $stats)
-                <flux:card>
-                    <div class="space-y-3">
-                        <div class="text-sm font-medium text-zinc-900 dark:text-white">{{ $label }}</div>
-                        <div class="space-y-3">
-                            @forelse ($stats as $stat)
-                            @php($percent = $summaryStats['total_hits'] > 0 ? min(100, round(($stat['total'] / $summaryStats['total_hits']) * 100)) : 0)
-                            <div class="space-y-1.5">
-                                <div class="flex items-center justify-between gap-4 text-sm">
-                                    @if ($label === __('Device Type'))
-                                        <button
-                                            type="button"
-                                            class="min-w-0 truncate text-left text-zinc-600 underline-offset-2 hover:text-zinc-950 hover:underline dark:text-zinc-400 dark:hover:text-white"
-                                            wire:click="showDeviceReferrers('{{ addslashes($stat['label']) }}')">
-                                            {{ str($stat['label'])->title() }}
-                                        </button>
-                                    @else
-                                        <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $stat['label'] }}</span>
-                                    @endif
-                                    <span class="font-medium">{{ number_format($stat['total']) }}</span>
-                                </div>
-                                <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                                    <div class="h-full rounded-full bg-blue-600" @style(["width: {$percent}%"])></div>
-                                </div>
-                            </div>
-                            @empty
-                            <flux:text>{{ __('No data') }}</flux:text>
-                            @endforelse
-                        </div>
-                    </div>
-                </flux:card>
-                @endforeach
-            </section>
 
-            <flux:modal name="device-referrers" class="max-w-xl md:min-w-xl">
-                <div class="space-y-6">
-                    <div>
-                        <flux:heading size="lg">{{ __('Top Referrers') }}</flux:heading>
-                        <flux:text>{{ __('Device type: :device', ['device' => str($selectedDeviceType)->title()]) }}</flux:text>
-                    </div>
-
-                    <div class="space-y-3">
-                        @forelse ($deviceReferrers as $referrer)
-                            <div class="flex items-center justify-between gap-4 rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-700">
-                                <div class="min-w-0">
-                                    @if ($href = $this->referrerHref($referrer['ref_url']))
-                                        <flux:link href="{{ $href }}" target="_blank" rel="noreferrer" class="block truncate">
-                                            {{ $referrer['ref_url'] }}
-                                        </flux:link>
-                                    @else
-                                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('Direct / unknown') }}</span>
-                                    @endif
-                                </div>
-                                <span class="shrink-0 font-medium">{{ number_format($referrer['total']) }}</span>
-                            </div>
-                        @empty
-                            <flux:text>{{ __('No referrer data yet.') }}</flux:text>
-                        @endforelse
-                    </div>
-                </div>
-            </flux:modal>
         </section>
 
         <section class="space-y-5" x-show="activeTab === 'hits'">

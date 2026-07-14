@@ -97,12 +97,6 @@ new #[Title('Banner rotator stats')] class extends Component
                 'summary',
                 fn(): array => $this->summaryStats($rotator),
             ),
-            'breakdownStats' => AnalyticsCache::remember(
-                'banner-rotator',
-                $rotator->id,
-                'breakdowns',
-                fn(): array => $this->breakdownStats($rotator),
-            ),
             'chartData' => $dailyEvents['chartData'],
             'maxEvents' => $dailyEvents['maxEvents'],
             'dailyEventRecords' => $this->activeTab === 'events'
@@ -195,96 +189,8 @@ new #[Title('Banner rotator stats')] class extends Component
             return [
                 'impressions' => 0,
                 'clicks' => 0,
-                'unique_impressions' => 0,
-                'unique_clicks' => 0,
-                'ctr' => 0,
-            ];
-        }
-        $aggregate = DB::table('daily_banner_referrer_stats')
-            ->where('source_type', 'rotator')
-            ->where('source_id', $rotator->id)
-            ->where('stat_date', '<', today())
-            ->selectRaw('COALESCE(SUM(impressions), 0) as impressions')
-            ->selectRaw('COALESCE(SUM(clicks), 0) as clicks')
-            ->selectRaw('COALESCE(SUM(daily_unique_impressions), 0) as unique_impressions')
-            ->selectRaw('COALESCE(SUM(daily_unique_clicks), 0) as unique_clicks')
-            ->first();
-
-        $today = DB::table('banner_stats')
-            ->where('banner_rotator_id', $rotator->id)
-            ->where('created_at', '>=', today());
-
-        $impressions = (int) $aggregate->impressions + (clone $today)
-            ->where('event_type', 'impression')
-            ->count();
-        $clicks = (int) $aggregate->clicks + (clone $today)
-            ->where('event_type', 'click')
-            ->count();
-
-        return [
-            'impressions'        => $impressions,
-            'clicks'             => $clicks,
-            'unique_impressions' => (int) $aggregate->unique_impressions + (clone $today)
-                ->where('event_type', 'impression')
-                ->distinct('ip_address')
-                ->count('ip_address'),
-            'unique_clicks'      => (int) $aggregate->unique_clicks + (clone $today)
-                ->where('event_type', 'click')
-                ->distinct('ip_address')
-                ->count('ip_address'),
             'ctr'                => $impressions > 0 ? ($clicks / $impressions) * 100 : 0,
         ];
-    }
-
-    private function breakdownStats(BannerRotator $rotator): array
-    {
-        return [
-            'device_types' => $this->groupedStatCounts($rotator, 'device_type'),
-            'operating_systems' => $this->groupedStatCounts($rotator, 'operating_system'),
-            'browsers' => $this->groupedStatCounts($rotator, 'browser'),
-            'countries' => $this->groupedStatCounts($rotator, 'country_code'),
-        ];
-    }
-
-    private function groupedStatCounts(BannerRotator $rotator, string $field)
-    {
-        $field = match ($field) {
-            'device_type', 'operating_system', 'browser', 'country_code' => $field,
-            default => throw new InvalidArgumentException('Invalid field'),
-        };
-
-        if (! $this->hasRotatorStatsColumn()) {
-            return collect();
-        }
-
-        $aggregate = DB::table('daily_banner_breakdown_stats')
-            ->select('label')
-            ->selectRaw('SUM(impressions + clicks) as total')
-            ->where('source_type', 'rotator')
-            ->where('source_id', $rotator->id)
-            ->where('breakdown_type', $field)
-            ->where('stat_date', '<', today())
-            ->groupBy('label');
-
-        $today = DB::table('banner_stats')
-            ->select("{$field} as label")
-            ->selectRaw('COUNT(*) as total')
-            ->where('banner_rotator_id', $rotator->id)
-            ->where('created_at', '>=', today())
-            ->groupBy($field);
-
-        return DB::query()
-            ->fromSub($aggregate->unionAll($today), 'breakdown_stats')
-            ->selectRaw("COALESCE(label, ?) as label", [__('Unknown')])
-            ->selectRaw('SUM(total) as total')
-            ->groupBy('label')
-            ->orderByDesc('total')
-            ->get()
-            ->map(fn($stat): array => [
-                'label' => $stat->label,
-                'total' => (int) $stat->total,
-            ])
-            ->all();
     }
 
     private function referrerStats(BannerRotator $rotator)
@@ -450,7 +356,7 @@ $clickUrl = route('bannerrotators.click', $rotator->rotator_slug);
         </flux:button>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="grid gap-4 sm:grid-cols-3">
         <flux:card>
             <div class="space-y-2">
                 <flux:text>{{ __('Impressions') }}</flux:text>
@@ -467,18 +373,6 @@ $clickUrl = route('bannerrotators.click', $rotator->rotator_slug);
             <div class="space-y-2">
                 <flux:text>{{ __('CTR') }}</flux:text>
                 <flux:heading size="xl">{{ number_format($summaryStats['ctr'], 2) }}%</flux:heading>
-            </div>
-        </flux:card>
-        <flux:card>
-            <div class="space-y-2">
-                <flux:text>{{ __('Unique Impressions') }}</flux:text>
-                <flux:heading size="xl">{{ number_format($summaryStats['unique_impressions']) }}</flux:heading>
-            </div>
-        </flux:card>
-        <flux:card>
-            <div class="space-y-2">
-                <flux:text>{{ __('Unique Clicks') }}</flux:text>
-                <flux:heading size="xl">{{ number_format($summaryStats['unique_clicks']) }}</flux:heading>
             </div>
         </flux:card>
     </div>
@@ -507,34 +401,6 @@ $clickUrl = route('bannerrotators.click', $rotator->rotator_slug);
                 </div>
             </section>
 
-            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach ([__('Device Type') => $breakdownStats['device_types'], __('Operating System') => $breakdownStats['operating_systems'], __('Browser') => $breakdownStats['browsers'], __('Country') => $breakdownStats['countries']] as $label => $stats)
-                <flux:card>
-                    <div class="space-y-3">
-                        <div class="text-sm font-medium text-zinc-900 dark:text-white">{{ $label }}</div>
-                        <div class="space-y-3">
-                            @forelse ($stats as $stat)
-                            @php
-                            $totalEvents = $summaryStats['impressions'] + $summaryStats['clicks'];
-                            $percent = $totalEvents > 0 ? min(100, round(($stat['total'] / $totalEvents) * 100)) : 0;
-                            @endphp
-                            <div class="space-y-1.5">
-                                <div class="flex items-center justify-between gap-4 text-sm">
-                                    <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $label === __('Device Type') ? str($stat['label'])->title() : $stat['label'] }}</span>
-                                    <span class="font-medium">{{ number_format($stat['total']) }}</span>
-                                </div>
-                                <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                                    <div class="h-full rounded-full bg-blue-600" @style(["width: {$percent}%"])></div>
-                                </div>
-                            </div>
-                            @empty
-                            <flux:text>{{ __('No data') }}</flux:text>
-                            @endforelse
-                        </div>
-                    </div>
-                </flux:card>
-                @endforeach
-            </section>
         </section>
 
         <section class="space-y-4" x-show="activeTab === 'banners'">

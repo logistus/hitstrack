@@ -25,8 +25,6 @@ class BannerClickRedirectController extends Controller
         $banner->stats()->create([
             'event_type' => $eventType,
             'ref_url' => ClientInfo::referrerDomain($request),
-            'ip_address' => $request->ip(),
-            ...ClientInfo::fromRequest($request),
         ]);
     }
 }

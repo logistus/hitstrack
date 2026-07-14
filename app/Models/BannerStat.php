@@ -13,11 +13,6 @@ class BannerStat extends Model
         'banner_rotator_id',
         'event_type',
         'ref_url',
-        'ip_address',
-        'device_type',
-        'operating_system',
-        'browser',
-        'country_code',
     ];
 
     public function banner()

@@ -13,7 +13,6 @@ Artisan::command('inspire', function () {
 Artisan::command('link-stats:rollup {--from=} {--to=} {--fresh} {--prune}', function () {
     if (
         ! Schema::hasTable('daily_link_referrer_stats')
-        || ! Schema::hasTable('daily_link_breakdown_stats')
         || ! Schema::hasTable('daily_link_rotator_tracker_stats')
     ) {
         $this->error('Aggregate tables do not exist yet. Run the daily link aggregate migration first.');
@@ -43,9 +42,6 @@ Artisan::command('link-stats:rollup {--from=} {--to=} {--fresh} {--prune}', func
         DB::table('daily_link_referrer_stats')
             ->whereBetween('stat_date', [$from->toDateString(), $to->toDateString()])
             ->delete();
-        DB::table('daily_link_breakdown_stats')
-            ->whereBetween('stat_date', [$from->toDateString(), $to->toDateString()])
-            ->delete();
         DB::table('daily_link_rotator_tracker_stats')
             ->whereBetween('stat_date', [$from->toDateString(), $to->toDateString()])
             ->delete();
@@ -56,10 +52,6 @@ Artisan::command('link-stats:rollup {--from=} {--to=} {--fresh} {--prune}', func
 
     foreach (['tracker', 'rotator'] as $sourceType) {
         $totalRows += rollupLinkReferrers($sourceType, $from, $to, $now);
-
-        foreach (['device_type', 'operating_system', 'browser', 'country_code'] as $breakdownType) {
-            $totalRows += rollupLinkBreakdowns($sourceType, $breakdownType, $from, $to, $now);
-        }
     }
 
     $totalRows += rollupLinkRotatorTrackers($from, $to, $now);
@@ -118,59 +110,6 @@ if (! function_exists('rollupLinkReferrers')) {
             'daily_link_referrer_stats',
             ['source_type', 'source_id', 'stat_date', 'ref_url_hash'],
             ['user_id', 'tracker_id', 'rotator_id', 'ref_url', 'total_hits', 'daily_unique_hits', 'last_hit_at', 'updated_at'],
-            $now,
-        );
-    }
-}
-
-if (! function_exists('rollupLinkBreakdowns')) {
-    function rollupLinkBreakdowns(string $sourceType, string $breakdownType, $from, $to, string $now): int
-    {
-        $column = match ($breakdownType) {
-            'device_type', 'operating_system', 'browser', 'country_code' => $breakdownType,
-            default => throw new InvalidArgumentException('Invalid breakdown type.'),
-        };
-
-        $query = match ($sourceType) {
-            'tracker' => DB::table('tracker_stats')
-                ->join('trackers', 'trackers.id', '=', 'tracker_stats.tracker_id')
-                ->whereBetween('tracker_stats.created_at', [$from, $to])
-                ->whereNotNull('tracker_stats.tracker_id')
-                ->selectRaw('DATE(tracker_stats.created_at) as stat_date')
-                ->selectRaw('trackers.user_id as user_id')
-                ->selectRaw('tracker_stats.tracker_id as tracker_id')
-                ->selectRaw('NULL as rotator_id')
-                ->selectRaw("'tracker' as source_type")
-                ->selectRaw('tracker_stats.tracker_id as source_id')
-                ->selectRaw('? as breakdown_type', [$breakdownType])
-                ->selectRaw("tracker_stats.{$column} as label")
-                ->selectRaw("SHA2(COALESCE(tracker_stats.{$column}, ''), 256) as label_hash")
-                ->selectRaw('COUNT(*) as total_hits')
-                ->selectRaw('COUNT(DISTINCT tracker_stats.ip_address) as daily_unique_hits')
-                ->groupByRaw("DATE(tracker_stats.created_at), trackers.user_id, tracker_stats.tracker_id, tracker_stats.{$column}, SHA2(COALESCE(tracker_stats.{$column}, ''), 256)"),
-            'rotator' => DB::table('rotator_stats')
-                ->join('rotators', 'rotators.id', '=', 'rotator_stats.rotator_id')
-                ->whereBetween('rotator_stats.created_at', [$from, $to])
-                ->whereNotNull('rotator_stats.rotator_id')
-                ->selectRaw('DATE(rotator_stats.created_at) as stat_date')
-                ->selectRaw('rotators.user_id as user_id')
-                ->selectRaw('NULL as tracker_id')
-                ->selectRaw('rotator_stats.rotator_id as rotator_id')
-                ->selectRaw("'rotator' as source_type")
-                ->selectRaw('rotator_stats.rotator_id as source_id')
-                ->selectRaw('? as breakdown_type', [$breakdownType])
-                ->selectRaw("rotator_stats.{$column} as label")
-                ->selectRaw("SHA2(COALESCE(rotator_stats.{$column}, ''), 256) as label_hash")
-                ->selectRaw('COUNT(*) as total_hits')
-                ->selectRaw('COUNT(DISTINCT rotator_stats.ip_address) as daily_unique_hits')
-                ->groupByRaw("DATE(rotator_stats.created_at), rotators.user_id, rotator_stats.rotator_id, rotator_stats.{$column}, SHA2(COALESCE(rotator_stats.{$column}, ''), 256)"),
-        };
-
-        return upsertAggregateRows(
-            $query,
-            'daily_link_breakdown_stats',
-            ['source_type', 'source_id', 'stat_date', 'breakdown_type', 'label_hash'],
-            ['user_id', 'tracker_id', 'rotator_id', 'label', 'total_hits', 'daily_unique_hits', 'updated_at'],
             $now,
         );
     }
@@ -247,7 +186,6 @@ if (! function_exists('pruneRolledUpLinkStats')) {
 Artisan::command('banner-stats:rollup {--from=} {--to=} {--fresh} {--prune}', function () {
     if (
         ! Schema::hasTable('daily_banner_referrer_stats')
-        || ! Schema::hasTable('daily_banner_breakdown_stats')
         || ! Schema::hasTable('daily_banner_rotator_banner_stats')
     ) {
         $this->error('Aggregate tables do not exist yet. Run the daily banner aggregate migration first.');
@@ -272,9 +210,6 @@ Artisan::command('banner-stats:rollup {--from=} {--to=} {--fresh} {--prune}', fu
         DB::table('daily_banner_referrer_stats')
             ->whereBetween('stat_date', [$from->toDateString(), $to->toDateString()])
             ->delete();
-        DB::table('daily_banner_breakdown_stats')
-            ->whereBetween('stat_date', [$from->toDateString(), $to->toDateString()])
-            ->delete();
         DB::table('daily_banner_rotator_banner_stats')
             ->whereBetween('stat_date', [$from->toDateString(), $to->toDateString()])
             ->delete();
@@ -285,10 +220,6 @@ Artisan::command('banner-stats:rollup {--from=} {--to=} {--fresh} {--prune}', fu
 
     foreach (['banner', 'rotator'] as $sourceType) {
         $totalRows += rollupBannerReferrers($sourceType, $from, $to, $now);
-
-        foreach (['device_type', 'operating_system', 'browser', 'country_code'] as $breakdownType) {
-            $totalRows += rollupBannerBreakdowns($sourceType, $breakdownType, $from, $to, $now);
-        }
     }
 
     $totalRows += rollupBannerRotatorBanners($from, $to, $now);
@@ -321,8 +252,6 @@ if (! function_exists('rollupBannerReferrers')) {
                 ->selectRaw("SHA2(COALESCE(banner_stats.ref_url, ''), 256) as ref_url_hash")
                 ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
                 ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-                ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.ip_address END) as daily_unique_impressions")
-                ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'click' THEN banner_stats.ip_address END) as daily_unique_clicks")
                 ->selectRaw("MAX(CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.created_at ELSE NULL END) as last_impression_at")
                 ->groupByRaw("DATE(banner_stats.created_at), banners.user_id, banner_stats.banner_id, banner_stats.ref_url, SHA2(COALESCE(banner_stats.ref_url, ''), 256)"),
             'rotator' => DB::table('banner_stats')
@@ -339,8 +268,6 @@ if (! function_exists('rollupBannerReferrers')) {
                 ->selectRaw("SHA2(COALESCE(banner_stats.ref_url, ''), 256) as ref_url_hash")
                 ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
                 ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-                ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.ip_address END) as daily_unique_impressions")
-                ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'click' THEN banner_stats.ip_address END) as daily_unique_clicks")
                 ->selectRaw("MAX(CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.created_at ELSE NULL END) as last_impression_at")
                 ->groupByRaw("DATE(banner_stats.created_at), banner_rotators.user_id, banner_stats.banner_rotator_id, banner_stats.ref_url, SHA2(COALESCE(banner_stats.ref_url, ''), 256)"),
         };
@@ -349,63 +276,7 @@ if (! function_exists('rollupBannerReferrers')) {
             $query,
             'daily_banner_referrer_stats',
             ['source_type', 'source_id', 'stat_date', 'ref_url_hash'],
-            ['user_id', 'banner_id', 'banner_rotator_id', 'ref_url', 'impressions', 'clicks', 'daily_unique_impressions', 'daily_unique_clicks', 'last_impression_at', 'updated_at'],
-            $now,
-        );
-    }
-}
-
-if (! function_exists('rollupBannerBreakdowns')) {
-    function rollupBannerBreakdowns(string $sourceType, string $breakdownType, $from, $to, string $now): int
-    {
-        $column = match ($breakdownType) {
-            'device_type', 'operating_system', 'browser', 'country_code' => $breakdownType,
-            default => throw new InvalidArgumentException('Invalid breakdown type.'),
-        };
-
-        $query = match ($sourceType) {
-            'banner' => DB::table('banner_stats')
-                ->join('banners', 'banners.id', '=', 'banner_stats.banner_id')
-                ->whereBetween('banner_stats.created_at', [$from, $to])
-                ->selectRaw('DATE(banner_stats.created_at) as stat_date')
-                ->selectRaw('banners.user_id as user_id')
-                ->selectRaw('banner_stats.banner_id as banner_id')
-                ->selectRaw('NULL as banner_rotator_id')
-                ->selectRaw("'banner' as source_type")
-                ->selectRaw('banner_stats.banner_id as source_id')
-                ->selectRaw('? as breakdown_type', [$breakdownType])
-                ->selectRaw("banner_stats.{$column} as label")
-                ->selectRaw("SHA2(COALESCE(banner_stats.{$column}, ''), 256) as label_hash")
-                ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
-                ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-                ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.ip_address END) as daily_unique_impressions")
-                ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'click' THEN banner_stats.ip_address END) as daily_unique_clicks")
-                ->groupByRaw("DATE(banner_stats.created_at), banners.user_id, banner_stats.banner_id, banner_stats.{$column}, SHA2(COALESCE(banner_stats.{$column}, ''), 256)"),
-            'rotator' => DB::table('banner_stats')
-                ->join('banner_rotators', 'banner_rotators.id', '=', 'banner_stats.banner_rotator_id')
-                ->whereBetween('banner_stats.created_at', [$from, $to])
-                ->whereNotNull('banner_stats.banner_rotator_id')
-                ->selectRaw('DATE(banner_stats.created_at) as stat_date')
-                ->selectRaw('banner_rotators.user_id as user_id')
-                ->selectRaw('NULL as banner_id')
-                ->selectRaw('banner_stats.banner_rotator_id as banner_rotator_id')
-                ->selectRaw("'rotator' as source_type")
-                ->selectRaw('banner_stats.banner_rotator_id as source_id')
-                ->selectRaw('? as breakdown_type', [$breakdownType])
-                ->selectRaw("banner_stats.{$column} as label")
-                ->selectRaw("SHA2(COALESCE(banner_stats.{$column}, ''), 256) as label_hash")
-                ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
-                ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-                ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.ip_address END) as daily_unique_impressions")
-                ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'click' THEN banner_stats.ip_address END) as daily_unique_clicks")
-                ->groupByRaw("DATE(banner_stats.created_at), banner_rotators.user_id, banner_stats.banner_rotator_id, banner_stats.{$column}, SHA2(COALESCE(banner_stats.{$column}, ''), 256)"),
-        };
-
-        return upsertAggregateRows(
-            $query,
-            'daily_banner_breakdown_stats',
-            ['source_type', 'source_id', 'stat_date', 'breakdown_type', 'label_hash'],
-            ['user_id', 'banner_id', 'banner_rotator_id', 'label', 'impressions', 'clicks', 'daily_unique_impressions', 'daily_unique_clicks', 'updated_at'],
+            ['user_id', 'banner_id', 'banner_rotator_id', 'ref_url', 'impressions', 'clicks', 'last_impression_at', 'updated_at'],
             $now,
         );
     }
@@ -424,15 +295,13 @@ if (! function_exists('rollupBannerRotatorBanners')) {
             ->selectRaw('banner_stats.banner_id as banner_id')
             ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'impression' THEN 1 ELSE 0 END) as impressions")
             ->selectRaw("SUM(CASE WHEN banner_stats.event_type = 'click' THEN 1 ELSE 0 END) as clicks")
-            ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'impression' THEN banner_stats.ip_address END) as daily_unique_impressions")
-            ->selectRaw("COUNT(DISTINCT CASE WHEN banner_stats.event_type = 'click' THEN banner_stats.ip_address END) as daily_unique_clicks")
             ->groupByRaw('DATE(banner_stats.created_at), banner_rotators.user_id, banner_stats.banner_rotator_id, banner_stats.banner_id');
 
         return upsertAggregateRows(
             $query,
             'daily_banner_rotator_banner_stats',
             ['banner_rotator_id', 'banner_id', 'stat_date'],
-            ['user_id', 'impressions', 'clicks', 'daily_unique_impressions', 'daily_unique_clicks', 'updated_at'],
+            ['user_id', 'impressions', 'clicks', 'updated_at'],
             $now,
         );
     }

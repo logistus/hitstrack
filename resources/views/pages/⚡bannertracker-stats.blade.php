@@ -4,7 +4,6 @@ use App\Models\Banner;
 use App\Support\AnalyticsCache;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
-use Flux\Flux;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -28,9 +27,6 @@ new #[Title('Banner tracker stats')] class extends Component
 
     public string $activeTab = 'overview';
 
-    public string $selectedDeviceType = '';
-
-    public array $deviceReferrers = [];
 
     public function mount(string $slug): void
     {
@@ -95,12 +91,6 @@ new #[Title('Banner tracker stats')] class extends Component
                 'summary',
                 fn (): array => $this->summaryStats($banner),
             ),
-            'breakdownStats' => AnalyticsCache::remember(
-                'banner-tracker',
-                $banner->id,
-                'breakdowns',
-                fn (): array => $this->breakdownStats($banner),
-            ),
             'chartData' => $dailyEvents['chartData'],
             'maxEvents' => $dailyEvents['maxEvents'],
             'dailyEventRecords' => $this->activeTab === 'events'
@@ -123,14 +113,6 @@ new #[Title('Banner tracker stats')] class extends Component
         }
 
         return 'https://'.$refUrl;
-    }
-
-    public function showDeviceReferrers(string $deviceType): void
-    {
-        $this->selectedDeviceType = $deviceType;
-        $this->deviceReferrers = $this->topDeviceReferrers($this->banner(), $deviceType);
-
-        Flux::modal('device-referrers')->show();
     }
 
     private function banner(): Banner
@@ -179,8 +161,6 @@ new #[Title('Banner tracker stats')] class extends Component
             ->where('stat_date', '<', today())
             ->selectRaw('COALESCE(SUM(impressions), 0) as impressions')
             ->selectRaw('COALESCE(SUM(clicks), 0) as clicks')
-            ->selectRaw('COALESCE(SUM(daily_unique_impressions), 0) as unique_impressions')
-            ->selectRaw('COALESCE(SUM(daily_unique_clicks), 0) as unique_clicks')
             ->first();
 
         $today = DB::table('banner_stats')
@@ -198,63 +178,8 @@ new #[Title('Banner tracker stats')] class extends Component
         return [
             'impressions' => $impressions,
             'clicks' => $clicks,
-            'unique_impressions' => (int) $aggregate->unique_impressions + (clone $today)
-                ->where('event_type', 'impression')
-                ->distinct('ip_address')
-                ->count('ip_address'),
-            'unique_clicks' => (int) $aggregate->unique_clicks + (clone $today)
-                ->where('event_type', 'click')
-                ->distinct('ip_address')
-                ->count('ip_address'),
             'ctr' => $impressions > 0 ? ($clicks / $impressions) * 100 : 0,
         ];
-    }
-
-    private function breakdownStats(Banner $banner): array
-    {
-        return [
-            'device_types' => $this->groupedStatCounts($banner, 'device_type'),
-            'operating_systems' => $this->groupedStatCounts($banner, 'operating_system'),
-            'browsers' => $this->groupedStatCounts($banner, 'browser'),
-            'countries' => $this->groupedStatCounts($banner, 'country_code'),
-        ];
-    }
-
-    private function groupedStatCounts(Banner $banner, string $field)
-    {
-        $field = match ($field) {
-            'device_type', 'operating_system', 'browser', 'country_code' => $field,
-            default => throw new InvalidArgumentException('Invalid field'),
-        };
-
-        $aggregate = DB::table('daily_banner_breakdown_stats')
-            ->select('label')
-            ->selectRaw('SUM(impressions + clicks) as total')
-            ->where('source_type', 'banner')
-            ->where('source_id', $banner->id)
-            ->where('breakdown_type', $field)
-            ->where('stat_date', '<', today())
-            ->groupBy('label');
-
-        $today = DB::table('banner_stats')
-            ->select("{$field} as label")
-            ->selectRaw('COUNT(*) as total')
-            ->where('banner_id', $banner->id)
-            ->where('created_at', '>=', today())
-            ->groupBy($field);
-
-        return DB::query()
-            ->fromSub($aggregate->unionAll($today), 'breakdown_stats')
-            ->selectRaw("COALESCE(label, ?) as label", [__('Unknown')])
-            ->selectRaw('SUM(total) as total')
-            ->groupBy('label')
-            ->orderByDesc('total')
-            ->get()
-            ->map(fn ($stat): array => [
-                'label' => $stat->label,
-                'total' => (int) $stat->total,
-            ])
-            ->all();
     }
 
     private function referrerStats(Banner $banner)
@@ -266,25 +191,6 @@ new #[Title('Banner tracker stats')] class extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
             ->simplePaginate(25, pageName: 'referrerPage');
-    }
-
-    private function topDeviceReferrers(Banner $banner, string $deviceType): array
-    {
-        return DB::table('banner_stats')
-            ->selectRaw("COALESCE(ref_url, '') as ref_url")
-            ->selectRaw('COUNT(*) as total_events')
-            ->where('banner_id', $banner->id)
-            ->where('device_type', $deviceType)
-            ->where('created_at', '>=', today())
-            ->groupByRaw("COALESCE(ref_url, '')")
-            ->orderByDesc('total_events')
-            ->limit(5)
-            ->get()
-            ->map(fn ($stat): array => [
-                'ref_url' => $stat->ref_url,
-                'total' => (int) $stat->total_events,
-            ])
-            ->all();
     }
 
     private function dailyEventRecords(Banner $banner)
@@ -380,12 +286,10 @@ new #[Title('Banner tracker stats')] class extends Component
         </flux:button>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <div class="grid gap-4 sm:grid-cols-3">
         <flux:card><div class="space-y-2"><flux:text>{{ __('Impressions') }}</flux:text><flux:heading size="xl">{{ number_format($summaryStats['impressions']) }}</flux:heading></div></flux:card>
         <flux:card><div class="space-y-2"><flux:text>{{ __('Clicks') }}</flux:text><flux:heading size="xl">{{ number_format($summaryStats['clicks']) }}</flux:heading></div></flux:card>
         <flux:card><div class="space-y-2"><flux:text>{{ __('CTR') }}</flux:text><flux:heading size="xl">{{ number_format($summaryStats['ctr'], 2) }}%</flux:heading></div></flux:card>
-        <flux:card><div class="space-y-2"><flux:text>{{ __('Unique Impressions') }}</flux:text><flux:heading size="xl">{{ number_format($summaryStats['unique_impressions']) }}</flux:heading></div></flux:card>
-        <flux:card><div class="space-y-2"><flux:text>{{ __('Unique Clicks') }}</flux:text><flux:heading size="xl">{{ number_format($summaryStats['unique_clicks']) }}</flux:heading></div></flux:card>
     </div>
 
     <div class="space-y-6">
@@ -408,69 +312,7 @@ new #[Title('Banner tracker stats')] class extends Component
                 </div>
             </section>
 
-            <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach ([__('Device Type') => $breakdownStats['device_types'], __('Operating System') => $breakdownStats['operating_systems'], __('Browser') => $breakdownStats['browsers'], __('Country') => $breakdownStats['countries']] as $label => $stats)
-                <flux:card>
-                    <div class="space-y-3">
-                        <div class="text-sm font-medium text-zinc-900 dark:text-white">{{ $label }}</div>
-                        <div class="space-y-3">
-                            @forelse ($stats as $stat)
-                            @php
-                                $totalEvents = $summaryStats['impressions'] + $summaryStats['clicks'];
-                                $percent = $totalEvents > 0 ? min(100, round(($stat['total'] / $totalEvents) * 100)) : 0;
-                            @endphp
-                            <div class="space-y-1.5">
-                                <div class="flex items-center justify-between gap-4 text-sm">
-                                    @if ($label === __('Device Type'))
-                                        <button
-                                            type="button"
-                                            class="min-w-0 truncate text-left text-zinc-600 underline-offset-2 hover:text-zinc-950 hover:underline dark:text-zinc-400 dark:hover:text-white"
-                                            wire:click="showDeviceReferrers('{{ addslashes($stat['label']) }}')">
-                                            {{ str($stat['label'])->title() }}
-                                        </button>
-                                    @else
-                                        <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $stat['label'] }}</span>
-                                    @endif
-                                    <span class="font-medium">{{ number_format($stat['total']) }}</span>
-                                </div>
-                                <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"><div class="h-full rounded-full bg-blue-600" @style(["width: {$percent}%"])></div></div>
-                            </div>
-                            @empty
-                            <flux:text>{{ __('No data') }}</flux:text>
-                            @endforelse
-                        </div>
-                    </div>
-                </flux:card>
-                @endforeach
-            </section>
 
-            <flux:modal name="device-referrers" class="max-w-xl md:min-w-xl">
-                <div class="space-y-6">
-                    <div>
-                        <flux:heading size="lg">{{ __('Top Referrers') }}</flux:heading>
-                        <flux:text>{{ __('Device type: :device', ['device' => str($selectedDeviceType)->title()]) }}</flux:text>
-                    </div>
-
-                    <div class="space-y-3">
-                        @forelse ($deviceReferrers as $referrer)
-                            <div class="flex items-center justify-between gap-4 rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-700">
-                                <div class="min-w-0">
-                                    @if ($href = $this->referrerHref($referrer['ref_url']))
-                                        <flux:link href="{{ $href }}" target="_blank" rel="noreferrer" class="block truncate">
-                                            {{ $referrer['ref_url'] }}
-                                        </flux:link>
-                                    @else
-                                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('Direct / unknown') }}</span>
-                                    @endif
-                                </div>
-                                <span class="shrink-0 font-medium">{{ number_format($referrer['total']) }}</span>
-                            </div>
-                        @empty
-                            <flux:text>{{ __('No referrer data yet.') }}</flux:text>
-                        @endforelse
-                    </div>
-                </div>
-            </flux:modal>
 
         </section>
 

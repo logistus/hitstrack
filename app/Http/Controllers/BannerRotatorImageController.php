@@ -24,10 +24,15 @@ class BannerRotatorImageController extends Controller
             'banner_rotator_id' => $rotator->id,
             'event_type' => 'impression',
             'ref_url' => ClientInfo::referrerDomain($request),
-            'ip_address' => $request->ip(),
-            ...ClientInfo::fromRequest($request),
         ]);
 
-        return $imageProxy->responseFor($banner->image_url);
+        return $imageProxy->responseFor($banner->image_url)
+            ->withCookie(cookie(
+                "banner_rotator_{$rotator->id}_selected_banner",
+                (string) $banner->id,
+                30,
+                httpOnly: true,
+                sameSite: 'lax',
+            ));
     }
 }

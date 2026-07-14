@@ -18,8 +18,6 @@ class BannerImageController extends Controller
         $banner->stats()->create([
             'event_type' => 'impression',
             'ref_url' => ClientInfo::referrerDomain($request),
-            'ip_address' => $request->ip(),
-            ...ClientInfo::fromRequest($request),
         ]);
 
         return new Response('', 302, [

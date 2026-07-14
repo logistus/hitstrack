@@ -13,10 +13,6 @@ class LinkRotatorStat extends Model
         'tracker_id',
         'ref_url',
         'ip_address',
-        'device_type',
-        'operating_system',
-        'browser',
-        'country_code',
     ];
 
     public function rotator()

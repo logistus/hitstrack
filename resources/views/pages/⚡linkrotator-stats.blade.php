@@ -120,12 +120,6 @@ new #[Title('Link rotator stats')] class extends Component
                 'summary',
                 fn (): array => $this->summaryStats($rotator),
             ),
-            'breakdownStats' => AnalyticsCache::remember(
-                'link-rotator',
-                $rotator->id,
-                'breakdowns',
-                fn (): array => $this->breakdownStats($rotator),
-            ),
             'chartData' => $dailyHits['chartData'],
             'maxHits' => $dailyHits['maxHits'],
             'dailyHitCalendar' => $this->activeTab === 'hits'
@@ -233,52 +227,6 @@ new #[Title('Link rotator stats')] class extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->when($this->sortField !== 'ref_url', fn ($query) => $query->orderBy('ref_url'))
             ->simplePaginate(25, pageName: 'referrerPage');
-    }
-
-    private function breakdownStats(LinkRotator $rotator): array
-    {
-        return [
-            'device_types' => $this->groupedStatCounts($rotator, 'device_type'),
-            'operating_systems' => $this->groupedStatCounts($rotator, 'operating_system'),
-            'browsers' => $this->groupedStatCounts($rotator, 'browser'),
-        ];
-    }
-
-    private function groupedStatCounts(LinkRotator $rotator, string $field)
-    {
-        $field = match ($field) {
-            'device_type', 'operating_system', 'browser' => $field,
-            default => throw new InvalidArgumentException('Invalid field'),
-        };
-
-        $aggregate = DB::table('daily_link_breakdown_stats')
-            ->select('label')
-            ->selectRaw('SUM(total_hits) as total')
-            ->where('source_type', 'rotator')
-            ->where('source_id', $rotator->id)
-            ->where('breakdown_type', $field)
-            ->where('stat_date', '<', today())
-            ->groupBy('label');
-
-        $today = DB::table('rotator_stats')
-            ->select("{$field} as label")
-            ->selectRaw('COUNT(*) as total')
-            ->where('rotator_id', $rotator->id)
-            ->where('created_at', '>=', today())
-            ->groupBy($field);
-
-        return DB::query()
-            ->fromSub($aggregate->unionAll($today), 'breakdown_stats')
-            ->selectRaw("COALESCE(label, ?) as label", [__('Unknown')])
-            ->selectRaw('SUM(total) as total')
-            ->groupBy('label')
-            ->orderByDesc('total')
-            ->get()
-            ->map(fn ($stat): array => [
-                'label' => $stat->label,
-                'total' => (int) $stat->total,
-            ])
-            ->all();
     }
 
     private function trackerPerformanceStats(LinkRotator $rotator)
@@ -546,37 +494,6 @@ new #[Title('Link rotator stats')] class extends Component
                 </div>
             </section>
 
-            <section class="grid gap-4 lg:grid-cols-3">
-                @foreach ([
-                __('Device Type') => $breakdownStats['device_types'],
-                __('Operating System') => $breakdownStats['operating_systems'],
-                __('Browser') => $breakdownStats['browsers'],
-                ] as $label => $stats)
-                <flux:card>
-                    <div class="space-y-3">
-                        <div class="text-sm font-medium text-zinc-900 dark:text-white">{{ $label }}</div>
-                        <div class="space-y-3">
-                            @forelse ($stats as $stat)
-                            @php
-                            $percent = $summaryStats['total_hits'] > 0 ? min(100, round(($stat['total'] / $summaryStats['total_hits']) * 100)) : 0;
-                            @endphp
-                            <div class="space-y-1.5">
-                                <div class="flex items-center justify-between gap-4 text-sm">
-                                    <span class="truncate text-zinc-600 dark:text-zinc-400">{{ $label === __('Device Type') ? str($stat['label'])->title() : $stat['label'] }}</span>
-                                    <span class="font-medium">{{ number_format($stat['total']) }}</span>
-                                </div>
-                                <div class="h-1.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                                    <div class="h-full rounded-full bg-blue-600" @style(["width: {$percent}%"])></div>
-                                </div>
-                            </div>
-                            @empty
-                            <flux:text>{{ __('No data') }}</flux:text>
-                            @endforelse
-                        </div>
-                    </div>
-                </flux:card>
-                @endforeach
-            </section>
         </section>
 
         <section class="space-y-4" x-show="activeTab === 'trackers'">
