@@ -48,7 +48,9 @@ Route::get('br/{slug}/image.{extension}', BannerRotatorImageController::class)
     ->whereIn('extension', ['jpg', 'jpeg', 'png', 'gif', 'webp'])
     ->withoutMiddleware($statelessImageMiddleware)
     ->name('bannerrotators.image.extension');
-Route::get('br/{slug}', BannerRotatorClickRedirectController::class)->name('bannerrotators.click');
+Route::get('br/{slug}', BannerRotatorClickRedirectController::class)
+    ->withoutMiddleware(EncryptCookies::class)
+    ->name('bannerrotators.click');
 
 Route::get('pixel', PixelTrackingController::class)->name('pixels.track');
 Route::get('datacrove', DataCroveController::class)->name('datacrove');

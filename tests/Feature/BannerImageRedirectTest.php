@@ -52,3 +52,46 @@ test('banner rotator image redirects to the selected banner image url', function
         ->where('event_type', 'impression')
         ->count())->toBe(1);
 });
+
+test('banner rotator click uses the banner selected by the image cookie', function () {
+    $user = User::factory()->create();
+    $firstBanner = Banner::create([
+        'user_id' => $user->id,
+        'name' => 'First banner',
+        'banner_slug' => 'first-banner',
+        'target_url' => 'https://first-target.example',
+        'image_url' => 'https://cdn.example/first.gif',
+    ]);
+    $secondBanner = Banner::create([
+        'user_id' => $user->id,
+        'name' => 'Second banner',
+        'banner_slug' => 'second-banner',
+        'target_url' => 'https://second-target.example',
+        'image_url' => 'https://cdn.example/second.gif',
+    ]);
+    $rotator = BannerRotator::create([
+        'user_id' => $user->id,
+        'rotator_slug' => 'cookie-rotator',
+        'rotation_type' => 'round_robin',
+    ]);
+
+    $rotator->banners()->attach([
+        $firstBanner->id => ['weight' => 1, 'order_column' => 1],
+        $secondBanner->id => ['weight' => 1, 'order_column' => 2],
+    ]);
+
+    $this->get(route('bannerrotators.image', $rotator->rotator_slug))
+        ->assertRedirect($firstBanner->image_url);
+
+    $cookieName = "banner_rotator_{$rotator->id}_selected_banner";
+
+    $this->withUnencryptedCookie($cookieName, (string) $firstBanner->id)
+        ->get(route('bannerrotators.click', $rotator->rotator_slug))
+        ->assertRedirect($firstBanner->target_url);
+
+    $this->assertDatabaseHas('banner_stats', [
+        'banner_id' => $firstBanner->id,
+        'banner_rotator_id' => $rotator->id,
+        'event_type' => 'click',
+    ]);
+});
