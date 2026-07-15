@@ -49,7 +49,6 @@ Route::get('br/{slug}/image.{extension}', BannerRotatorImageController::class)
     ->withoutMiddleware($statelessImageMiddleware)
     ->name('bannerrotators.image.extension');
 Route::get('br/{slug}', BannerRotatorClickRedirectController::class)
-    ->withoutMiddleware(EncryptCookies::class)
     ->name('bannerrotators.click');
 
 Route::get('pixel', PixelTrackingController::class)->name('pixels.track');

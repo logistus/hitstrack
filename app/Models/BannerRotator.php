@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class BannerRotator extends Model
 {
-    protected $fillable = ['user_id', 'name', 'rotator_slug', 'rotation_type'];
+    protected $fillable = ['user_id', 'name', 'rotator_slug', 'rotation_type', 'current_banner_id'];
 
     public function user()
     {
@@ -18,6 +18,11 @@ class BannerRotator extends Model
         return $this->belongsToMany(Banner::class, 'banner_rotator_banner')
             ->withPivot(['weight', 'order_column'])
             ->withTimestamps();
+    }
+
+    public function currentBanner()
+    {
+        return $this->belongsTo(Banner::class, 'current_banner_id');
     }
 
     public function stats()

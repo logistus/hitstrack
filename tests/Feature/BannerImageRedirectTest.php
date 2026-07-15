@@ -44,7 +44,9 @@ test('banner rotator image redirects to the selected banner image url', function
         'extension' => 'gif',
     ]))
         ->assertRedirect($banner->image_url)
-        ->assertPlainCookie("banner_rotator_{$rotator->id}_selected_banner", (string) $banner->id);
+        ->assertCookieMissing("banner_rotator_{$rotator->id}_selected_banner");
+
+    expect($rotator->fresh()->current_banner_id)->toBe($banner->id);
 
     expect(BannerStat::query()
         ->where('banner_id', $banner->id)
@@ -53,7 +55,7 @@ test('banner rotator image redirects to the selected banner image url', function
         ->count())->toBe(1);
 });
 
-test('banner rotator click uses the banner selected by the image cookie', function () {
+test('banner rotator click uses the server-side banner selected by the image request', function () {
     $user = User::factory()->create();
     $firstBanner = Banner::create([
         'user_id' => $user->id,
@@ -71,7 +73,7 @@ test('banner rotator click uses the banner selected by the image cookie', functi
     ]);
     $rotator = BannerRotator::create([
         'user_id' => $user->id,
-        'rotator_slug' => 'cookie-rotator',
+        'rotator_slug' => 'server-state-rotator',
         'rotation_type' => 'round_robin',
     ]);
 
@@ -83,10 +85,15 @@ test('banner rotator click uses the banner selected by the image cookie', functi
     $this->get(route('bannerrotators.image', $rotator->rotator_slug))
         ->assertRedirect($firstBanner->image_url);
 
-    $cookieName = "banner_rotator_{$rotator->id}_selected_banner";
+    $trackerClickUrl = route('bannertrackers.click', [
+        'slug' => $firstBanner->banner_slug,
+        'rotator' => $rotator->rotator_slug,
+    ]);
 
-    $this->withUnencryptedCookie($cookieName, (string) $firstBanner->id)
-        ->get(route('bannerrotators.click', $rotator->rotator_slug))
+    $this->get(route('bannerrotators.click', $rotator->rotator_slug))
+        ->assertRedirect($trackerClickUrl);
+
+    $this->get($trackerClickUrl)
         ->assertRedirect($firstBanner->target_url);
 
     $this->assertDatabaseHas('banner_stats', [

@@ -19,19 +19,14 @@ class BannerRotatorImageController extends Controller
 
         abort_if(! $banner, 404);
 
+        $rotator->forceFill(['current_banner_id' => $banner->id])->saveQuietly();
+
         $banner->stats()->create([
             'banner_rotator_id' => $rotator->id,
             'event_type' => 'impression',
             'ref_url' => ClientInfo::referrerDomain($request),
         ]);
 
-        return redirect()->away($banner->image_url)
-            ->withCookie(cookie(
-                "banner_rotator_{$rotator->id}_selected_banner",
-                (string) $banner->id,
-                30,
-                httpOnly: true,
-                sameSite: 'lax',
-            ));
+        return redirect()->away($banner->image_url);
     }
 }
