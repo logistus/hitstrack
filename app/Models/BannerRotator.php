@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FiltersReferrerTarget;
 use Illuminate\Database\Eloquent\Model;
 
 class BannerRotator extends Model
 {
+    use FiltersReferrerTarget;
     protected $fillable = ['user_id', 'name', 'rotator_slug', 'rotation_type', 'current_banner_id'];
 
     public function user()
@@ -58,7 +60,7 @@ class BannerRotator extends Model
             return $sorted->first();
         }
 
-        $lastIndex = $sorted->search(fn ($banner) => $banner->id === $lastStat->banner_id);
+        $lastIndex = $sorted->search(fn($banner) => $banner->id === $lastStat->banner_id);
 
         return $lastIndex === false ? $sorted->first() : $sorted[($lastIndex + 1) % $sorted->count()];
     }

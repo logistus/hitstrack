@@ -15,7 +15,8 @@ class BannerRotatorImageController extends Controller
             ->where('rotator_slug', $slug)
             ->firstOrFail();
 
-        $banner = $rotator->pickNextBanner();
+        $refUrl = ClientInfo::referrerDomain($request); // tek sefer hesapla
+        $banner = $rotator->pickNextBanner($refUrl);
 
         abort_if(! $banner, 404);
 
@@ -24,7 +25,7 @@ class BannerRotatorImageController extends Controller
         $banner->stats()->create([
             'banner_rotator_id' => $rotator->id,
             'event_type' => 'impression',
-            'ref_url' => ClientInfo::referrerDomain($request),
+            'ref_url' => $refUrl,
         ]);
 
         return redirect()->away($banner->image_url);

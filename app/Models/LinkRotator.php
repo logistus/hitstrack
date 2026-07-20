@@ -32,10 +32,7 @@ class LinkRotator extends Model
     public function pickNextTracker(?string $refUrl = null): ?LinkTracker
     {
         $trackers = $this->trackers()->get();
-
-        if ($trackers->isEmpty()) {
-            return null;
-        }
+        if ($trackers->isEmpty()) return null;
 
         $trackers = $this->withoutReferrerTarget($trackers, $refUrl);
 
@@ -55,7 +52,7 @@ class LinkRotator extends Model
             return $sorted->first();
         }
 
-        $lastIndex = $sorted->search(fn ($t) => $t->id === $lastStat->tracker_id);
+        $lastIndex = $sorted->search(fn($t) => $t->id === $lastStat->tracker_id);
 
         return $lastIndex === false ? $sorted->first() : $sorted[($lastIndex + 1) % $sorted->count()];
     }
@@ -74,32 +71,5 @@ class LinkRotator extends Model
         }
 
         return $trackers->first();
-    }
-
-    private function withoutReferrerTarget(Collection $trackers, ?string $refUrl): Collection
-    {
-        $refDomain = $this->domainForComparison($refUrl);
-
-        if (! $refDomain) {
-            return $trackers;
-        }
-
-        $availableTrackers = $trackers
-            ->reject(fn (LinkTracker $tracker) => $this->domainForComparison($tracker->target_url) === $refDomain)
-            ->values();
-
-        return $availableTrackers->isEmpty() ? $trackers : $availableTrackers;
-    }
-
-    private function domainForComparison(?string $url): ?string
-    {
-        if (! $url) {
-            return null;
-        }
-
-        $domain = ClientInfo::domainFromUrl($url)
-            ?? ClientInfo::domainFromUrl("https://{$url}");
-
-        return $domain ?: null;
     }
 }
