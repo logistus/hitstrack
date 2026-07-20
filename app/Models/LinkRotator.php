@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FiltersReferrerTarget;
 use App\Support\ClientInfo;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 class LinkRotator extends Model
 {
+    use FiltersReferrerTarget;
     protected $table = 'rotators';
 
     protected $fillable = ['user_id', 'rotator_name', 'rotator_slug', 'rotation_type'];
