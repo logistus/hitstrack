@@ -32,13 +32,15 @@ class BannerRotator extends Model
         return $this->hasMany(BannerStat::class);
     }
 
-    public function pickNextBanner(): ?Banner
+    public function pickNextBanner(?string $refUrl = null): ?Banner
     {
         $banners = $this->banners()->get();
 
         if ($banners->isEmpty()) {
             return null;
         }
+
+        $banners = $this->withoutReferrerTarget($banners, $refUrl);
 
         return match ($this->rotation_type) {
             'random' => $banners->random(),
