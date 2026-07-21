@@ -22,13 +22,11 @@ class BannerRotatorImageController extends Controller
 
         $rotator->forceFill(['current_banner_id' => $banner->id])->saveQuietly();
 
-        if (! ClientInfo::isExcludedReferrer($request)) {
-            $banner->stats()->create([
-                'banner_rotator_id' => $rotator->id,
-                'event_type' => 'impression',
-                'ref_url' => $refUrl,
-            ]);
-        }
+        $banner->stats()->create([
+            'banner_rotator_id' => $rotator->id,
+            'event_type' => 'impression',
+            'ref_url' => $refUrl,
+        ]);
 
         return redirect()->away($banner->image_url);
     }

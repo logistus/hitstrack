@@ -6,30 +6,6 @@ use Illuminate\Http\Request;
 
 class ClientInfo
 {
-    private const EXCLUDED_REFERRER_PATHS = [
-        'mysqbans.php',
-        'mybanners.php',
-    ];
-
-    public static function isExcludedReferrer(Request $request): bool
-    {
-        $referer = $request->headers->get('referer');
-
-        if (! $referer) {
-            return false;
-        }
-
-        $path = (string) parse_url($referer, PHP_URL_PATH);
-
-        foreach (self::EXCLUDED_REFERRER_PATHS as $needle) {
-            if (stripos($path, $needle) !== false) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     public static function referrerDomain(Request $request): ?string
     {
         return self::domainFromUrl($request->headers->get('referer'));

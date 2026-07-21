@@ -23,10 +23,6 @@ class BannerClickRedirectController extends Controller
 
     protected function recordEvent(Request $request, Banner $banner, string $eventType): void
     {
-        if (ClientInfo::isExcludedReferrer($request)) {
-            return;
-        }
-
         $rotator = $this->rotatorContext($request, $banner);
 
         $banner->stats()->create([
