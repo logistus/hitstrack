@@ -15,10 +15,12 @@ class BannerImageController extends Controller
             ->where('banner_slug', $slug)
             ->firstOrFail();
 
-        $banner->stats()->create([
-            'event_type' => 'impression',
-            'ref_url' => ClientInfo::referrerDomain($request),
-        ]);
+        if (! ClientInfo::isExcludedReferrer($request)) {
+            $banner->stats()->create([
+                'event_type' => 'impression',
+                'ref_url' => ClientInfo::referrerDomain($request),
+            ]);
+        }
 
         return new Response('', 302, [
             'Location' => $banner->image_url,

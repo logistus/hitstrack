@@ -23,6 +23,10 @@ class BannerClickRedirectController extends Controller
 
     protected function recordEvent(Request $request, Banner $banner, string $eventType): void
     {
+        if (ClientInfo::isExcludedReferrer($request)) {
+            return;
+        }
+
         $rotator = $this->rotatorContext($request, $banner);
 
         $banner->stats()->create([
@@ -43,7 +47,7 @@ class BannerClickRedirectController extends Controller
         return BannerRotator::query()
             ->where('rotator_slug', $rotatorSlug)
             ->where('current_banner_id', $banner->id)
-            ->whereHas('banners', fn ($query) => $query->whereKey($banner->id))
+            ->whereHas('banners', fn($query) => $query->whereKey($banner->id))
             ->first();
     }
 }

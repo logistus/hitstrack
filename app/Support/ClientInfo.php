@@ -6,6 +6,30 @@ use Illuminate\Http\Request;
 
 class ClientInfo
 {
+    private const EXCLUDED_REFERRER_PATHS = [
+        'mysqbans.php',
+        'mybanners.php',
+    ];
+
+    public static function isExcludedReferrer(Request $request): bool
+    {
+        $referer = $request->headers->get('referer');
+
+        if (! $referer) {
+            return false;
+        }
+
+        $path = (string) parse_url($referer, PHP_URL_PATH);
+
+        foreach (self::EXCLUDED_REFERRER_PATHS as $needle) {
+            if (stripos($path, $needle) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function referrerDomain(Request $request): ?string
     {
         return self::domainFromUrl($request->headers->get('referer'));
@@ -52,15 +76,17 @@ class ClientInfo
 
     private static function countryCode(Request $request): ?string
     {
-        foreach ([
-            'CF-IPCountry',
-            'CloudFront-Viewer-Country',
-            'X-Vercel-IP-Country',
-            'X-Appengine-Country',
-            'X-Country-Code',
-            'X-Geo-Country',
-            'X-Forwarded-Country',
-        ] as $header) {
+        foreach (
+            [
+                'CF-IPCountry',
+                'CloudFront-Viewer-Country',
+                'X-Vercel-IP-Country',
+                'X-Appengine-Country',
+                'X-Country-Code',
+                'X-Geo-Country',
+                'X-Forwarded-Country',
+            ] as $header
+        ) {
             $countryCode = strtoupper((string) $request->headers->get($header));
 
             if (preg_match('/^[A-Z]{2}$/', $countryCode) === 1 && $countryCode !== 'XX') {
