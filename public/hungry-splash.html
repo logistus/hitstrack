@@ -4,572 +4,318 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hungry For Hits — Free Traffic</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link
-        href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@300;400;600;700;800&display=swap"
-        rel="stylesheet">
+    <title>HungryForHits - Feed Your Website Traffic!</title>
     <style>
-        *,
-        *::before,
-        *::after {
+        * {
             box-sizing: border-box;
             margin: 0;
-            padding: 0
-        }
-
-        html,
-        body {
-            width: 100%;
-            overflow-x: hidden;
-            overflow-y: auto;
+            padding: 0;
         }
 
         body {
-            font-family: 'Nunito', sans-serif;
-            background: #fff7ee;
-            color: #3d1c02;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            background: radial-gradient(circle at top, #e2d5f8 0%, #f4effa 100%);
+            color: #1e152a;
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            padding: 1.2rem 0;
+            padding: 20px;
+            text-align: center;
+            overflow: hidden;
             position: relative;
         }
 
-        /* ── BG ── */
-        .bg {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            background:
-                radial-gradient(ellipse 65% 55% at 8% 50%, rgba(245, 100, 20, 0.16) 0%, transparent 60%),
-                radial-gradient(ellipse 55% 45% at 92% 40%, rgba(232, 52, 10, 0.12) 0%, transparent 60%),
-                radial-gradient(ellipse 70% 40% at 50% 100%, rgba(249, 163, 26, 0.13) 0%, transparent 65%),
-                #fff7ee;
-        }
-
-        .dots {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
+        /* --- Floating Food Ingredients Animation --- */
+        .food-item {
+            position: absolute;
+            font-size: 32px;
+            user-select: none;
             pointer-events: none;
-            background-image: radial-gradient(circle, rgba(232, 52, 10, 0.09) 1.5px, transparent 1.5px);
-            background-size: 28px 28px;
-        }
-
-        canvas {
-            position: fixed;
-            inset: 0;
             z-index: 1;
-            pointer-events: none;
+            opacity: 0;
+            animation: floatAndFade 7s ease-in-out infinite;
         }
 
-        /* ── LAYOUT ── */
-        .card {
+        .food-item:nth-child(1) {
+            top: 10%;
+            left: 8%;
+            animation-delay: 0s;
+        }
+
+        .food-item:nth-child(2) {
+            top: 75%;
+            left: 12%;
+            animation-delay: 1.5s;
+        }
+
+        .food-item:nth-child(3) {
+            top: 20%;
+            right: 10%;
+            animation-delay: 3s;
+        }
+
+        .food-item:nth-child(4) {
+            top: 80%;
+            right: 15%;
+            animation-delay: 4.5s;
+        }
+
+        .food-item:nth-child(5) {
+            top: 50%;
+            left: 4%;
+            animation-delay: 2s;
+        }
+
+        .food-item:nth-child(6) {
+            top: 45%;
+            right: 5%;
+            animation-delay: 5.5s;
+        }
+
+        @keyframes floatAndFade {
+            0% {
+                opacity: 0;
+                transform: translateY(20px) rotate(0deg) scale(0.8);
+            }
+
+            20% {
+                opacity: 0.85;
+            }
+
+            80% {
+                opacity: 0.85;
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-60px) rotate(25deg) scale(1.1);
+            }
+        }
+
+        /* --- Main Container --- */
+        .container {
+            max-width: 650px;
+            width: 100%;
+            border: 3px solid #ff8c00;
+            border-radius: 20px;
+            padding: 40px 25px;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 15px 35px rgba(110, 60, 180, 0.15);
             position: relative;
             z-index: 10;
-            width: min(680px, 94vw);
-            text-align: center;
-            animation: up .7s cubic-bezier(.16, 1, .3, 1) both;
+            animation: fadeIn 1s ease-out;
         }
 
-        @keyframes up {
+        .badge {
+            display: inline-block;
+            background: linear-gradient(90deg, #ff4500, #ff8c00);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 8px 18px;
+            border-radius: 50px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        h1 {
+            font-size: 30px;
+            font-weight: 900;
+            line-height: 1.2;
+            color: #1e152a;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            animation: slideInDown 0.8s ease-out;
+        }
+
+        h1 span {
+            color: #e65100;
+            display: block;
+            font-size: 36px;
+        }
+
+        .subheadline {
+            font-size: 16px;
+            color: #4a3e56;
+            margin-bottom: 28px;
+            line-height: 1.4;
+            font-weight: 600;
+            animation: fadeIn 1s ease-out 0.5s both;
+        }
+
+        .benefits-grid {
+            margin: 25px 0;
+            text-align: left;
+            animation: fadeIn 1s ease-out 0.8s both;
+        }
+
+        .benefit-card {
+            background: #f7f3fd;
+            border-left: 5px solid #00a896;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .benefit-card:hover {
+            transform: translateY(-3px);
+            background: #efe7fb;
+        }
+
+        .benefit-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #00897b;
+            margin-bottom: 4px;
+        }
+
+        .benefit-desc {
+            font-size: 13px;
+            color: #554863;
+        }
+
+        .cta-container {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            animation: fadeIn 1s ease-out 1.2s both;
+        }
+
+        .btn-cta {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff8c00 0%, #ff3d00 100%);
+            color: #ffffff !important;
+            font-size: 20px;
+            font-weight: 900;
+            text-decoration: none;
+            padding: 18px 36px;
+            border-radius: 50px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 2px solid #ffd54f;
+            box-shadow: 0 8px 25px rgba(255, 61, 0, 0.35);
+            animation: heartbeat 1.5s infinite;
+        }
+
+        .guarantee {
+            font-size: 12px;
+            color: #7a6b8a;
+            font-weight: 700;
+            margin-top: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            animation: fadeIn 1s ease-out 1.5s both;
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(22px);
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0);
             }
         }
 
-        /* ── BADGE ── */
-        .badge {
-            display: inline-flex;
-            align-items: center;
-            gap: .45rem;
-            background: #e8340a;
-            color: #fff;
-            font-family: 'Fredoka One', cursive;
-            font-size: .72rem;
-            letter-spacing: .08em;
-            padding: .35rem 1rem .35rem .75rem;
-            border-radius: 999px;
-            margin-bottom: 1.1rem;
-            box-shadow: 0 4px 14px rgba(232, 52, 10, .3);
-            animation: up .7s .1s cubic-bezier(.16, 1, .3, 1) both;
-            white-space: nowrap;
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
-        .bdot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #ffdd00;
-            box-shadow: 0 0 6px #ffdd00;
-            animation: bp 1.3s infinite;
-        }
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 69, 0, 0.4);
+            }
 
-        @keyframes bp {
+            70% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(255, 69, 0, 0);
+            }
 
-            0%,
             100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(255, 69, 0, 0);
+            }
+        }
+
+        @keyframes heartbeat {
+            0% {
                 transform: scale(1);
             }
 
-            50% {
-                transform: scale(.45);
+            14% {
+                transform: scale(1.08);
             }
-        }
 
-        /* ── HEADLINE ── */
-        .headline {
-            font-family: 'Fredoka One', cursive;
-            font-size: clamp(2.6rem, 7.5vw, 4.8rem);
-            line-height: .96;
-            letter-spacing: .01em;
-            margin-bottom: .18em;
-            animation: up .7s .15s cubic-bezier(.16, 1, .3, 1) both;
-            text-shadow: 3px 4px 0 rgba(160, 50, 0, .14);
-        }
-
-        .hl-top {
-            display: block;
-            color: #e8340a;
-        }
-
-        .hl-bot {
-            display: block;
-            color: #3d1c02;
-        }
-
-        .hl-acc {
-            color: #f5a623;
-            position: relative;
-            display: inline-block;
-        }
-
-        .hl-acc::after {
-            content: '';
-            position: absolute;
-            bottom: -3px;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 60 5'%3E%3Cpath d='M0 3.5Q7.5 0 15 3.5Q22.5 7 30 3.5Q37.5 0 45 3.5Q52.5 7 60 3.5' fill='none' stroke='%23f5a623' stroke-width='2'/%3E%3C/svg%3E") repeat-x center;
-            background-size: 28px 3px;
-            transform: scaleX(0);
-            transform-origin: left;
-            animation: wi .5s .85s ease both;
-        }
-
-        @keyframes wi {
-            to {
-                transform: scaleX(1);
+            28% {
+                transform: scale(1);
             }
-        }
 
-        /* ── SUBLINE ── */
-        .sub {
-            font-size: clamp(.85rem, 1.9vw, 1.05rem);
-            font-weight: 400;
-            color: #3d1c02;
-            opacity: .6;
-            line-height: 1.55;
-            margin-bottom: 1.3rem;
-            animation: up .7s .25s cubic-bezier(.16, 1, .3, 1) both;
-        }
+            42% {
+                transform: scale(1.08);
+            }
 
-        .sub strong {
-            color: #e8340a;
-            font-weight: 700;
-            opacity: 1;
-        }
-
-        /* ── BONUS BOX ── */
-        .bonus {
-            background: rgba(255, 255, 255, .75);
-            border: 1.5px solid rgba(232, 52, 10, .16);
-            border-radius: 14px;
-            padding: .75rem 1rem;
-            margin-bottom: 1.2rem;
-            animation: up .7s .32s cubic-bezier(.16, 1, .3, 1) both;
-            backdrop-filter: blur(4px);
-        }
-
-        .bonus-title {
-            font-family: 'Fredoka One', cursive;
-            font-size: .75rem;
-            letter-spacing: .18em;
-            text-transform: uppercase;
-            color: #e8340a;
-            margin-bottom: .6rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: .5rem;
-        }
-
-        .bonus-title::before,
-        .bonus-title::after {
-            content: '';
-            flex: 1;
-            max-width: 40px;
-            height: 1px;
-            background: rgba(232, 52, 10, .2);
-        }
-
-        .bonus-items {
-            display: flex;
-            justify-content: center;
-            gap: .5rem;
-            flex-wrap: wrap;
-        }
-
-        .bonus-item {
-            display: flex;
-            align-items: center;
-            gap: .35rem;
-            background: rgba(232, 52, 10, .07);
-            border: 1px solid rgba(232, 52, 10, .13);
-            border-radius: 8px;
-            padding: .38rem .75rem;
-            font-size: .78rem;
-            font-weight: 700;
-            color: #3d1c02;
-            white-space: nowrap;
-        }
-
-        .bonus-item span {
-            font-size: 1rem;
-        }
-
-        /* ── STATS ── */
-        .stats {
-            display: flex;
-            border: 1.5px solid rgba(232, 52, 10, .13);
-            border-radius: 14px;
-            overflow: hidden;
-            background: rgba(255, 255, 255, .7);
-            backdrop-filter: blur(4px);
-            margin-bottom: 1.2rem;
-            box-shadow: 0 4px 20px rgba(232, 52, 10, .07);
-            animation: up .7s .38s cubic-bezier(.16, 1, .3, 1) both;
-        }
-
-        .stat {
-            flex: 1;
-            padding: .65rem .4rem;
-            border-right: 1px solid rgba(232, 52, 10, .1);
-        }
-
-        .stat:last-child {
-            border-right: none;
-        }
-
-        .stat-icon {
-            font-size: 1.1rem;
-            display: block;
-            line-height: 1;
-            margin-bottom: .2rem;
-        }
-
-        .stat-val {
-            font-family: 'Fredoka One', cursive;
-            font-size: clamp(1.1rem, 2.8vw, 1.6rem);
-            line-height: 1;
-            display: block;
-            margin-bottom: .18rem;
-        }
-
-        .stat:nth-child(1) .stat-val {
-            color: #e8340a;
-        }
-
-        .stat:nth-child(2) .stat-val {
-            color: #c57700;
-        }
-
-        .stat:nth-child(3) .stat-val {
-            color: #9e2007;
-        }
-
-        .stat:nth-child(4) .stat-val {
-            color: #e8340a;
-        }
-
-        .stat-key {
-            font-size: .54rem;
-            font-weight: 800;
-            letter-spacing: .17em;
-            text-transform: uppercase;
-            color: #3d1c02;
-            opacity: .38;
-            display: block;
-        }
-
-        /* ── CTA ── */
-        .cta-group {
-            display: flex;
-            gap: .7rem;
-            justify-content: center;
-            flex-wrap: wrap;
-            animation: up .7s .46s cubic-bezier(.16, 1, .3, 1) both;
-        }
-
-        .btn-main {
-            font-family: 'Fredoka One', cursive;
-            font-size: 1rem;
-            letter-spacing: .04em;
-            color: #fff;
-            background: #e8340a;
-            border: none;
-            padding: .8rem 2.2rem;
-            border-radius: 12px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            position: relative;
-            overflow: hidden;
-            transition: transform .15s, box-shadow .2s;
-            box-shadow: 0 4px 0 #9e2007, 0 6px 18px rgba(232, 52, 10, .28);
-        }
-
-        .btn-main::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 40%;
-            background: rgba(255, 255, 255, .12);
-            border-radius: 12px 12px 50% 50%;
-            pointer-events: none;
-        }
-
-        .btn-main:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 7px 0 #9e2007, 0 12px 26px rgba(232, 52, 10, .33);
-        }
-
-        .btn-main:active {
-            transform: translateY(1px);
-            box-shadow: 0 2px 0 #9e2007, 0 4px 10px rgba(232, 52, 10, .25);
-        }
-
-        .btn-learn {
-            font-family: 'Fredoka One', cursive;
-            font-size: 1rem;
-            letter-spacing: .04em;
-            color: #e8340a;
-            background: rgba(255, 255, 255, .8);
-            border: 1.5px solid rgba(232, 52, 10, .25);
-            padding: .8rem 1.7rem;
-            border-radius: 12px;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-            transition: all .2s;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, .06);
-        }
-
-        .btn-learn:hover {
-            background: #fff;
-            border-color: #e8340a;
-            transform: translateY(-2px);
-            box-shadow: 0 7px 18px rgba(232, 52, 10, .13);
-        }
-
-        /* ── PERKS ── */
-        .perks {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-top: .9rem;
-            animation: up .7s .56s cubic-bezier(.16, 1, .3, 1) both;
-        }
-
-        .perk {
-            font-size: .62rem;
-            font-weight: 700;
-            letter-spacing: .12em;
-            text-transform: uppercase;
-            color: #3d1c02;
-            opacity: .4;
-            display: flex;
-            align-items: center;
-            gap: .3rem;
-        }
-
-        .perk::before {
-            content: '✦';
-            color: #f5a623;
-            opacity: 1;
-            font-size: .5rem;
-        }
-
-        /* ── INVITE ── */
-        .invite-box {
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            z-index: 25;
-            display: flex;
-            align-items: center;
-            gap: .5rem;
-            background: rgba(255, 255, 255, .78);
-            border: 1.5px solid rgba(232, 52, 10, .18);
-            border-radius: 999px;
-            padding: .32rem .85rem .32rem .32rem;
-            backdrop-filter: blur(6px);
-            box-shadow: 0 4px 14px rgba(232, 52, 10, .1);
-            animation: up .7s .75s cubic-bezier(.16, 1, .3, 1) both;
-        }
-
-        .invite-avatar {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            border: 2px solid #f5a623;
-            object-fit: cover;
-            display: block;
-        }
-
-        .invite-text {
-            font-size: .78rem;
-            font-weight: 700;
-            color: #3d1c02;
-            opacity: .75;
-            white-space: nowrap;
-        }
-
-        .invite-text strong {
-            color: #e8340a;
-            font-weight: 800;
+            70% {
+                transform: scale(1);
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <div class="bg"></div>
-    <div class="dots"></div>
-    <canvas id="c"></canvas>
+    <!-- Floating Food Items -->
+    <div class="food-item">🍕</div>
+    <div class="food-item">🍔</div>
+    <div class="food-item">🍟</div>
+    <div class="food-item">🍩</div>
+    <div class="food-item">🌮</div>
+    <div class="food-item">🍦</div>
 
-    <div class="card">
+    <div class="container">
+        <div class="badge">🔥 MASSIVE TRAFFIC OPPORTUNITY</div>
 
-        <div class="badge">
-            <span class="bdot"></span>
-            Ranked #2 Worldwide · 35,000+ Members
-        </div>
+        <h1>NEED MORE HITS & SUBSCRIBERS? <span>FEED YOUR WEBSITE TRAFFIC!</span></h1>
 
-        <h1 class="headline">
-            <span class="hl-top">Hungry For</span>
-            <span class="hl-bot">Free <span class="hl-acc">Traffic?</span></span>
-        </h1>
+        <p class="subheadline">Get 100% Real Human Visitors and High Conversion Rates with HungryForHits!</p>
 
-        <p class="sub">
-            Real human visitors. Zero cost. Surf sites, earn credits,<br>
-            and send <strong>unlimited traffic</strong> to your website.
-        </p>
+        <div class="benefits-grid">
+            <div class="benefit-card">
+                <div class="benefit-title">🍕 100% REAL HUMAN TRAFFIC</div>
+                <div class="benefit-desc">No bots, no fake clicks! Real engaged users browsing your website directly.
+                </div>
+            </div>
 
-        <!-- SIGNUP BONUS -->
-        <div class="bonus">
-            <div class="bonus-title">🎁 Free Signup Bonus</div>
-            <div class="bonus-items">
-                <div class="bonus-item"><span>🌐</span> 1,000 Website Credits</div>
-                <div class="bonus-item"><span>🖼️</span> 1,000 Banner Impressions</div>
-                <div class="bonus-item"><span>📝</span> 1,000 Text Ad Impressions</div>
+            <div class="benefit-card">
+                <div class="benefit-title">🚀 HIGH ENGAGEMENT & HIGH ROI</div>
+                <div class="benefit-desc">Boost your sales and signups with banner ads, text ads, and direct traffic
+                    flow.</div>
             </div>
         </div>
 
-        <!-- STATS -->
-        <div class="stats">
-            <div class="stat">
-                <span class="stat-icon">👥</span>
-                <span class="stat-val">35K+</span>
-                <span class="stat-key">Members</span>
-            </div>
-            <div class="stat">
-                <span class="stat-icon">🏆</span>
-                <span class="stat-val">#2</span>
-                <span class="stat-key">World Rank</span>
-            </div>
-            <div class="stat">
-                <span class="stat-icon">🌐</span>
-                <span class="stat-val">∞</span>
-                <span class="stat-key">Traffic</span>
-            </div>
-            <div class="stat">
-                <span class="stat-icon">🆓</span>
-                <span class="stat-val">Free</span>
-                <span class="stat-key">Forever</span>
-            </div>
+        <div class="cta-container">
+            <a href="https://hungryforhits.com/?rid=17" target="_blank" class="btn-cta">
+                👉 JOIN FREE & GET TRAFFIC NOW!
+            </a>
         </div>
 
-        <!-- CTA -->
-        <div class="cta-group">
-            <a href="https://hungryforhits.com/?rid=17" target="_blank" class="btn-main">🍔 Claim Bonus &amp; Join
-                Free</a>
-            <a href="https://hungryforhits.com/?rid=17" target="_blank" class="btn-learn">Learn More</a>
-        </div>
-
-        <div class="perks">
-            <span class="perk">Real Visitors</span>
-            <span class="perk">Tracking Tools</span>
-            <span class="perk">Affiliate Program</span>
-            <span class="perk">Social Network</span>
-            <span class="perk">Your Own Blog</span>
-        </div>
-
+        <p class="guarantee">✓ No Credit Card Required &nbsp;|&nbsp; ✓ Instant Setup &nbsp;|&nbsp; ✓ 100% Free
+            Membership</p>
     </div>
 
-    <div class="invite-box">
-        <img class="invite-avatar"
-            src="https://www.gravatar.com/avatar/0101c72c97a4bef379faf316240a89dd?s=96&d=identicon" alt="Sinan">
-        <span class="invite-text">Invited by <strong>Sinan</strong></span>
-    </div>
-
-    <script>
-        const canvas = document.getElementById('c');
-        const ctx = canvas.getContext('2d');
-        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        resize(); window.addEventListener('resize', resize);
-        const emojis = ['🍔', '🌶️', '🔥', '⚡', '🍕', '🌮'];
-        class P {
-            constructor(r) { this.reset(r); }
-            reset(r) {
-                this.e = emojis[Math.floor(Math.random() * emojis.length)];
-                this.x = Math.random() * canvas.width;
-                this.y = r ? Math.random() * canvas.height : -20;
-                this.s = 13 + Math.random() * 14;
-                this.vy = 0.4 + Math.random() * 0.65;
-                this.vx = (Math.random() - .5) * .35;
-                this.rot = Math.random() * Math.PI * 2;
-                this.rv = (Math.random() - .5) * .018;
-                this.o = 0.18 + Math.random() * 0.28;
-                this.w = Math.random() * Math.PI * 2;
-            }
-            update() {
-                this.y += this.vy; this.x += this.vx + Math.sin(this.w) * .25;
-                this.w += .012; this.rot += this.rv;
-                if (this.y > canvas.height + 20) this.reset(false);
-            }
-            draw() {
-                ctx.save(); ctx.globalAlpha = this.o;
-                ctx.translate(this.x, this.y); ctx.rotate(this.rot);
-                ctx.font = this.s + 'px serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText(this.e, 0, 0); ctx.restore();
-            }
-        }
-        const ps = Array.from({ length: 40 }, () => new P(true));
-        (function loop() { ctx.clearRect(0, 0, canvas.width, canvas.height); ps.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(loop); })();
-    </script>
 </body>
 
 </html>
