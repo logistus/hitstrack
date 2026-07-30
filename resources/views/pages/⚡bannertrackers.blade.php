@@ -43,6 +43,8 @@ new #[Title('Banner Trackers')] class extends Component
         $this->resetForm();
 
         Flux::modal('banner-form')->show();
+
+        $this->skipRender();
     }
 
     public function save(): void
@@ -98,17 +100,23 @@ new #[Title('Banner Trackers')] class extends Component
 
         $this->resetValidation();
         Flux::modal('banner-form')->show();
+
+        $this->skipRender();
     }
 
     public function cancelEdit(): void
     {
         $this->resetForm();
         Flux::modal('banner-form')->close();
+
+        $this->skipRender();
     }
 
     public function closeBannerModal(): void
     {
         $this->resetForm();
+
+        $this->skipRender();
     }
 
     public function confirmDeleteBanner(int $bannerId): void
@@ -121,6 +129,8 @@ new #[Title('Banner Trackers')] class extends Component
         $this->deletingBannerName = $banner->name;
 
         Flux::modal('delete-banner')->show();
+
+        $this->skipRender();
     }
 
     public function deleteBanner(): void
@@ -147,11 +157,15 @@ new #[Title('Banner Trackers')] class extends Component
     {
         $this->resetDeleteState();
         Flux::modal('delete-banner')->close();
+
+        $this->skipRender();
     }
 
     public function closeDeleteModal(): void
     {
         $this->resetDeleteState();
+
+        $this->skipRender();
     }
 
     public function confirmDeleteSelected(array $bannerIds): void
@@ -161,6 +175,8 @@ new #[Title('Banner Trackers')] class extends Component
         if ($this->selectedBannerIds !== []) {
             Flux::modal('delete-selected-banners')->show();
         }
+
+        $this->skipRender();
     }
 
     public function deleteSelected(): void
@@ -182,6 +198,8 @@ new #[Title('Banner Trackers')] class extends Component
     public function cancelDeleteSelected(): void
     {
         Flux::modal('delete-selected-banners')->close();
+
+        $this->skipRender();
     }
 
     public function with(): array
@@ -317,32 +335,32 @@ new #[Title('Banner Trackers')] class extends Component
         </div>
 
         @unless ($usage['reached'])
-            <flux:button variant="primary" type="button" wire:click="createBanner">
-                {{ __('New banner') }}
-            </flux:button>
+        <flux:button variant="primary" type="button" wire:click="createBanner">
+            {{ __('New banner') }}
+        </flux:button>
         @endunless
     </div>
 
     @if ($usage['can_upgrade'])
-        <flux:callout
-            inline
-            variant="danger"
-            :heading="__('Banner tracker usage')"
-            :text="$usage['limit'] === null
+    <flux:callout
+        inline
+        variant="danger"
+        :heading="__('Banner tracker usage')"
+        :text="$usage['limit'] === null
                 ? __('You have created :count banner trackers. Your plan has unlimited banner trackers.', ['count' => number_format($usage['count'])])
                 : __('You have created :count of :limit banner trackers.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit'])])">
-            <x-slot:actions>
-                <flux:button variant="primary" size="sm" type="button">
-                    {{ __('Upgrade Now') }}
-                </flux:button>
-            </x-slot:actions>
-        </flux:callout>
+        <x-slot:actions>
+            <flux:button variant="primary" size="sm" type="button">
+                {{ __('Upgrade Now') }}
+            </flux:button>
+        </x-slot:actions>
+    </flux:callout>
     @else
-        <flux:callout
-            inline
-            :variant="$usage['reached'] ? 'danger' : 'success'"
-            :heading="__('Banner tracker usage')"
-            :text="$usage['limit'] === null
+    <flux:callout
+        inline
+        :variant="$usage['reached'] ? 'danger' : 'success'"
+        :heading="__('Banner tracker usage')"
+        :text="$usage['limit'] === null
                 ? __('You have created :count banner trackers. Your plan has unlimited banner trackers.', ['count' => number_format($usage['count'])])
                 : __('You have created :count of :limit banner trackers.', ['count' => number_format($usage['count']), 'limit' => number_format($usage['limit'])])" />
     @endif
@@ -416,7 +434,7 @@ new #[Title('Banner Trackers')] class extends Component
     </flux:modal>
 
     @php
-        $pageBannerIds = $banners->pluck('id')->map(fn ($id) => (string) $id)->all();
+    $pageBannerIds = $banners->pluck('id')->map(fn ($id) => (string) $id)->all();
     @endphp
     <div x-data="{ selected: [] }" x-on:bulk-selection-cleared.window="selected = []" class="space-y-4">
         <div style="visibility: hidden" x-bind:style="selected.length > 0 ? 'visibility: visible' : 'visibility: hidden'">
@@ -425,139 +443,139 @@ new #[Title('Banner Trackers')] class extends Component
             </flux:button>
         </div>
 
-    <flux:table :paginate="$banners">
-        <flux:table.columns>
-            <flux:table.column>
-                <input type="checkbox" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" x-on:change="selected = $event.target.checked ? [...new Set([...selected, ...@js($pageBannerIds)])] : selected.filter(id => !@js($pageBannerIds).includes(id))" x-bind:checked="@js($pageBannerIds).length > 0 && @js($pageBannerIds).every(id => selected.includes(id))" aria-label="{{ __('Select or deselect all trackers on this page') }}">
-            </flux:table.column>
-            <flux:table.column>{{ __('Banner') }}</flux:table.column>
-            <flux:table.column>{{ __('Links') }}</flux:table.column>
-            <flux:table.column>{{ __('Performance') }}</flux:table.column>
-            <flux:table.column>{{ __('Last Impression') }}</flux:table.column>
-            <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
-        </flux:table.columns>
+        <flux:table :paginate="$banners">
+            <flux:table.columns>
+                <flux:table.column>
+                    <input type="checkbox" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" x-on:change="selected = $event.target.checked ? [...new Set([...selected, ...@js($pageBannerIds)])] : selected.filter(id => !@js($pageBannerIds).includes(id))" x-bind:checked="@js($pageBannerIds).length > 0 && @js($pageBannerIds).every(id => selected.includes(id))" aria-label="{{ __('Select or deselect all trackers on this page') }}">
+                </flux:table.column>
+                <flux:table.column>{{ __('Banner') }}</flux:table.column>
+                <flux:table.column>{{ __('Links') }}</flux:table.column>
+                <flux:table.column>{{ __('Performance') }}</flux:table.column>
+                <flux:table.column>{{ __('Last Impression') }}</flux:table.column>
+                <flux:table.column align="end">{{ __('Actions') }}</flux:table.column>
+            </flux:table.columns>
 
-        <flux:table.rows>
-            @forelse ($banners as $banner)
-            @php
-            $imageUrl = route('bannertrackers.image', $banner->banner_slug);
-            $clickUrl = route('bannertrackers.click', $banner->banner_slug);
-            $ctr = $banner->impressions_count > 0 ? ($banner->clicks_count / $banner->impressions_count) * 100 : 0;
-            $previewWidth = $banner->width ? max(1, (int) round($banner->width / 2)) : 160;
-            $previewHeight = $banner->height ? max(1, (int) round($banner->height / 2)) : 80;
-            $lastImpressionAt = collect([$banner->aggregate_last_impression_at, $banner->today_last_impression_at])
+            <flux:table.rows>
+                @forelse ($banners as $banner)
+                @php
+                $imageUrl = route('bannertrackers.image', $banner->banner_slug);
+                $clickUrl = route('bannertrackers.click', $banner->banner_slug);
+                $ctr = $banner->impressions_count > 0 ? ($banner->clicks_count / $banner->impressions_count) * 100 : 0;
+                $previewWidth = $banner->width ? max(1, (int) round($banner->width / 2)) : 160;
+                $previewHeight = $banner->height ? max(1, (int) round($banner->height / 2)) : 80;
+                $lastImpressionAt = collect([$banner->aggregate_last_impression_at, $banner->today_last_impression_at])
                 ->filter()
                 ->map(fn ($value) => \Carbon\Carbon::parse($value))
                 ->sortDesc()
                 ->first();
-            @endphp
-            <flux:table.row :key="$banner->id">
-                <flux:table.cell>
-                    <input type="checkbox" value="{{ $banner->id }}" x-model="selected" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" aria-label="{{ __('Select tracker :name', ['name' => $banner->name]) }}">
-                </flux:table.cell>
-                <flux:table.cell>
-                    <div class="max-w-lg space-y-2">
-                        <div class="truncate font-medium">{{ $banner->name }}</div>
-                        <img
-                            src="{{ $banner->image_url }}"
-                            alt="{{ $banner->alt_text ?: $banner->name }}"
-                            class="block rounded bg-zinc-100 object-contain dark:bg-zinc-800"
-                            width="{{ $previewWidth }}"
-                            height="{{ $previewHeight }}">
-                    </div>
-                </flux:table.cell>
-                <flux:table.cell>
-                    <div class="max-w-md space-y-2 text-sm">
-                        <div class="flex min-w-0 gap-2">
-                            <span class="shrink-0 font-medium">{{ __('Image') }}:</span>
-                            <flux:link href="{{ $imageUrl }}" target="_blank" rel="noreferrer" class="min-w-0 truncate" title="{{ $imageUrl }}">
-                                {{ $imageUrl }}
-                            </flux:link>
-                            <flux:tooltip :content="__('Copy image tracker URL')">
-                                <flux:button
-                                    variant="ghost"
-                                    size="xs"
-                                    icon="clipboard-document"
-                                    type="button"
-                                    class="shrink-0"
-                                    x-on:click="navigator.clipboard.writeText(@js($imageUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Image tracker URL copied.')) }))"
-                                    :aria-label="__('Copy image tracker URL')" />
-                            </flux:tooltip>
+                @endphp
+                <flux:table.row :key="$banner->id">
+                    <flux:table.cell>
+                        <input type="checkbox" value="{{ $banner->id }}" x-model="selected" class="size-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800" aria-label="{{ __('Select tracker :name', ['name' => $banner->name]) }}">
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        <div class="max-w-lg space-y-2">
+                            <div class="truncate font-medium">{{ $banner->name }}</div>
+                            <img
+                                src="{{ $banner->image_url }}"
+                                alt="{{ $banner->alt_text ?: $banner->name }}"
+                                class="block rounded bg-zinc-100 object-contain dark:bg-zinc-800"
+                                width="{{ $previewWidth }}"
+                                height="{{ $previewHeight }}">
                         </div>
-                        <div class="flex min-w-0 gap-2">
-                            <span class="shrink-0 font-medium">{{ __('Target') }}:</span>
-                            <flux:link href="{{ $clickUrl }}" target="_blank" rel="noreferrer" class="min-w-0 truncate" title="{{ $clickUrl }}">
-                                {{ $clickUrl }}
-                            </flux:link>
-                            <flux:tooltip :content="__('Copy target tracker URL')">
-                                <flux:button
-                                    variant="ghost"
-                                    size="xs"
-                                    icon="clipboard-document"
-                                    type="button"
-                                    class="shrink-0"
-                                    x-on:click="navigator.clipboard.writeText(@js($clickUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Target tracker URL copied.')) }))"
-                                    :aria-label="__('Copy target tracker URL')" />
-                            </flux:tooltip>
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        <div class="max-w-md space-y-2 text-sm">
+                            <div class="flex min-w-0 gap-2">
+                                <span class="shrink-0 font-medium">{{ __('Image') }}:</span>
+                                <flux:link href="{{ $imageUrl }}" target="_blank" rel="noreferrer" class="min-w-0 truncate" title="{{ $imageUrl }}">
+                                    {{ $imageUrl }}
+                                </flux:link>
+                                <flux:tooltip :content="__('Copy image tracker URL')">
+                                    <flux:button
+                                        variant="ghost"
+                                        size="xs"
+                                        icon="clipboard-document"
+                                        type="button"
+                                        class="shrink-0"
+                                        x-on:click="navigator.clipboard.writeText(@js($imageUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Image tracker URL copied.')) }))"
+                                        :aria-label="__('Copy image tracker URL')" />
+                                </flux:tooltip>
+                            </div>
+                            <div class="flex min-w-0 gap-2">
+                                <span class="shrink-0 font-medium">{{ __('Target') }}:</span>
+                                <flux:link href="{{ $clickUrl }}" target="_blank" rel="noreferrer" class="min-w-0 truncate" title="{{ $clickUrl }}">
+                                    {{ $clickUrl }}
+                                </flux:link>
+                                <flux:tooltip :content="__('Copy target tracker URL')">
+                                    <flux:button
+                                        variant="ghost"
+                                        size="xs"
+                                        icon="clipboard-document"
+                                        type="button"
+                                        class="shrink-0"
+                                        x-on:click="navigator.clipboard.writeText(@js($clickUrl)).then(() => window.Flux?.toast({ variant: 'success', text: @js(__('Target tracker URL copied.')) }))"
+                                        :aria-label="__('Copy target tracker URL')" />
+                                </flux:tooltip>
+                            </div>
                         </div>
-                    </div>
-                </flux:table.cell>
-                <flux:table.cell>
-                    <div class="space-y-1 text-sm tabular-nums">
-                        <div><span class="font-medium">{{ number_format($banner->impressions_count) }}</span> <span class="text-zinc-500 dark:text-zinc-400">{{ __('impressions') }}</span></div>
-                        <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ number_format($banner->clicks_count) }} {{ __('clicks') }} · {{ number_format($ctr, 2) }}% CTR</div>
-                    </div>
-                </flux:table.cell>
-                <flux:table.cell>
-                    @if ($lastImpressionAt)
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        <div class="space-y-1 text-sm tabular-nums">
+                            <div><span class="font-medium">{{ number_format($banner->impressions_count) }}</span> <span class="text-zinc-500 dark:text-zinc-400">{{ __('impressions') }}</span></div>
+                            <div class="text-xs text-zinc-500 dark:text-zinc-400">{{ number_format($banner->clicks_count) }} {{ __('clicks') }} · {{ number_format($ctr, 2) }}% CTR</div>
+                        </div>
+                    </flux:table.cell>
+                    <flux:table.cell>
+                        @if ($lastImpressionAt)
                         <span title="{{ $lastImpressionAt->format('Y-m-d H:i:s') }}" class="font-medium">
                             {{ $lastImpressionAt->diffForHumans(short: true) }}
                         </span>
-                    @else
+                        @else
                         <span class="font-medium">{{ __('Never') }}</span>
-                    @endif
-                </flux:table.cell>
-                <flux:table.cell align="end">
-                    <div class="flex justify-end gap-1">
-                        <flux:tooltip :content="__('Stats')">
-                            <flux:button
-                                :href="route('bannertrackers.stats', $banner->banner_slug)"
-                                variant="ghost"
-                                size="sm"
-                                icon="chart-bar"
-                                wire:navigate
-                                :aria-label="__('Stats')" />
-                        </flux:tooltip>
-                        <flux:tooltip :content="__('Edit')">
-                            <flux:button
-                                variant="ghost"
-                                size="sm"
-                                icon="pencil-square"
-                                type="button"
-                                wire:click="editBanner({{ $banner->id }}, @js($banner->name), @js($banner->target_url), @js($banner->image_url), @js($banner->alt_text), @js($banner->width), @js($banner->height))"
-                                :aria-label="__('Edit')" />
-                        </flux:tooltip>
-                        <flux:tooltip :content="__('Delete')">
-                            <flux:button
-                                variant="ghost"
-                                size="sm"
-                                icon="trash"
-                                type="button"
-                                class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                                wire:click="confirmDeleteBanner({{ $banner->id }})"
-                                :aria-label="__('Delete')" />
-                        </flux:tooltip>
-                    </div>
-                </flux:table.cell>
-            </flux:table.row>
-            @empty
-            <flux:table.row>
-                <flux:table.cell colspan="6" align="center">
-                    {{ __('No banners created yet.') }}
-                </flux:table.cell>
-            </flux:table.row>
-            @endforelse
-        </flux:table.rows>
-    </flux:table>
+                        @endif
+                    </flux:table.cell>
+                    <flux:table.cell align="end">
+                        <div class="flex justify-end gap-1">
+                            <flux:tooltip :content="__('Stats')">
+                                <flux:button
+                                    :href="route('bannertrackers.stats', $banner->banner_slug)"
+                                    variant="ghost"
+                                    size="sm"
+                                    icon="chart-bar"
+                                    wire:navigate
+                                    :aria-label="__('Stats')" />
+                            </flux:tooltip>
+                            <flux:tooltip :content="__('Edit')">
+                                <flux:button
+                                    variant="ghost"
+                                    size="sm"
+                                    icon="pencil-square"
+                                    type="button"
+                                    wire:click="editBanner({{ $banner->id }}, @js($banner->name), @js($banner->target_url), @js($banner->image_url), @js($banner->alt_text), @js($banner->width), @js($banner->height))"
+                                    :aria-label="__('Edit')" />
+                            </flux:tooltip>
+                            <flux:tooltip :content="__('Delete')">
+                                <flux:button
+                                    variant="ghost"
+                                    size="sm"
+                                    icon="trash"
+                                    type="button"
+                                    class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                    wire:click="confirmDeleteBanner({{ $banner->id }})"
+                                    :aria-label="__('Delete')" />
+                            </flux:tooltip>
+                        </div>
+                    </flux:table.cell>
+                </flux:table.row>
+                @empty
+                <flux:table.row>
+                    <flux:table.cell colspan="6" align="center">
+                        {{ __('No banners created yet.') }}
+                    </flux:table.cell>
+                </flux:table.row>
+                @endforelse
+            </flux:table.rows>
+        </flux:table>
     </div>
 </section>
